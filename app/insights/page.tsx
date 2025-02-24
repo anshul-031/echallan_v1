@@ -103,7 +103,6 @@ const timeRanges = [
 export default function InsightsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
-  const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 lg:p-6">
@@ -144,7 +143,6 @@ export default function InsightsPage() {
                 transform hover:scale-[1.02] hover:-translate-y-1`}
               onMouseEnter={() => setHoveredCard(index)}
               onMouseLeave={() => setHoveredCard(null)}
-              onClick={() => setExpandedCard(expandedCard === index ? null : index)}
             >
               {/* Animated Background Gradient */}
               <div className={`absolute inset-0 bg-gradient-to-r ${card.color} opacity-0 
@@ -184,12 +182,12 @@ export default function InsightsPage() {
                   </div>
                 </div>
 
-                {/* Expandable Details */}
-                <div className={`mt-4 space-y-2 transition-all duration-300
-                  ${expandedCard === index ? 'opacity-100 max-h-40' : 'opacity-0 max-h-0 overflow-hidden'}`}
+                {/* Details Section - Automatically shows on hover */}
+                <div className={`mt-4 space-y-2 transition-all duration-300 ease-in-out
+                  ${hoveredCard === index ? 'opacity-100 max-h-40' : 'opacity-0 max-h-0 overflow-hidden'}`}
                 >
                   {card.details.map((detail, idx) => (
-                    <div key={idx} className="flex justify-between items-center">
+                    <div key={idx} className="flex justify-between items-center p-2 rounded-lg bg-gray-50">
                       <span className="text-sm text-gray-500">{detail.label}</span>
                       <span className="text-sm font-medium text-gray-900">{detail.value}</span>
                     </div>

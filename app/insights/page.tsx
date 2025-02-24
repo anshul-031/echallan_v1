@@ -207,13 +207,13 @@ export default function InsightsPage() {
         {/* Performance Metrics and Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Performance Metrics */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Performance Metrics</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg shadow-sm p-6 h-[280px]">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Performance Metrics</h2>
+            <div className="grid grid-cols-2 gap-4 h-[200px]">
               {performanceMetrics.map((metric, index) => (
                 <div 
                   key={index}
-                  className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors flex flex-col justify-between"
                 >
                   <div className="flex justify-between items-start">
                     <span className="text-sm text-gray-500">{metric.label}</span>
@@ -228,16 +228,16 @@ export default function InsightsPage() {
                       </span>
                     </div>
                   </div>
-                  <p className="text-2xl font-semibold mt-2">{metric.value}</p>
+                  <p className="text-2xl font-semibold">{metric.value}</p>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Chart Placeholder */}
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-6">Usage Trends</h2>
-            <div className="h-[300px] bg-gray-50 rounded-lg flex items-center justify-center">
+          <div className="bg-white rounded-lg shadow-sm p-6 h-[280px]">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Usage Trends</h2>
+            <div className="h-[200px] bg-gray-50 rounded-lg flex items-center justify-center">
               <DocumentChartBarIcon className="w-12 h-12 text-gray-400" />
             </div>
           </div>
@@ -245,7 +245,7 @@ export default function InsightsPage() {
 
         {/* Additional Metrics */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6 h-[280px]">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Routes</h3>
             <div className="space-y-4">
               {[
@@ -267,7 +267,7 @@ export default function InsightsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6 h-[280px]">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Peak Hours</h3>
             <div className="space-y-4">
               {[
@@ -289,7 +289,7 @@ export default function InsightsPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-lg shadow-sm p-6 h-[280px]">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Monthly Overview</h3>
             <div className="space-y-4">
               {[

@@ -1,20 +1,25 @@
-import mysql from 'mysql2/promise';
+import { Pool } from 'pg';
 
-export async function getConnection() {
-  return await mysql.createConnection({
-    host: process.env.MYSQL_HOST,
-    user: process.env.MYSQL_USER,
-    password: process.env.MYSQL_PASSWORD,
-    database: process.env.MYSQL_DATABASE
-  });
-}
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
 
 export async function query(sql: string, params: any[] = []) {
-  const connection = await getConnection();
+  const client = await pool.connect();
   try {
-    const [results] = await connection.execute(sql, params);
-    return results;
+    const { rows } = await client.query(sql, params);
+    return rows;
   } finally {
-    await connection.end();
+    client.release();
   }
 }
+
+// Test the database connection
+pool.on('connect', () => {
+  console.log('Connected to PostgreSQL database');
+});
+
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
+});

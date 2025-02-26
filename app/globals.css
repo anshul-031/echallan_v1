@@ -13,6 +13,17 @@
   --zoho-purple: #885AF8;
 }
 
+.dark {
+  --foreground-rgb: 255, 255, 255;
+  --background-rgb: 17, 24, 39;
+  --zoho-primary: #3B82F6;
+  --zoho-secondary: #9CA3AF;
+  --zoho-success: #10B981;
+  --zoho-warning: #F59E0B;
+  --zoho-danger: #EF4444;
+  --zoho-purple: #8B5CF6;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
@@ -98,29 +109,29 @@ body {
 
 @layer base {
   h1 {
-    @apply text-2xl font-semibold text-[#2D3748];
+    @apply text-2xl font-semibold text-[#2D3748] dark:text-gray-100;
   }
   
   h2 {
-    @apply text-xl font-medium text-[#2D3748];
+    @apply text-xl font-medium text-[#2D3748] dark:text-gray-100;
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-[#E2E8F0] transition-all duration-200 hover:shadow-md;
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-[#E2E8F0] dark:border-gray-700 transition-all duration-200 hover:shadow-md;
   }
   
   .card-title {
-    @apply text-sm font-medium text-[#5F6988];
+    @apply text-sm font-medium text-[#5F6988] dark:text-gray-300;
   }
   
   .card-value {
-    @apply text-2xl font-semibold text-[#2D3748] mt-2;
+    @apply text-2xl font-semibold text-[#2D3748] dark:text-white mt-2;
   }
 }
 
 /* Zoho-style Cards */
 .zoho-card {
-  @apply p-6 bg-white rounded-lg shadow-sm border border-[#E2E8F0] transition-all duration-200;
+  @apply p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-[#E2E8F0] dark:border-gray-700 transition-all duration-200;
 }
 
 .zoho-card:hover {
@@ -129,40 +140,40 @@ body {
 
 /* Zoho Typography */
 .zoho-heading-xl {
-  @apply text-2xl font-semibold text-[#2D3748] tracking-tight;
+  @apply text-2xl font-semibold text-[#2D3748] dark:text-white tracking-tight;
 }
 
 .zoho-heading-lg {
-  @apply text-xl font-medium text-[#2D3748] tracking-tight;
+  @apply text-xl font-medium text-[#2D3748] dark:text-white tracking-tight;
 }
 
 .zoho-heading-md {
-  @apply text-lg font-medium text-[#2D3748] tracking-tight;
+  @apply text-lg font-medium text-[#2D3748] dark:text-white tracking-tight;
 }
 
 .zoho-text-secondary {
-  @apply text-sm text-[#5F6988];
+  @apply text-sm text-[#5F6988] dark:text-gray-400;
 }
 
 /* Zoho Colors */
 .zoho-bg-primary {
-  @apply bg-[#2D5DE9] text-white;
+  @apply bg-[#2D5DE9] dark:bg-blue-600 text-white;
 }
 
 .zoho-bg-success {
-  @apply bg-[#23AD5C] text-white;
+  @apply bg-[#23AD5C] dark:bg-green-600 text-white;
 }
 
 .zoho-bg-warning {
-  @apply bg-[#FFB946] text-white;
+  @apply bg-[#FFB946] dark:bg-amber-500 text-white;
 }
 
 .zoho-bg-danger {
-  @apply bg-[#F7685B] text-white;
+  @apply bg-[#F7685B] dark:bg-red-500 text-white;
 }
 
 .zoho-bg-purple {
-  @apply bg-[#885AF8] text-white;
+  @apply bg-[#885AF8] dark:bg-purple-600 text-white;
 }
 
 /* Custom Animations */
@@ -175,10 +186,60 @@ body {
   }
 }
 
-.animate-spin-slow {
-  animation: spin-slow 2s linear;
-}
-
 .hover\:rotate-360:hover {
   transform: rotate(360deg);
+}
+
+/* Sidebar Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Dark Mode Toggle Animation */
+@keyframes sunRise {
+  0% {
+    transform: translateY(20px) scale(0.7);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes moonRise {
+  0% {
+    transform: translateY(-20px) scale(0.7);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.dark-mode-enter {
+  animation: moonRise 0.5s ease forwards;
+}
+
+.dark-mode-exit {
+  animation: sunRise 0.5s ease forwards;
 }

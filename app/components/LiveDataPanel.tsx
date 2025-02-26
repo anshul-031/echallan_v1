@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useState } from 'react';
 import { MagnifyingGlassIcon, PlusIcon, XMarkIcon, ArrowRightIcon, DocumentTextIcon, ClockIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 
@@ -67,21 +66,19 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
   }
 
   return (
-    <div className="w-full xl:w-96 bg-white h-full overflow-y-auto">
-      <div className="p-6 border-b">
-        <h2 className="text-xl font-semibold text-gray-900 mb-1">Live Data Fetch</h2>
+    <div className="w-full xl:w-96 bg-white h-screen max-h-screen">
+      <div className="p-4 border-b">
+        <h2 className="text-lg font-semibold text-gray-900 mb-1">Live Data Fetch</h2>
         <p className="text-sm text-gray-500">Search and verify vehicle information</p>
       </div>
 
-      <div className="p-6">
+      <div className="p-4">
         {/* Search Input */}
         <div className="relative">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <Image 
+            <img 
               src="https://echallan.app/application/fleet/images/india.svg"
               alt="India"
-              width={20}
-              height={20}
               className="w-5 h-5"
             />
           </div>
@@ -90,7 +87,7 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
             placeholder="Enter Vehicle Number"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value.toUpperCase())}
-            className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-11 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
             <MagnifyingGlassIcon className="w-5 h-5" />
@@ -98,28 +95,28 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
         </div>
 
         {/* Quick Stats */}
-        <div className="mt-8 grid grid-cols-3 gap-4">
-          <div className="bg-blue-50 rounded-lg p-3 text-center">
-            <ClockIcon className="w-6 h-6 text-blue-600 mx-auto mb-1" />
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          <div className="bg-blue-50 rounded-lg p-2 text-center">
+            <ClockIcon className="w-5 h-5 text-blue-600 mx-auto mb-1" />
             <p className="text-xs text-gray-600">Validity</p>
             <p className="text-sm font-medium text-gray-900">6 months</p>
           </div>
-          <div className="bg-green-50 rounded-lg p-3 text-center">
-            <ShieldCheckIcon className="w-6 h-6 text-green-600 mx-auto mb-1" />
+          <div className="bg-green-50 rounded-lg p-2 text-center">
+            <ShieldCheckIcon className="w-5 h-5 text-green-600 mx-auto mb-1" />
             <p className="text-xs text-gray-600">Status</p>
             <p className="text-sm font-medium text-gray-900">Active</p>
           </div>
-          <div className="bg-purple-50 rounded-lg p-3 text-center">
-            <DocumentTextIcon className="w-6 h-6 text-purple-600 mx-auto mb-1" />
+          <div className="bg-purple-50 rounded-lg p-2 text-center">
+            <DocumentTextIcon className="w-5 h-5 text-purple-600 mx-auto mb-1" />
             <p className="text-xs text-gray-600">Documents</p>
             <p className="text-sm font-medium text-gray-900">5/6</p>
           </div>
         </div>
 
         {/* Document Status */}
-        <div className="mt-8">
-          <h3 className="text-sm font-medium text-gray-900 mb-4">Document Status</h3>
-          <div className="space-y-4">
+        <div className="mt-4">
+          <h3 className="text-sm font-medium text-gray-900 mb-3">Document Status</h3>
+          <div className="space-y-2">
             {[
               { label: 'Insurance', status: 'Valid till Dec 2024' },
               { label: 'Fitness', status: 'Valid till Nov 2024' },
@@ -128,7 +125,7 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
               { label: 'Permit', status: 'Not Available' },
               { label: 'NP Permit', status: 'Valid till Aug 2024' }
             ].map((doc, index) => (
-              <div key={index} className="bg-gray-50 rounded-lg p-4">
+              <div key={index} className="bg-gray-50 rounded-lg p-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">{doc.label}</span>
                   <span className={`text-sm font-medium ${
@@ -143,14 +140,14 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-8 space-y-3">
-          <button className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
+        <div className="mt-4 space-y-2">
+          <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
             <PlusIcon className="w-5 h-5" />
             <span>Add New Vehicle</span>
           </button>
           <button 
             onClick={handleViewDetails}
-            className="w-full px-4 py-3 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2"
+            className="w-full px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2"
           >
             <ArrowRightIcon className="w-5 h-5" />
             <span>View Full Details</span>

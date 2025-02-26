@@ -16,9 +16,7 @@ import {
   XMarkIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  DocumentArrowDownIcon
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 
 const summaryCards = [
@@ -98,7 +96,7 @@ const renewalData = [
       { type: 'National Permit', status: 'Valid', expiry: '01-11-2025', lastUpdated: '01-11-2023' }
     ]
   },
-  // Add more renewal data items here...
+  // Add more sample data as needed
 ];
 
 export default function RenewalsPage() {
@@ -107,43 +105,36 @@ export default function RenewalsPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<typeof renewalData[0] | null>(null);
-  const [showExportDropdown, setShowExportDropdown] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentTab, setCurrentTab] = useState<'upcoming' | 'expired' | 'all'>('upcoming');
 
   const handleViewDetails = (period: string) => {
     setSelectedPeriod(period);
     setShowDetailsModal(true);
   };
 
-  const handleExport = (format: 'current-excel' | 'all-excel' | 'pdf') => {
-    console.log(`Exporting in ${format} format`);
-    setShowExportDropdown(false);
-  };
-
-  // Calculate pagination
-  const totalPages = Math.ceil(renewalData.length / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
-  const currentRenewals = renewalData.slice(startIndex, endIndex);
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-4 lg:p-6 space-y-6">
-        {/* Header with Search */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <h1 className="text-2xl font-semibold text-gray-900">Renewals Dashboard</h1>
-          <div className="w-full lg:w-72">
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-semibold text-gray-900">Renewals Management</h1>
+            <p className="mt-1 text-sm text-gray-500">Track and manage your vehicle document renewals</p>
+          </div>
+          <div className="flex items-center space-x-4">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Search vehicles..."
-                className="w-full h-10 pl-10 pr-4 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             </div>
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+              Add Vehicle
+            </button>
           </div>
         </div>
 
@@ -157,13 +148,11 @@ export default function RenewalsPage() {
               onMouseEnter={() => setHoveredCard(index)}
               onMouseLeave={() => setHoveredCard(null)}
             >
-              {/* Animated Background Gradient */}
               <div className={`absolute inset-0 bg-gradient-to-r ${card.color} opacity-0 
                 transition-opacity duration-300 blur-xl
                 ${hoveredCard === index ? 'opacity-20' : ''}`}
               />
               
-              {/* Card Content */}
               <div className={`relative bg-white border ${card.borderColor} p-6 h-full
                 transition-all duration-300
                 ${hoveredCard === index ? card.shadowColor : 'shadow-sm'}`}
@@ -192,176 +181,124 @@ export default function RenewalsPage() {
                   <span>View Details</span>
                   <ArrowRightIcon className="w-4 h-4" />
                 </button>
-
-                {/* Hover Effect Indicator */}
-                <div className={`absolute bottom-2 right-2 w-2 h-2 rounded-full transition-all duration-300
-                  bg-gradient-to-r ${card.color}
-                  ${hoveredCard === index ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
-                />
               </div>
             </div>
           ))}
         </div>
 
-        {/* Table Section */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">Renewal Details</h2>
-              
-              {/* Export Button with Animated Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowExportDropdown(!showExportDropdown)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
-                  Export
-                  <ChevronDownIcon className={`w-4 h-4 ml-2 transition-transform duration-200 ${showExportDropdown ? 'rotate-180' : ''}`} />
-                </button>
+        {/* Tabs */}
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              { id: 'upcoming', label: 'Upcoming Renewals' },
+              { id: 'expired', label: 'Expired Documents' },
+              { id: 'all', label: 'All Documents' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setCurrentTab(tab.id as typeof currentTab)}
+                className={`
+                  py-4 px-1 border-b-2 font-medium text-sm
+                  ${currentTab === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+                `}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
 
-                {/* Animated Dropdown */}
-                <div
-                  className={`absolute bottom-full right-0 mb-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 transform transition-all duration-200 origin-bottom z-50
-                    ${showExportDropdown 
-                      ? 'opacity-100 translate-y-0 scale-100' 
-                      : 'opacity-0 translate-y-2 scale-95 pointer-events-none'}`}
-                >
-                  <div className="py-1" role="menu" aria-orientation="vertical">
-                    {[
-                      { label: 'Export Current Page', format: 'current-excel' },
-                      { label: 'Export All Data', format: 'all-excel' },
-                      { label: 'Export as PDF', format: 'pdf' }
-                    ].map((option) => (
-                      <button
-                        key={option.format}
-                        onClick={() => handleExport(option.format as any)}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center transition-colors duration-150"
-                      >
-                        <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Click Outside Handler */}
-              {showExportDropdown && (
-                <div 
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowExportDropdown(false)}
-                />
-              )}
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VRN</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Road Tax</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fitness</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Insurance</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pollution</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State Permit</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">National Permit</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {currentRenewals.map((renewal) => (
-                  <tr key={renewal.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{renewal.vrn}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.roadTax}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.fitness}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.insurance}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.pollution}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500">{renewal.statePermit}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.nationalPermit}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.lastUpdated}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex justify-center space-x-2">
-                        <button 
-                          onClick={() => {
-                            setSelectedVehicle(renewal);
-                            setShowDetailsModal(true);
-                          }}
-                          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                          <EyeIcon className="w-5 h-5" />
-                        </button>
-                        <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
-                          <ArrowPathIcon className="w-5 h-5" />
-                        </button>
-                        <button className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors">
-                          <CloudArrowUpIcon className="w-5 h-5" />
-                        </button>
-                        <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors">
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
+        {/* Main Content Table */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Vehicle Details
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Road Tax
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Fitness
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Insurance
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Pollution
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {renewalData.map((vehicle) => (
+                <tr key={vehicle.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                          <DocumentCheckIcon className="h-6 w-6 text-gray-400" />
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          <div className="px-6 py-4 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">Show rows:</span>
-                <select 
-                  value={rowsPerPage} 
-                  onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                  className="border rounded px-2 py-1 text-sm"
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                </select>
-                <span className="text-sm text-gray-500">
-                  Showing {startIndex + 1} to {Math.min(endIndex, renewalData.length)} of {renewalData.length} entries
-                </span>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <button 
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(1)}
-                >⟪</button>
-                <button 
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => prev - 1)}
-                >⟨</button>
-                <span className="px-3 py-1 bg-blue-600 text-white rounded">{currentPage}</span>
-                <button 
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => prev + 1)}
-                >⟩</button>
-                <button 
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(totalPages)}
-                >⟫</button>
-              </div>
-            </div>
-          </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{vehicle.vrn}</div>
+                        <div className="text-sm text-gray-500">{vehicle.vehicleDetails.make} {vehicle.vehicleDetails.model}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{vehicle.roadTax}</div>
+                    <div className="text-xs text-gray-500">Valid</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{vehicle.fitness}</div>
+                    <div className="text-xs text-gray-500">Valid</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{vehicle.insurance}</div>
+                    <div className="text-xs text-gray-500">Valid</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{vehicle.pollution}</div>
+                    <div className="text-xs text-gray-500">Valid</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                      Active
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => {
+                        setSelectedVehicle(vehicle);
+                        setShowDetailsModal(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-900 mr-3"
+                    >
+                      View
+                    </button>
+                    <button className="text-red-600 hover:text-red-900">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         {/* Details Modal */}
         {showDetailsModal && (selectedPeriod || selectedVehicle) && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-              {/* Modal Header */}
               <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-xl font-semibold text-gray-900">
                   {selectedVehicle ? `Vehicle Details - ${selectedVehicle.vrn}` : `${selectedPeriod} Renewals`}
@@ -378,11 +315,9 @@ export default function RenewalsPage() {
                 </button>
               </div>
 
-              {/* Modal Content */}
               <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
                 {selectedVehicle ? (
                   <div className="space-y-6">
-                    {/* Vehicle Information */}
                     <div>
                       <h4 className="text-lg font-medium text-gray-900 mb-4">Vehicle Information</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -395,7 +330,6 @@ export default function RenewalsPage() {
                       </div>
                     </div>
 
-                    {/* Document Status */}
                     <div>
                       <h4 className="text-lg font-medium text-gray-900 mb-4">Document Status</h4>
                       <div className="space-y-3">
@@ -435,12 +369,10 @@ export default function RenewalsPage() {
                     <p className="text-gray-600">
                       Showing vehicles with renewals due in {selectedPeriod?.toLowerCase()}
                     </p>
-                    {/* Add period-specific content here */}
                   </div>
                 )}
               </div>
 
-              {/* Modal Footer */}
               <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
                 <div className="flex justify-end space-x-3">
                   <button

@@ -13,6 +13,17 @@
   --zoho-purple: #885AF8;
 }
 
+.dark {
+  --foreground-rgb: 255, 255, 255;
+  --background-rgb: 17, 24, 39;
+  --zoho-primary: #3B82F6;
+  --zoho-secondary: #9CA3AF;
+  --zoho-success: #10B981;
+  --zoho-warning: #F59E0B;
+  --zoho-danger: #EF4444;
+  --zoho-purple: #8B5CF6;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
@@ -60,12 +71,27 @@ body {
 
 /* Custom Scrollbar Styles */
 .scrollbar-custom {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(203, 213, 225, 0.4) transparent;
 }
 
 .scrollbar-custom::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: rgba(203, 213, 225, 0.4);
+  border-radius: 20px;
+  border: transparent;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(203, 213, 225, 0.6);
 }
 
 /* Card Glow Effects */
@@ -81,31 +107,79 @@ body {
   --tw-shadow-color: rgb(239 68 68 / 0.5);
 }
 
+.shadow-green-500\/20 {
+  --tw-shadow-color: rgb(34 197 94 / 0.2);
+}
+
+.shadow-indigo-500\/20 {
+  --tw-shadow-color: rgb(99 102 241 / 0.2);
+}
+
+.shadow-orange-500\/20 {
+  --tw-shadow-color: rgb(249 115 22 / 0.2);
+}
+
+.shadow-purple-500\/20 {
+  --tw-shadow-color: rgb(168 85 247 / 0.2);
+}
+
+/* Enhanced Animation Keyframes */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
 @layer base {
   h1 {
-    @apply text-2xl font-semibold text-[#2D3748];
+    @apply text-2xl font-semibold text-[#2D3748] dark:text-gray-100;
   }
   
   h2 {
-    @apply text-xl font-medium text-[#2D3748];
+    @apply text-xl font-medium text-[#2D3748] dark:text-gray-100;
   }
   
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-[#E2E8F0] transition-all duration-200 hover:shadow-md;
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-[#E2E8F0] dark:border-gray-700 transition-all duration-200 hover:shadow-md;
   }
   
   .card-title {
-    @apply text-sm font-medium text-[#5F6988];
+    @apply text-sm font-medium text-[#5F6988] dark:text-gray-300;
   }
   
   .card-value {
-    @apply text-2xl font-semibold text-[#2D3748] mt-2;
+    @apply text-2xl font-semibold text-[#2D3748] dark:text-white mt-2;
   }
 }
 
 /* Zoho-style Cards */
 .zoho-card {
-  @apply p-6 bg-white rounded-lg shadow-sm border border-[#E2E8F0] transition-all duration-200;
+  @apply p-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-[#E2E8F0] dark:border-gray-700 transition-all duration-200;
 }
 
 .zoho-card:hover {
@@ -114,40 +188,40 @@ body {
 
 /* Zoho Typography */
 .zoho-heading-xl {
-  @apply text-2xl font-semibold text-[#2D3748] tracking-tight;
+  @apply text-2xl font-semibold text-[#2D3748] dark:text-white tracking-tight;
 }
 
 .zoho-heading-lg {
-  @apply text-xl font-medium text-[#2D3748] tracking-tight;
+  @apply text-xl font-medium text-[#2D3748] dark:text-white tracking-tight;
 }
 
 .zoho-heading-md {
-  @apply text-lg font-medium text-[#2D3748] tracking-tight;
+  @apply text-lg font-medium text-[#2D3748] dark:text-white tracking-tight;
 }
 
 .zoho-text-secondary {
-  @apply text-sm text-[#5F6988];
+  @apply text-sm text-[#5F6988] dark:text-gray-400;
 }
 
 /* Zoho Colors */
 .zoho-bg-primary {
-  @apply bg-[#2D5DE9] text-white;
+  @apply bg-[#2D5DE9] dark:bg-blue-600 text-white;
 }
 
 .zoho-bg-success {
-  @apply bg-[#23AD5C] text-white;
+  @apply bg-[#23AD5C] dark:bg-green-600 text-white;
 }
 
 .zoho-bg-warning {
-  @apply bg-[#FFB946] text-white;
+  @apply bg-[#FFB946] dark:bg-amber-500 text-white;
 }
 
 .zoho-bg-danger {
-  @apply bg-[#F7685B] text-white;
+  @apply bg-[#F7685B] dark:bg-red-500 text-white;
 }
 
 .zoho-bg-purple {
-  @apply bg-[#885AF8] text-white;
+  @apply bg-[#885AF8] dark:bg-purple-600 text-white;
 }
 
 /* Custom Animations */
@@ -160,10 +234,247 @@ body {
   }
 }
 
-.animate-spin-slow {
-  animation: spin-slow 2s linear;
-}
-
 .hover\:rotate-360:hover {
   transform: rotate(360deg);
+}
+
+/* Sidebar Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Dark Mode Toggle Animation */
+@keyframes sunRise {
+  0% {
+    transform: translateY(20px) scale(0.7);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes moonRise {
+  0% {
+    transform: translateY(-20px) scale(0.7);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.dark-mode-enter {
+  animation: moonRise 0.5s ease forwards;
+}
+
+.dark-mode-exit {
+  animation: sunRise 0.5s ease forwards;
+}
+
+/* New Animation Classes */
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-ping {
+  animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Utility classes for colored backgrounds with opacity */
+.bg-blue-50 {
+  background-color: rgba(239, 246, 255, 1);
+}
+
+.bg-blue-100 {
+  background-color: rgba(219, 234, 254, 1);
+}
+
+.bg-green-50 {
+  background-color: rgba(240, 253, 244, 1);
+}
+
+.bg-green-100 {
+  background-color: rgba(220, 252, 231, 1);
+}
+
+.bg-orange-50 {
+  background-color: rgba(255, 247, 237, 1);
+}
+
+.bg-orange-100 {
+  background-color: rgba(255, 237, 213, 1);
+}
+
+.bg-indigo-50 {
+  background-color: rgba(238, 242, 255, 1);
+}
+
+.bg-indigo-100 {
+  background-color: rgba(224, 231, 255, 1);
+}
+
+.bg-purple-50 {
+  background-color: rgba(250, 245, 255, 1);
+}
+
+.bg-purple-100 {
+  background-color: rgba(243, 232, 255, 1);
+}
+
+.bg-yellow-50 {
+  background-color: rgba(254, 252, 232, 1);
+}
+
+.bg-yellow-100 {
+  background-color: rgba(254, 249, 195, 1);
+}
+
+.bg-red-50 {
+  background-color: rgba(254, 242, 242, 1);
+}
+
+.bg-red-100 {
+  background-color: rgba(254, 226, 226, 1);
+}
+
+/* Text colors */
+.text-blue-500 {
+  color: rgba(59, 130, 246, 1);
+}
+
+.text-green-500 {
+  color: rgba(34, 197, 94, 1);
+}
+
+.text-orange-500 {
+  color: rgba(249, 115, 22, 1);
+}
+
+.text-indigo-500 {
+  color: rgba(99, 102, 241, 1);
+}
+
+.text-purple-500 {
+  color: rgba(168, 85, 247, 1);
+}
+
+.text-yellow-500 {
+  color: rgba(234, 179, 8, 1);
+}
+
+.text-red-500 {
+  color: rgba(239, 68, 68, 1);
+}
+
+/* Hover states */
+.hover\:bg-blue-50:hover {
+  background-color: rgba(239, 246, 255, 1);
+}
+
+.hover\:bg-green-50:hover {
+  background-color: rgba(240, 253, 244, 1);
+}
+
+.hover\:bg-orange-50:hover {
+  background-color: rgba(255, 247, 237, 1);
+}
+
+.hover\:bg-indigo-50:hover {
+  background-color: rgba(238, 242, 255, 1);
+}
+
+.hover\:bg-purple-50:hover {
+  background-color: rgba(250, 245, 255, 1);
+}
+
+.hover\:bg-yellow-50:hover {
+  background-color: rgba(254, 252, 232, 1);
+}
+
+.hover\:bg-red-50:hover {
+  background-color: rgba(254, 242, 242, 1);
+}
+
+/* Transition utilities */
+.transition-colors {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.transition-transform {
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.transition-opacity {
+  transition-property: opacity;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+.duration-150 {
+  transition-duration: 150ms;
+}
+
+.duration-300 {
+  transition-duration: 300ms;
+}
+
+.duration-500 {
+  transition-duration: 500ms;
+}
+
+.duration-1000 {
+  transition-duration: 1000ms;
+}
+
+.ease-in-out {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ease-out {
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+.ease-in {
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
 }

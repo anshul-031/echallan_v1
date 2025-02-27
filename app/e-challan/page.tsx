@@ -17,7 +17,7 @@ import {
   ChartBarIcon
 } from '@heroicons/react/24/outline';
 
-const summaryData = [
+const summaryCards = [
   {
     title: 'Total Vehicles',
     count: '213',
@@ -171,324 +171,184 @@ export default function EChallanPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex flex-col lg:flex-row min-h-screen">
-        {/* Main Content */}
-        <div className="flex-1 p-4 lg:p-6">
-          <div className="max-w-[calc(100vw-2rem)] lg:max-w-[calc(100vw-26rem)] mx-auto space-y-6">
-            {/* Header */}
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-semibold text-gray-900">E-Challan Dashboard</h1>
-                <p className="text-sm text-gray-500 mt-1">Manage and track vehicle challans</p>
-              </div>
-              <div className="w-full lg:w-72">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search Vehicle"
-                    className="w-full h-10 pl-10 pr-4 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                </div>
-              </div>
-            </div>
-
-            {/* Enhanced Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-              {summaryData.map((item, index) => (
-                <div
-                  key={item.title}
-                  className={`relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer
-                    transform hover:scale-[1.02] hover:-translate-y-1
-                    ${expandedCard === index ? 'md:col-span-2 md:row-span-2' : ''}
-                  `}
-                  onMouseEnter={() => setHoveredCard(index)}
-                  onMouseLeave={() => setHoveredCard(null)}
-                  onClick={() => setExpandedCard(expandedCard === index ? null : index)}
-                >
-                  {/* Animated Background Gradient */}
-                  <div className={`absolute inset-0 ${item.bgGradient} opacity-50 animate-gradient`} />
-                  
-                  {/* Card Content */}
-                  <div className={`relative bg-white border ${item.borderColor} p-6 h-full
-                    transition-all duration-300
-                    ${hoveredCard === index ? 'shadow-lg shadow-' + item.color.split('-')[1] + '-500/20' : 'shadow-sm'}`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <div className={`p-2 rounded-lg ${item.bgGradient}`}>
-                            <item.icon className={`w-5 h-5 ${item.textColor}`} />
-                          </div>
-                          <p className="text-gray-500 text-sm font-medium">{item.title}</p>
-                        </div>
-                        <p className={`text-2xl font-bold mt-2 bg-gradient-to-r ${item.color} bg-clip-text text-transparent`}>
-                          {item.count}
-                        </p>
+      <div className="p-4 lg:p-6 space-y-4">
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {summaryCards.map((card, index) => (
+            <div
+              key={card.title}
+              className={`relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer
+                transform hover:scale-[1.02] hover:-translate-y-1`}
+              onMouseEnter={() => setHoveredCard(index)}
+              onMouseLeave={() => setHoveredCard(null)}
+            >
+              {/* Animated Background Gradient */}
+              <div className={`absolute inset-0 ${card.bgGradient} opacity-50 animate-gradient`} />
+              
+              {/* Card Content */}
+              <div className={`relative bg-white border ${card.borderColor} p-4 h-full
+                transition-all duration-300
+                ${hoveredCard === index ? 'shadow-lg shadow-' + card.color.split('-')[1] + '-500/20' : 'shadow-sm'}`}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <div className={`p-3 rounded-lg ${card.bgGradient} flex items-center justify-center`}>
+                        <card.icon className={`w-7 h-7 ${card.textColor}`} />
                       </div>
-                      
-                      <ChartBarIcon 
-                        className={`w-5 h-5 ${item.textColor} transition-transform duration-300
-                          ${expandedCard === index ? 'rotate-180' : ''}`}
-                      />
+                      <p className="text-gray-500 text-sm font-medium">{card.title}</p>
                     </div>
-
-                    {/* Mini Chart */}
-                    <div className={`mt-4 transition-all duration-300
-                      ${expandedCard === index ? 'opacity-0 h-0' : 'opacity-100'}`}>
-                      {renderMiniChart(item.chart.data, item.chart.color)}
-                    </div>
-
-                    {/* Expandable Details */}
-                    <div className={`space-y-4 transition-all duration-300 ease-in-out
-                      ${expandedCard === index ? 'opacity-100 max-h-96 mt-4' : 'opacity-0 max-h-0'}`}
-                    >
-                      {item.details.map((detail, idx) => (
-                        <div key={idx} className="flex justify-between items-center p-3 rounded-lg bg-gray-50">
-                          <span className="text-gray-600 text-sm">{detail.label}</span>
-                          <div className="text-right">
-                            <span className="font-medium block">{detail.value}</span>
-                            <span className={`text-xs ${
-                              detail.trend.startsWith('+') ? 'text-green-500' : 'text-red-500'
-                            }`}>
-                              {detail.trend}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                      
-                      {/* Detailed Chart */}
-                      <div className="h-32 mt-4">
-                        {renderMiniChart(item.chart.data.concat(item.chart.data), item.chart.color)}
-                      </div>
-                    </div>
-
-                    {/* Hover Effect Indicator */}
-                    <div className={`absolute bottom-2 right-2 w-2 h-2 rounded-full transition-all duration-300
-                      bg-gradient-to-r ${item.color}
-                      ${hoveredCard === index ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
-                    />
+                    <p className={`text-2xl font-bold mt-2 bg-gradient-to-r ${card.color} bg-clip-text text-transparent`}>
+                      {card.count}
+                    </p>
                   </div>
+                  
+                  <ChartBarIcon 
+                    className={`w-5 h-5 ${card.textColor} transition-transform duration-300 mt-1
+                      ${expandedCard === index ? 'rotate-180' : ''}`}
+                  />
                 </div>
-              ))}
-            </div>
 
-            {/* Challan Table */}
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle No</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Challans</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Online/Offline</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {challanData.map((row) => (
-                      <tr key={row.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center">
-                            <DocumentTextIcon className="w-5 h-5 text-gray-400 mr-3" />
-                            <span className="text-sm font-medium text-gray-900">{row.vehicleNo}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center text-sm text-gray-500">
-                            <MapPinIcon className="w-4 h-4 mr-1" />
-                            {row.location}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{row.challans}</td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900">₹{row.amount.toLocaleString()}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center space-x-2 text-sm text-gray-500">
-                            <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs">Online: {row.online}</span>
-                            <span className="px-2 py-1 bg-gray-50 text-gray-600 rounded-full text-xs">Offline: {row.offline}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            row.status === 'Pending' 
-                              ? 'bg-yellow-50 text-yellow-600' 
-                              : 'bg-green-50 text-green-600'
-                          }`}>
-                            {row.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center space-x-2">
-                            <button 
-                              onClick={() => handlePayChallan(row.vehicleNo)}
-                              className="p-1.5 text-green-600 hover:bg-green-50 rounded-full transition-colors"
-                              title="Pay Challan"
-                            >
-                              <CurrencyRupeeIcon className="w-5 h-5" />
-                            </button>
-                            <button 
-                              onClick={() => handleViewDetails(row.vehicleNo)}
-                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                              title="View Details"
-                            >
-                              <EyeIcon className="w-5 h-5" />
-                            </button>
-                            <button 
-                              className="p-1.5 text-yellow-600 hover:bg-yellow-50 rounded-full transition-colors"
-                              title="Refresh"
-                            >
-                              <ArrowPathIcon className="w-5 h-5" />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(row.vehicleNo)}
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors"
-                              title="Delete"
-                            >
-                              <TrashIcon className="w-5 h-5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                {/* Mini Chart */}
+                <div className={`mt-3 transition-all duration-300
+                  ${expandedCard === index ? 'opacity-0 h-0' : 'opacity-100'}`}>
+                  {renderMiniChart(card.chart.data, card.chart.color)}
+                </div>
 
-              {/* Pagination */}
-              <div className="px-6 py-4 flex items-center justify-between border-t border-gray-200 bg-gray-50">
-                <div className="flex items-center text-sm text-gray-500">
-                  <span>Showing 1 to 10 of 100 entries</span>
+                {/* Expandable Details */}
+                <div className={`space-y-3 transition-all duration-300 ease-in-out
+                  ${expandedCard === index ? 'opacity-100 max-h-48 mt-3' : 'opacity-0 max-h-0'}`}
+                >
+                  {card.details.map((detail, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-2 rounded-lg bg-gray-50">
+                      <span className="text-gray-600 text-sm">{detail.label}</span>
+                      <div className="text-right">
+                        <span className="font-medium block text-sm">{detail.value}</span>
+                        <span className={`text-xs ${
+                          detail.trend.startsWith('+') ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {detail.trend}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors">First</button>
-                  <button className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors">Prev</button>
-                  <span className="px-3 py-1 text-sm text-white bg-blue-600 rounded">1</span>
-                  <button className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors">Next</button>
-                  <button className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors">Last</button>
-                </div>
+
+                {/* Hover Effect Indicator */}
+                <div className={`absolute bottom-2 right-2 w-2 h-2 rounded-full transition-all duration-300
+                  bg-gradient-to-r ${card.color}
+                  ${hoveredCard === index ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
+                />
               </div>
             </div>
-          </div>
+          ))}
         </div>
 
-        {/* Live Challan Status Sidebar */}
-        <div className="w-full lg:w-96 bg-white p-6 lg:border-l border-gray-200">
-          <div className="sticky top-0 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Live Challan Status</h2>
-              <button className="p-2 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-50 transition-colors">
-                <ArrowPathIcon className="w-5 h-5" />
-              </button>
-            </div>
-            
-            {/* Vehicle Input */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Enter Vehicle Number"
-                className="w-full px-4 py-2 pl-10 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                value={vehicleInput}
-                onChange={(e) => setVehicleInput(e.target.value.toUpperCase())}
-              />
-              <DocumentTextIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
-                Search
-              </button>
-            </div>
+        {/* Search Bar */}
+        <div className="flex justify-between items-center">
+          <div className="relative w-64">
+            <input
+              type="text"
+              placeholder="Search challans..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          </div>
+          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Add New Challan
+          </button>
+        </div>
 
-            {/* Status Tabs */}
-            <div className="flex border-b border-gray-200">
-              <button
-                className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'pending'
-                    ? 'text-blue-600 border-blue-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
-                }`}
-                onClick={() => setActiveTab('pending')}
-              >
-                Pending
-              </button>
-              <button
-                className={`flex-1 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'disposed'
-                    ? 'text-blue-600 border-blue-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
-                }`}
-                onClick={() => setActiveTab('disposed')}
-              >
-                Disposed
-              </button>
-            </div>
-
-            {/* Challan Details */}
-            <div className="space-y-4">
-              {challanDetails.map((challan) => (
-                <div
-                  key={challan.id}
-                  className="p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-all"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex items-center space-x-2">
-                      <DocumentTextIcon className="w-5 h-5 text-gray-400" />
-                      <h3 className="font-medium text-gray-900">Challan #{challan.id}</h3>
+        {/* Challan Table */}
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle No</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Challans</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {challanData.map((challan) => (
+                <tr key={challan.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-10 w-10">
+                        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                          <DocumentTextIcon className="h-6 w-6 text-gray-400" />
+                        </div>
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">{challan.vehicleNo}</div>
+                        <div className="text-sm text-gray-500">{challan.lastUpdated}</div>
+                      </div>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{challan.location}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">{challan.challans}</div>
+                    <div className="text-sm text-gray-500">
+                      Online: {challan.online} | Offline: {challan.offline}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    ₹{challan.amount.toLocaleString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                       challan.status === 'Pending'
-                        ? 'bg-yellow-50 text-yellow-600'
-                        : 'bg-green-50 text-green-600'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-green-100 text-green-800'
                     }`}>
                       {challan.status}
                     </span>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center text-gray-500">
-                      <MapPinIcon className="w-4 h-4 mr-2" />
-                      {challan.location}
-                    </div>
-                    <div className="flex items-center text-gray-500">
-                      <CalendarIcon className="w-4 h-4 mr-2" />
-                      {challan.date}
-                    </div>
-                    <div className="flex items-center text-gray-500">
-                      <ClockIcon className="w-4 h-4 mr-2" />
-                      {challan.offence}
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center">
-                      <span className="font-medium text-gray-900">₹{challan.amount}</span>
-                      <button className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors">
-                        Pay Now
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleViewDetails(challan.vehicleNo)}
+                      className="text-blue-600 hover:text-blue-900 mr-4"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleDelete(challan.vehicleNo)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* View Details Modal */}
       {showDetailsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-lg w-full">
             <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-lg font-semibold text-gray-900">Challan Details - {selectedVehicle}</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                Challan Details - {selectedVehicle}
+              </h3>
               <button
                 onClick={() => setShowDetailsModal(false)}
-                className="text-gray-400 hover:text-gray-500 transition-colors"
+                className="text-gray-400 hover:text-gray-500"
               >
-                <XMarkIcon className="w-6 h-6" />
+                <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
             <div className="p-6">
-              <p className="text-gray-600">Detailed challan information for {selectedVehicle}</p>
+              {/* Modal content */}
             </div>
           </div>
         </div>
@@ -496,22 +356,24 @@ export default function EChallanPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Delete</h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete the challan record for {selectedVehicle}?
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-sm w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Confirm Delete
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Are you sure you want to delete this challan? This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-4">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
               >
                 Delete
               </button>

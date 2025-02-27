@@ -16,9 +16,11 @@ import {
   XMarkIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  DocumentArrowDownIcon
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  FunnelIcon,
+  ArrowsUpDownIcon,
+  UserIcon
 } from '@heroicons/react/24/outline';
 
 const summaryCards = [
@@ -68,6 +70,7 @@ const summaryCards = [
   }
 ];
 
+// Extended demo data for renewals table
 const renewalData = [
   {
     id: 1,
@@ -79,6 +82,7 @@ const renewalData = [
     statePermit: 'Not available',
     nationalPermit: '01-11-2025',
     lastUpdated: '23-01-2025',
+    assignedTo: 'John Doe',
     vehicleDetails: {
       make: 'Toyota',
       model: 'Innova',
@@ -98,7 +102,126 @@ const renewalData = [
       { type: 'National Permit', status: 'Valid', expiry: '01-11-2025', lastUpdated: '01-11-2023' }
     ]
   },
-  // Add more renewal data items here...
+  {
+    id: 2,
+    vrn: 'RJ09GB9450',
+    roadTax: '15-05-2025',
+    fitness: '18-09-2025',
+    insurance: '22-08-2025',
+    pollution: '10-04-2025',
+    statePermit: '05-06-2025',
+    nationalPermit: 'Not available',
+    lastUpdated: '25-01-2025',
+    assignedTo: 'Jane Smith',
+    vehicleDetails: {
+      make: 'Maruti',
+      model: 'Swift',
+      year: '2023',
+      engineNo: 'MSZ5F7654321',
+      chassisNo: 'MSLA751BLJM654321',
+      registeredAt: 'RTO Delhi',
+      owner: 'Jane Smith',
+      address: '456 Park Avenue, Delhi'
+    },
+    documents: [
+      { type: 'Road Tax', status: 'Valid', expiry: '15-05-2025', lastUpdated: '15-05-2024' },
+      { type: 'Fitness', status: 'Valid', expiry: '18-09-2025', lastUpdated: '18-09-2023' },
+      { type: 'Insurance', status: 'Valid', expiry: '22-08-2025', lastUpdated: '22-08-2023' },
+      { type: 'Pollution', status: 'Valid', expiry: '10-04-2025', lastUpdated: '10-04-2024' },
+      { type: 'State Permit', status: 'Valid', expiry: '05-06-2025', lastUpdated: '05-06-2023' },
+      { type: 'National Permit', status: 'Not Available', expiry: '-', lastUpdated: '-' }
+    ]
+  },
+  {
+    id: 3,
+    vrn: 'RJ09GB9451',
+    roadTax: '20-07-2025',
+    fitness: '12-10-2025',
+    insurance: '30-09-2025',
+    pollution: '15-05-2025',
+    statePermit: '18-08-2025',
+    nationalPermit: '22-12-2025',
+    lastUpdated: '28-01-2025',
+    assignedTo: 'Robert Johnson',
+    vehicleDetails: {
+      make: 'Honda',
+      model: 'City',
+      year: '2021',
+      engineNo: 'HCZ7G9876543',
+      chassisNo: 'HCLA651CLJM987654',
+      registeredAt: 'RTO Bangalore',
+      owner: 'Robert Johnson',
+      address: '789 Lake View, Bangalore'
+    },
+    documents: [
+      { type: 'Road Tax', status: 'Valid', expiry: '20-07-2025', lastUpdated: '20-07-2024' },
+      { type: 'Fitness', status: 'Valid', expiry: '12-10-2025', lastUpdated: '12-10-2023' },
+      { type: 'Insurance', status: 'Valid', expiry: '30-09-2025', lastUpdated: '30-09-2023' },
+      { type: 'Pollution', status: 'Valid', expiry: '15-05-2025', lastUpdated: '15-05-2024' },
+      { type: 'State Permit', status: 'Valid', expiry: '18-08-2025', lastUpdated: '18-08-2023' },
+      { type: 'National Permit', status: 'Valid', expiry: '22-12-2025', lastUpdated: '22-12-2023' }
+    ]
+  },
+  {
+    id: 4,
+    vrn: 'RJ09GB9452',
+    roadTax: '25-04-2025',
+    fitness: '28-08-2025',
+    insurance: '05-07-2025',
+    pollution: '12-03-2025',
+    statePermit: 'Not available',
+    nationalPermit: '08-10-2025',
+    lastUpdated: '30-01-2025',
+    assignedTo: 'Emily Davis',
+    vehicleDetails: {
+      make: 'Hyundai',
+      model: 'Creta',
+      year: '2022',
+      engineNo: 'HYZ9H1234567',
+      chassisNo: 'HYLA551DLJM123456',
+      registeredAt: 'RTO Chennai',
+      owner: 'Emily Davis',
+      address: '101 Beach Road, Chennai'
+    },
+    documents: [
+      { type: 'Road Tax', status: 'Valid', expiry: '25-04-2025', lastUpdated: '25-04-2024' },
+      { type: 'Fitness', status: 'Valid', expiry: '28-08-2025', lastUpdated: '28-08-2023' },
+      { type: 'Insurance', status: 'Valid', expiry: '05-07-2025', lastUpdated: '05-07-2023' },
+      { type: 'Pollution', status: 'Valid', expiry: '12-03-2025', lastUpdated: '12-03-2024' },
+      { type: 'State Permit', status: 'Not Available', expiry: '-', lastUpdated: '-' },
+      { type: 'National Permit', status: 'Valid', expiry: '08-10-2025', lastUpdated: '08-10-2023' }
+    ]
+  },
+  {
+    id: 5,
+    vrn: 'RJ09GB9454',
+    roadTax: '10-06-2025',
+    fitness: '15-12-2025',
+    insurance: '20-11-2025',
+    pollution: '25-02-2025',
+    statePermit: '30-07-2025',
+    nationalPermit: 'Not available',
+    lastUpdated: '02-02-2025',
+    assignedTo: 'Michael Wilson',
+    vehicleDetails: {
+      make: 'Tata',
+      model: 'Nexon',
+      year: '2023',
+      engineNo: 'TNZ1J7654321',
+      chassisNo: 'TNLA451ELJM654321',
+      registeredAt: 'RTO Kolkata',
+      owner: 'Michael Wilson',
+      address: '202 River View, Kolkata'
+    },
+    documents: [
+      { type: 'Road Tax', status: 'Valid', expiry: '10-06-2025', lastUpdated: '10-06-2024' },
+      { type: 'Fitness', status: 'Valid', expiry: '15-12-2025', lastUpdated: '15-12-2023' },
+      { type: 'Insurance', status: 'Valid', expiry: '20-11-2025', lastUpdated: '20-11-2023' },
+      { type: 'Pollution', status: 'Valid', expiry: '25-02-2025', lastUpdated: '25-02-2024' },
+      { type: 'State Permit', status: 'Valid', expiry: '30-07-2025', lastUpdated: '30-07-2023' },
+      { type: 'National Permit', status: 'Not Available', expiry: '-', lastUpdated: '-' }
+    ]
+  }
 ];
 
 export default function RenewalsPage() {
@@ -107,46 +230,122 @@ export default function RenewalsPage() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<typeof renewalData[0] | null>(null);
-  const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [sortField, setSortField] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
+
+  // Calculate pagination
+  const indexOfLastItem = currentPage * rowsPerPage;
+  const indexOfFirstItem = indexOfLastItem - rowsPerPage;
+  
+  // Filter and sort data
+  const filteredData = renewalData.filter(item => 
+    item.vrn.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.assignedTo.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  
+  // Sort data if sortField is set
+  const sortedData = sortField 
+    ? [...filteredData].sort((a, b) => {
+        // @ts-ignore - dynamic access
+        const aValue = a[sortField] || '';
+        // @ts-ignore - dynamic access
+        const bValue = b[sortField] || '';
+        
+        if (aValue === 'Not available' && bValue !== 'Not available') return sortDirection === 'asc' ? 1 : -1;
+        if (aValue !== 'Not available' && bValue === 'Not available') return sortDirection === 'asc' ? -1 : 1;
+        
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      })
+    : filteredData;
+  
+  const currentItems = sortedData.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
 
   const handleViewDetails = (period: string) => {
     setSelectedPeriod(period);
     setShowDetailsModal(true);
   };
 
-  const handleExport = (format: 'current-excel' | 'all-excel' | 'pdf') => {
-    console.log(`Exporting in ${format} format`);
-    setShowExportDropdown(false);
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
   };
 
-  // Calculate pagination
-  const totalPages = Math.ceil(renewalData.length / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = startIndex + rowsPerPage;
-  const currentRenewals = renewalData.slice(startIndex, endIndex);
+  const handleAssign = (id: number) => {
+    setSelectedVehicleId(id);
+    setShowAssignModal(true);
+  };
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return <ArrowsUpDownIcon className="w-4 h-4 text-gray-400" />;
+    return sortDirection === 'asc' 
+      ? <ChevronLeftIcon className="w-4 h-4 text-blue-500 rotate-90" />
+      : <ChevronLeftIcon className="w-4 h-4 text-blue-500 -rotate-90" />;
+  };
+
+  const RenewalCard = ({ data }: { data: typeof renewalData[0] }) => (
+    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 space-y-3">
+      <div className="flex justify-between items-center">
+        <span className="font-medium text-gray-900">{data.vrn}</span>
+        <span className="text-sm text-gray-500">#{data.id}</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <div>
+          <span className="text-gray-500">Road Tax:</span>
+          <span className="ml-2 font-medium text-green-600">{data.roadTax}</span>
+        </div>
+        <div>
+          <span className="text-gray-500">Fitness:</span>
+          <span className="ml-2 font-medium text-green-600">{data.fitness}</span>
+        </div>
+        <div>
+          <span className="text-gray-500">Insurance:</span>
+          <span className="ml-2 font-medium text-green-600">{data.insurance}</span>
+        </div>
+        <div>
+          <span className="text-gray-500">Pollution:</span>
+          <span className="ml-2 font-medium text-green-600">{data.pollution}</span>
+        </div>
+      </div>
+      <div className="flex justify-between items-center pt-2 border-t">
+        <div className="text-xs text-gray-500">Last Updated: {data.lastUpdated}</div>
+        <div className="flex space-x-2">
+          <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+            <ArrowPathIcon className="w-5 h-5" />
+          </button>
+          <button className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors">
+            <CloudArrowUpIcon className="w-5 h-5" />
+          </button>
+          <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors">
+            <TrashIcon className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => {
+              setSelectedVehicle(data);
+              setShowDetailsModal(true);
+            }}
+            className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full transition-colors"
+          >
+            <EyeIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="p-4 lg:p-6 space-y-6">
-        {/* Header with Search */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-          <h1 className="text-2xl font-semibold text-gray-900">Renewals Dashboard</h1>
-          <div className="w-full lg:w-72">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search vehicles..."
-                className="w-full h-10 pl-10 pr-4 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            </div>
-          </div>
-        </div>
-
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {summaryCards.map((card, index) => (
@@ -203,156 +402,290 @@ export default function RenewalsPage() {
           ))}
         </div>
 
-        {/* Table Section */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">Renewal Details</h2>
-              
-              {/* Export Button with Animated Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowExportDropdown(!showExportDropdown)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <DocumentArrowDownIcon className="w-5 h-5 mr-2" />
-                  Export
-                  <ChevronDownIcon className={`w-4 h-4 ml-2 transition-transform duration-200 ${showExportDropdown ? 'rotate-180' : ''}`} />
-                </button>
-
-                {/* Animated Dropdown */}
-                <div
-                  className={`absolute bottom-full right-0 mb-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 transform transition-all duration-200 origin-bottom z-50
-                    ${showExportDropdown 
-                      ? 'opacity-100 translate-y-0 scale-100' 
-                      : 'opacity-0 translate-y-2 scale-95 pointer-events-none'}`}
-                >
-                  <div className="py-1" role="menu" aria-orientation="vertical">
-                    {[
-                      { label: 'Export Current Page', format: 'current-excel' },
-                      { label: 'Export All Data', format: 'all-excel' },
-                      { label: 'Export as PDF', format: 'pdf' }
-                    ].map((option) => (
-                      <button
-                        key={option.format}
-                        onClick={() => handleExport(option.format as any)}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center transition-colors duration-150"
-                      >
-                        <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Click Outside Handler */}
-              {showExportDropdown && (
-                <div 
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowExportDropdown(false)}
-                />
-              )}
-            </div>
+        {/* Table Controls */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="relative w-full md:w-64">
+            <input
+              type="text"
+              placeholder="Search by VRN or assignee..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           </div>
+          
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg flex items-center space-x-2 hover:bg-gray-50">
+                <FunnelIcon className="w-5 h-5 text-gray-500" />
+                <span>Filter</span>
+              </button>
+            </div>
+            
+            <select 
+              className="px-4 py-2 bg-white border border-gray-200 rounded-lg appearance-none pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={rowsPerPage}
+              onChange={(e) => setRowsPerPage(Number(e.target.value))}
+            >
+              <option value={5}>5 rows</option>
+              <option value={10}>10 rows</option>
+              <option value={20}>20 rows</option>
+              <option value={50}>50 rows</option>
+            </select>
+            
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+              <CloudArrowUpIcon className="w-5 h-5" />
+              <span>Export</span>
+            </button>
+          </div>
+        </div>
 
+        {/* Renewals Table */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">VRN</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Road Tax</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fitness</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Insurance</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pollution</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State Permit</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">National Permit</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <div className="flex items-center cursor-pointer" onClick={() => handleSort('id')}>
+                      S.No {getSortIcon('id')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <div className="flex items-center cursor-pointer" onClick={() => handleSort('vrn')}>
+                      VRN {getSortIcon('vrn')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <div className="flex items-center cursor-pointer" onClick={() => handleSort('roadTax')}>
+                      Road Tax {getSortIcon('roadTax')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <div className="flex items-center cursor-pointer" onClick={() => handleSort('fitness')}>
+                      Fitness {getSortIcon('fitness')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <div className="flex items-center cursor-pointer" onClick={() => handleSort('insurance')}>
+                      Insurance {getSortIcon('insurance')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <div className="flex items-center cursor-pointer" onClick={() => handleSort('pollution')}>
+                      Pollution {getSortIcon('pollution')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <div className="flex items-center cursor-pointer" onClick={() => handleSort('statePermit')}>
+                      State Permit {getSortIcon('statePermit')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <div className="flex items-center cursor-pointer" onClick={() => handleSort('nationalPermit')}>
+                      National Permit {getSortIcon('nationalPermit')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <div className="flex items-center justify-center cursor-pointer" onClick={() => handleSort('assignedTo')}>
+                      Assign {getSortIcon('assignedTo')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    <div className="flex items-center cursor-pointer" onClick={() => handleSort('lastUpdated')}>
+                      Last Updated {getSortIcon('lastUpdated')}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Update
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Upload
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                    Delete
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {currentRenewals.map((renewal) => (
-                  <tr key={renewal.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{renewal.vrn}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.roadTax}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.fitness}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.insurance}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.pollution}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-500">{renewal.statePermit}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.nationalPermit}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{renewal.lastUpdated}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <div className="flex justify-center space-x-2">
-                        <button 
-                          onClick={() => {
-                            setSelectedVehicle(renewal);
-                            setShowDetailsModal(true);
-                          }}
-                          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                          <EyeIcon className="w-5 h-5" />
-                        </button>
-                        <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
-                          <ArrowPathIcon className="w-5 h-5" />
-                        </button>
-                        <button className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors">
-                          <CloudArrowUpIcon className="w-5 h-5" />
-                        </button>
-                        <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors">
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
+                {currentItems.map((item, index) => (
+                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {indexOfFirstItem + index + 1}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                          <span className="text-xs font-medium text-blue-800">{item.vrn.substring(0, 2)}</span>
+                        </div>
+                        <div className="ml-3">
+                          <div className="text-sm font-medium text-gray-900">{item.vrn}</div>
+                          <div className="text-xs text-gray-500">{item.vehicleDetails.make} {item.vehicleDetails.model}</div>
+                        </div>
                       </div>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                      {item.roadTax}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                      {item.fitness}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                      {item.insurance}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                      {item.pollution}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                      <span className={item.statePermit === 'Not available' ? 'text-red-500' : 'text-green-600'}>
+                        {item.statePermit}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                      <span className={item.nationalPermit === 'Not available' ? 'text-red-500' : 'text-green-600'}>
+                        {item.nationalPermit}
+                      </span>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-center">
+                      <button 
+                        onClick={() => handleAssign(item.id)}
+                        className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        <UserIcon className="w-4 h-4 mr-1 text-gray-500" />
+                        {item.assignedTo}
+                      </button>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {item.lastUpdated}
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-center">
+                      <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                        <ArrowPathIcon className="w-5 h-5" />
+                      </button>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-center">
+                      <button className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors">
+                        <CloudArrowUpIcon className="w-5 h-5" />
+                      </button>
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap text-center">
+                      <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors">
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
                     </td>
                   </tr>
                 ))}
+                {currentItems.length === 0 && (
+                  <tr>
+                    <td colSpan={13} className="px-4 py-8 text-center text-gray-500">
+                      No renewals found matching your search criteria
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
-
+          
           {/* Pagination */}
-          <div className="px-6 py-4 border-t border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">Show rows:</span>
-                <select 
-                  value={rowsPerPage} 
-                  onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                  className="border rounded px-2 py-1 text-sm"
-                >
-                  <option value={5}>5</option>
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                </select>
-                <span className="text-sm text-gray-500">
-                  Showing {startIndex + 1} to {Math.min(endIndex, renewalData.length)} of {renewalData.length} entries
+          <div className="px-4 py-3 bg-white border-t border-gray-200 sm:px-6 flex items-center justify-between">
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-medium">{indexOfFirstItem + 1}</span> to{' '}
+                  <span className="font-medium">
+                    {Math.min(indexOfLastItem, filteredData.length)}
+                  </span>{' '}
+                  of <span className="font-medium">{filteredData.length}</span> results
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="sr-only">First</span>
+                    <ChevronLeftIcon className="h-5 w-5 mr-1" />
+                    <ChevronLeftIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="sr-only">Previous</span>
+                    <ChevronLeftIcon className="h-5 w-5" />
+                  </button>
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNumber = currentPage <= 3
+                      ? i + 1
+                      : currentPage >= totalPages - 2
+                        ? totalPages - 4 + i
+                        : currentPage - 2 + i;
+                    
+                    if (pageNumber <= 0 || pageNumber > totalPages) return null;
+                    
+                    return (
+                      <button
+                        key={pageNumber}
+                        onClick={() => setCurrentPage(pageNumber)}
+                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          currentPage === pageNumber
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="sr-only">Next</span>
+                    <ChevronRightIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <span className="sr-only">Last</span>
+                    <ChevronRightIcon className="h-5 w-5 mr-1" />
+                    <ChevronRightIcon className="h-5 w-5" />
+                  </button>
+                </nav>
+              </div>
+            </div>
+            
+            {/* Mobile pagination */}
+            <div className="flex items-center sm:hidden">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <div className="mx-4">
+                <span className="text-sm text-gray-700">
+                  Page {currentPage} of {totalPages}
                 </span>
               </div>
-
-              <div className="flex items-center space-x-2">
-                <button 
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(1)}
-                >⟪</button>
-                <button 
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => prev - 1)}
-                >⟨</button>
-                <span className="px-3 py-1 bg-blue-600 text-white rounded">{currentPage}</span>
-                <button 
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => prev + 1)}
-                >⟩</button>
-                <button 
-                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(totalPages)}
-                >⟫</button>
-              </div>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages || totalPages === 0}
+                className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           </div>
         </div>
@@ -459,6 +792,75 @@ export default function RenewalsPage() {
                     </button>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Assign Modal */}
+        {showAssignModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-md w-full overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Assign Vehicle
+                </h3>
+                <button
+                  onClick={() => setShowAssignModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <XMarkIcon className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <div className="p-6">
+                <div className="mb-4">
+                  <label htmlFor="assignee" className="block text-sm font-medium text-gray-700 mb-1">
+                    Assign to
+                  </label>
+                  <select
+                    id="assignee"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>Select an assignee</option>
+                    <option value="John Doe">John Doe</option>
+                    <option value="Jane Smith">Jane Smith</option>
+                    <option value="Robert Johnson">Robert Johnson</option>
+                    <option value="Emily Davis">Emily Davis</option>
+                    <option value="Michael Wilson">Michael Wilson</option>
+                  </select>
+                </div>
+                
+                <div className="mb-4">
+                  <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes (optional)
+                  </label>
+                  <textarea
+                    id="notes"
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Add any additional notes..."
+                  ></textarea>
+                </div>
+              </div>
+              
+              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowAssignModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    // Handle assignment logic here
+                    setShowAssignModal(false);
+                  }}
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Assign
+                </button>
               </div>
             </div>
           </div>

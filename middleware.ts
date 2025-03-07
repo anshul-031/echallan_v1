@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Simplified middleware logic to avoid build issues
+  // Simplified middleware logic
   const isAuthPath = request.nextUrl.pathname.startsWith('/auth');
   const isRootPath = request.nextUrl.pathname === '/';
 

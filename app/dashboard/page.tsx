@@ -96,7 +96,7 @@ export default function Dashboard() {
     <div className="flex h-screen overflow-hidden">
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div className="flex-1 flex flex-col p-6 space-y-6 overflow-hidden">
+        <div className="flex-1 flex flex-col p-6 space-y-4 overflow-hidden">
           {/* Header */}
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-semibold text-gray-900">Fleet Dashboard</h1>
@@ -115,7 +115,7 @@ export default function Dashboard() {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-3 gap-4">
             {summaryCards.map((card, index) => (
               <div
                 key={card.title}
@@ -127,14 +127,13 @@ export default function Dashboard() {
                 onMouseLeave={() => setHoveredCard(null)}
               >
                 {/* Glow Effect */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-r ${card.color} opacity-0 
-                    transition-opacity duration-300 blur-xl
-                    ${hoveredCard === index ? 'opacity-20' : ''}`}
+                <div className={`absolute inset-0 bg-gradient-to-r ${card.color} opacity-0 
+                  transition-opacity duration-300 blur-xl
+                  ${hoveredCard === index ? 'opacity-20' : ''}`}
                 />
 
                 {/* Card Content */}
-                <div className={`relative bg-gradient-to-r ${card.color} p-6 h-full
+                <div className={`relative bg-gradient-to-r ${card.color} p-4 h-full
                   transition-all duration-500
                   ${hoveredCard === index ? 'shadow-lg shadow-' + card.glowColor + '-500/50' : ''}`}
                 >
@@ -144,7 +143,7 @@ export default function Dashboard() {
                         <card.icon className="w-5 h-5 text-white/80" />
                         <p className="text-white/80 text-sm font-medium">{card.title}</p>
                       </div>
-                      <p className="text-white text-3xl font-bold mt-2">{card.count}</p>
+                      <p className="text-white text-2xl font-bold mt-1">{card.count}</p>
                     </div>
                     <button
                       onClick={() => setExpandedCard(expandedCard === index ? null : index)}
@@ -157,11 +156,11 @@ export default function Dashboard() {
                   </div>
 
                   {/* Expandable Content */}
-                  <div className={`mt-4 overflow-hidden transition-all duration-500 ease-in-out
+                  <div className={`mt-2 overflow-hidden transition-all duration-500 ease-in-out
                     ${expandedCard === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
                   >
-                    <div className="pt-4 border-t border-white/20">
-                      <div className="space-y-3">
+                    <div className="pt-2 border-t border-white/20">
+                      <div className="space-y-2">
                         {card.details.map((detail, idx) => (
                           <div key={idx} className="flex justify-between items-center">
                             <span className="text-white/80 text-sm">{detail.label}</span>
@@ -169,7 +168,7 @@ export default function Dashboard() {
                           </div>
                         ))}
                       </div>
-                      <button className="mt-4 w-full py-2 px-4 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-center space-x-2">
+                      <button className="mt-3 w-full py-2 px-4 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-center space-x-2">
                         <span>View Details</span>
                         <ArrowRightIcon className="w-4 h-4" />
                       </button>
@@ -258,7 +257,7 @@ export default function Dashboard() {
                     Showing {startIndex + 1} to {Math.min(endIndex, vehicles.length)} of {vehicles.length} entries
                   </span>
 
-                  {/* Export Button with Animated Dropdown */}
+                  {/* Export Button with Dropdown */}
                   <div className="relative">
                     <button
                       onClick={() => setShowExportDropdown(!showExportDropdown)}
@@ -266,33 +265,25 @@ export default function Dashboard() {
                     >
                       <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
                       Export
-                      <ChevronDownIcon className={`w-4 h-4 ml-2 transition-transform duration-200 ${showExportDropdown ? 'rotate-180' : ''}`} />
+                      <ChevronDownIcon className="w-4 h-4 ml-2" />
                     </button>
 
-                    {/* Animated Dropdown */}
-                    <div
-                      className={`absolute bottom-full left-0 mb-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 transform transition-all duration-200 origin-bottom z-50
-                        ${showExportDropdown 
-                          ? 'opacity-100 translate-y-0 scale-100' 
-                          : 'opacity-0 translate-y-2 scale-95 pointer-events-none'}`}
-                    >
-                      <div className="py-1" role="menu" aria-orientation="vertical">
-                        {[
-                          { label: 'Current Excel', icon: DocumentArrowDownIcon, format: 'current-excel' },
-                          { label: 'All Excel', icon: DocumentArrowDownIcon, format: 'all-excel' },
-                          { label: 'PDF', icon: DocumentArrowDownIcon, format: 'pdf' }
-                        ].map((option) => (
-                          <button
-                            key={option.format}
-                            onClick={() => handleExport(option.format as any)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center transition-colors duration-150"
-                          >
-                            <option.icon className="w-4 h-4 mr-2" />
-                            {option.label}
-                          </button>
-                        ))}
+                    {showExportDropdown && (
+                      <div className="absolute left-0 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                        <div className="py-1" role="menu" aria-orientation="vertical">
+                          {['Current Excel', 'All Excel', 'PDF'].map((option) => (
+                            <button
+                              key={option}
+                              onClick={() => handleExport(option.toLowerCase().replace(' ', '-') as any)}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center"
+                            >
+                              <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
+                              {option}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 

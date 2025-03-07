@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -19,7 +20,10 @@ import {
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   UserIcon,
-  BellIcon
+  BellIcon,
+  KeyIcon,
+  DocumentTextIcon,
+  BookOpenIcon
 } from '@heroicons/react/24/outline';
 
 const navigation = [
@@ -30,12 +34,15 @@ const navigation = [
   { name: 'Usage Insights', href: '/insights', icon: ChartBarIcon, color: '#EB5757' },
   { name: 'Credits and Pricing', href: '/credits', icon: CreditCardIcon, color: '#219653' },
   { name: 'API History', href: '/api-history', icon: CodeBracketIcon, color: '#6B7280' },
+  { name: 'API Credentials', href: '/api-credentials', icon: KeyIcon, color: '#F59E0B' },
+  { name: 'API Documentation', href: '/api-docs', icon: BookOpenIcon, color: '#3B82F6' },
 ];
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [activeNavItem, setActiveNavItem] = useState<number | null>(null);
   const pathname = usePathname();
 
   const toggleSidebar = () => setIsOpen(!isOpen);
@@ -44,7 +51,10 @@ export default function Sidebar() {
     setIsCollapsed(!isCollapsed);
   };
 
-  // Close profile menu when clicking outside
+  const handleNavHover = (index: number | null) => {
+    setActiveNavItem(index);
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const profileMenu = document.getElementById('profile-menu');
@@ -70,7 +80,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Mobile Menu Button */}
       <button
         onClick={toggleSidebar}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
@@ -82,7 +91,6 @@ export default function Sidebar() {
         )}
       </button>
 
-      {/* Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
@@ -90,7 +98,6 @@ export default function Sidebar() {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={`fixed lg:sticky top-0 inset-y-0 left-0 z-40 transform ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
@@ -98,13 +105,14 @@ export default function Sidebar() {
           isCollapsed ? 'w-20' : 'w-64'
         }`}
       >
-        {/* Header */}
         <div className={`flex items-center h-16 px-4 border-b border-[#E4E7EC] dark:border-gray-800 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           <div className="flex items-center">
-            <img
+            <Image
               src="https://echallan.app/application/fleet/logoicon.png"
               alt="Fleet Manager"
-              className="h-14 w-14 object-contain transition-all duration-500 hover:rotate-360"
+              width={56}
+              height={56}
+              className="transition-all duration-500 hover:rotate-360"
               style={{ padding: '2px' }}
             />
             <div className={`ml-2 flex items-center transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100 w-auto'}`}>
@@ -124,7 +132,6 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* Collapse button for collapsed state */}
         {isCollapsed && (
           <button
             onClick={toggleCollapse}
@@ -135,10 +142,11 @@ export default function Sidebar() {
           </button>
         )}
         
-        {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-          {navigation.map((item) => {
+          {navigation.map((item, index) => {
             const isActive = pathname === item.href;
+            const isHovered = activeNavItem === index;
+            
             return (
               <Link
                 key={item.name}
@@ -148,6 +156,8 @@ export default function Sidebar() {
                     setIsOpen(false);
                   }
                 }}
+                onMouseEnter={() => handleNavHover(index)}
+                onMouseLeave={() => handleNavHover(null)}
                 className={`flex items-center ${
                   isCollapsed ? 'justify-center' : 'px-4'
                 } py-3 rounded-lg group transition-all duration-200 ${
@@ -156,10 +166,22 @@ export default function Sidebar() {
                     : 'hover:bg-white dark:hover:bg-gray-800 hover:shadow-sm'
                 }`}
               >
-                <item.icon 
-                  className={`w-6 h-6 ${isCollapsed ? 'mx-0' : 'mr-3'} transition-all duration-300`}
-                  style={{ color: item.color }}
-                />
+                <div className={`relative transition-all duration-300 ${
+                  (isActive || isHovered) && !isCollapsed ? 'scale-110' : ''
+                }`}>
+                  <item.icon 
+                    className={`w-6 h-6 ${isCollapsed ? 'mx-0' : 'mr-3'} transition-all duration-300`}
+                    style={{ color: item.color }}
+                  />
+                  
+                  {isActive && (
+                    <span 
+                      className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-current animate-pulse"
+                      style={{ color: item.color }}
+                    ></span>
+                  )}
+                </div>
+                
                 <span 
                   className={`whitespace-nowrap font-medium transition-all duration-300 ${
                     isCollapsed ? 'opacity-0 w-0 absolute' : 'opacity-100 w-auto relative'
@@ -168,8 +190,12 @@ export default function Sidebar() {
                 >
                   {item.name}
                 </span>
+                
                 {isCollapsed && (
-                  <div className="absolute left-16 transform -translate-x-2 bg-[#2D3748] dark:bg-gray-700 text-white px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50">
+                  <div className={`absolute left-16 transform -translate-x-2 bg-[#2D3748] dark:bg-gray-700 text-white px-2 py-1 rounded text-sm 
+                    transition-all duration-200 whitespace-nowrap z-50 ${
+                      isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'
+                    }`}>
                     {item.name}
                   </div>
                 )}
@@ -178,8 +204,7 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Profile Section */}
-        <div className={`p-4 border-t border-[#E4E7EC] dark:border-gray-800 relative`}>
+        <div className="p-4 border-t border-[#E4E7EC] dark:border-gray-800 relative">
           <button
             id="profile-button"
             onClick={() => setShowProfileMenu(!showProfileMenu)}
@@ -198,14 +223,13 @@ export default function Sidebar() {
             </div>
           </button>
 
-          {/* Profile Dropdown Menu */}
           {showProfileMenu && (
             <div
               id="profile-menu"
               className={`absolute ${isCollapsed ? 'left-20' : 'left-4'} bottom-full mb-2 w-48 
                 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-2 
                 transform origin-bottom-left transition-all duration-200 
-                animate-[fadeIn_0.2s_ease-in-out]`}
+                animate-[fadeIn_0.2s_ease-in-out] overflow-hidden`}
             >
               {profileMenuItems.map((item, index) => (
                 <Link

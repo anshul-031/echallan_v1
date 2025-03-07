@@ -1,6 +1,6 @@
 'use client';
 
-import { UserGroupIcon, DocumentTextIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { ChartBarIcon, ArrowPathIcon, ExclamationCircleIcon } from '@heroicons/react/24/outline';
 import type { SummaryCard } from '../types/vehicle';
 
 const summaryCards: SummaryCard[] = [
@@ -8,19 +8,19 @@ const summaryCards: SummaryCard[] = [
     title: 'TOTAL VEHICLES',
     count: 213,
     color: 'bg-[#2D5DE9]',
-    icon: UserGroupIcon
+    icon: ChartBarIcon
   },
   {
     title: 'EXPIRING DOCUMENTS',
     count: 36,
     color: 'bg-[#FFB946]',
-    icon: DocumentTextIcon
+    icon: ArrowPathIcon
   },
   {
     title: 'EXPIRED DOCUMENTS',
     count: 9,
     color: 'bg-[#F7685B]',
-    icon: ExclamationTriangleIcon
+    icon: ExclamationCircleIcon
   },
 ];
 

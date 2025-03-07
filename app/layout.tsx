@@ -1,6 +1,9 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import ClientLayout from './ClientLayout';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Fleet Manager',
@@ -13,13 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <head>
-        <link 
-          rel="stylesheet" 
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        />
-      </head>
+    <html lang="en" className={inter.className}>
       <body>
         <ClientLayout>{children}</ClientLayout>
       </body>

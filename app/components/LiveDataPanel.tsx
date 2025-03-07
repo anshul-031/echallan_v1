@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { MagnifyingGlassIcon, PlusIcon, XMarkIcon, ArrowRightIcon, DocumentTextIcon, ClockIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 
 interface VehicleDetails {
@@ -76,10 +77,11 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
         {/* Search Input */}
         <div className="relative">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <img 
+            <Image 
               src="https://echallan.app/application/fleet/images/india.svg"
               alt="India"
-              className="w-5 h-5"
+              width={20}
+              height={20}
             />
           </div>
           <input

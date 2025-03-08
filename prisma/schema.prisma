@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      String   @default("user")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Vehicle {
+  id                  String    @id @default(uuid())
+  vrn                 String    @unique
+  roadTaxExpiry       DateTime? @map("road_tax_expiry")
+  fitnessExpiry       DateTime? @map("fitness_expiry")
+  insuranceValidity   DateTime? @map("insurance_validity")
+  pollutionExpiry     DateTime? @map("pollution_expiry")
+  permitExpiry        DateTime? @map("permit_expiry")
+  nationalPermitExpiry DateTime? @map("national_permit_expiry")
+  chassisNumber       String?   @map("chassis_number")
+  engineNumber        String?   @map("engine_number")
+  financerName        String?   @map("financer_name")
+  insuranceCompany    String?   @map("insurance_company")
+  blacklistStatus     Boolean   @default(false) @map("blacklist_status")
+  rtoLocation         String?   @map("rto_location")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  challans            Challan[]
+
+  @@map("vehicles")
+}
+
+model Challan {
+  id            String   @id @default(uuid())
+  vehicleId     String   @map("vehicle_id")
+  violationType String   @map("violation_type")
+  amount        Decimal
+  location      String?
+  violationDate DateTime @default(now()) @map("violation_date")
+  status        String   @default("pending")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  vehicle       Vehicle  @relation(fields: [vehicleId], references: [id])
+
+  @@map("challans")
+}

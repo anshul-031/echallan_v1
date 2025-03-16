@@ -118,7 +118,7 @@
 //   const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
 //   const [showPaymentModal, setShowPaymentModal] = useState(false);
 //   const [animatedPrices, setAnimatedPrices] = useState<number[]>([0, 0, 0]);
-//   const canvasRef = useRef<HTMLCanvasElement>(null);
+//   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
 //   // Animate credits counter on load
 //   useEffect(() => {
@@ -271,7 +271,7 @@
 //     };
 //   }, []);
 
-//   const handlePurchase = (id: number) => {
+//   const handlePurchase = (id: number | null): void => {
 //     setSelectedPackage(id);
 //     setShowPaymentModal(true);
 //   };
@@ -743,11 +743,12 @@ const transactionHistory = [
 export default function CreditsPage() {
   const [currentCredits, setCurrentCredits] = useState(0);
   const [targetCredits] = useState(450);
-  const [hoveredPackage, setHoveredPackage] = useState(null);
-  const [selectedPackage, setSelectedPackage] = useState(null);
+const [hoveredPackage, setHoveredPackage] = useState<number | null>(null);
+const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
+
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [animatedPrices, setAnimatedPrices] = useState([0, 0, 0]);
-  const canvasRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isRazorpayLoaded, setIsRazorpayLoaded] = useState(false);
   const [paymentProcessing, setPaymentProcessing] = useState(false);
 
@@ -821,7 +822,14 @@ export default function CreditsPage() {
     window.addEventListener('resize', resizeCanvas);
 
     // Particles
-    const particles = [];
+    const particles: {
+  x: number;
+  y: number;
+  radius: number;
+  color: string;
+  speedX: number;
+  speedY: number;
+}[] = [];
 
     // Create particles
     const createParticles = () => {
@@ -895,7 +903,7 @@ export default function CreditsPage() {
     };
   }, []);
 
-  const handlePurchase = (id) => {
+  const handlePurchase = (id: number | null): void => {
     setSelectedPackage(id);
     setShowPaymentModal(true);
   };
@@ -906,7 +914,7 @@ export default function CreditsPage() {
   };
 
   // Initialize and open Razorpay payment
-  const initiateRazorpayPayment = () => {
+  const initiateRazorpayPayment = (): void => {
     if (!isRazorpayLoaded || !selectedPackage) {
       console.error("Razorpay not loaded or no package selected");
       return;
@@ -926,7 +934,7 @@ export default function CreditsPage() {
       name: "Fleet Manager",
       description: `Purchase ${packageDetails.name} Package`,
       image: "https://yourdomain.com/logo.png", // Your company logo
-      handler: function(response) {
+      handler: function(response: any) {
         // Handle successful payment
         // In production, you would verify this on your server
         console.log("Payment successful", response);
@@ -953,7 +961,7 @@ export default function CreditsPage() {
     };
 
     try {
-      const razorpayInstance = new window.Razorpay(options);
+      const razorpayInstance = new (window as any).Razorpay(options);
       razorpayInstance.open();
     } catch (error) {
       console.error("Error initiating Razorpay payment:", error);
@@ -962,7 +970,7 @@ export default function CreditsPage() {
   };
 
   // Handle successful payment
-  const handlePaymentSuccess = (packageDetails) => {
+  const handlePaymentSuccess = (packageDetails: { id: number; credits: number; priceAmount: number; }): void => {
     // Update credits and add to transaction history
     // In production, this would be synced with your backend
     setCurrentCredits(prev => prev + packageDetails.credits);
@@ -1044,7 +1052,9 @@ export default function CreditsPage() {
                 pkg.popular ? 'md:scale-105 md:-translate-y-1 z-10' : ''
               }`}
               onMouseEnter={() => setHoveredPackage(index)}
-              onMouseEnter={() => setHoveredPackage(index)}
+
+
+              // onMouseEnter={() => setHoveredPackage(index)}
               onMouseLeave={() => setHoveredPackage(null)}
             >
               {/* Popular Badge */}
@@ -1269,7 +1279,7 @@ export default function CreditsPage() {
                     </div>
                     <div className="ml-3">
                       <p className="text-sm text-blue-700">
-                        You'll be redirected to Razorpay's secure payment gateway to complete your purchase.
+                      You will be redirected to the secure payment gateway of Razorpay to complete your purchase.
                       </p>
                     </div>
                   </div>

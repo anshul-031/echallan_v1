@@ -32,7 +32,7 @@ interface DocumentModalProps {
 
 export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalProps) {
     const [uploading, setUploading] = useState<string | null>(null);
-    const [uploadedDocs, setUploadedDocs] = useState<Record<string, boolean>>({});
+    const [uploadedDocs, setUploadedDocs] = useState<Record<string, string>>({});
 
     const handleFileUpload = async (docType: string, file: File | null) => {
         if (!file) return;
@@ -53,13 +53,26 @@ export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalPro
         setUploading(docType);
 
         try {
-            // Simulate API call with timeout
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('vrn', vrn);
+            formData.append('docType', docType);
 
-            // Simulate successful upload
-            setUploadedDocs(prev => ({ ...prev, [docType]: true }));
+            const response = await fetch('/api/documents/upload', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Upload failed');
+            }
+
+            // Store the uploaded file name for this document type
+            setUploadedDocs(prev => ({ ...prev, [docType]: file.name }));
             toast.success(`${docType} uploaded successfully`);
         } catch (error) {
+            console.error('Upload error:', error);
             toast.error(`Failed to upload ${docType}`);
         } finally {
             setUploading(null);
@@ -67,9 +80,13 @@ export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalPro
     };
 
     const handleDownload = (docType: string) => {
-        // Simulate download - in real implementation, this would call an API endpoint
-        toast.info(`Downloading ${docType}...`);
-        // window.open(`/api/download-document?vrn=${vrn}&docType=${docType}`, '_blank');
+        if (!uploadedDocs[docType]) return;
+
+        const fileName = uploadedDocs[docType];
+        const url = `/api/documents/download?vrn=${vrn}&docType=${docType}&fileName=${encodeURIComponent(fileName)}`;
+
+        // Open in new tab for preview
+        window.open(url, '_blank');
     };
 
     return (
@@ -77,8 +94,8 @@ export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalPro
             <Modal
                 isOpen={isOpen}
                 onRequestClose={onClose}
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-[500px] max-w-[90vw] outline-none"
-                overlayClassName="fixed inset-0 bg-black/50"
+                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-xl p-6 w-[500px] max-w-[90vw] outline-none z-50"
+                overlayClassName="fixed inset-0 bg-black/50 z-40"
             >
                 <div className="flex justify-between items-center mb-6">
                     <h2 className="text-lg font-bold">Upload/Download Documents for VRN: {vrn}</h2>
@@ -127,7 +144,7 @@ export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalPro
                                     onClick={() => handleDownload(docType)}
                                     disabled={!uploadedDocs[docType]}
                                     className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md
-                    ${uploadedDocs[docType]
+                    ${uploadedDocs[docType] !== undefined
                                             ? 'bg-gray-600 text-white hover:bg-gray-700'
                                             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                         } transition-colors`}

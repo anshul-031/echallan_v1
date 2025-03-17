@@ -163,6 +163,7 @@ export default function Dashboard() {
                       <XMarkIcon className="w-4 h-4 text-gray-400" />
                     </button>
                   )}
+
                   <button
                     onClick={handleSearch}
                     className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"

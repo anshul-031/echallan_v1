@@ -189,7 +189,7 @@ export default function Dashboard() {
               >
                 {/* Glow Effect */}
                 <div className={`absolute inset-0 bg-gradient-to-r ${card.color} opacity-0 
-                  transition-opacity duration-300 blur-xl
+                  transition-opacity duration-300 blur-xl 
                   ${hoveredCard === index ? 'opacity-20' : ''}`}
                 />
 

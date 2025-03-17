@@ -163,13 +163,13 @@ export default function Dashboard() {
                       <XMarkIcon className="w-4 h-4 text-gray-400" />
                     </button>
                   )}
-                  <button
-                    onClick={handleSearch}
-                    className="p-1 hover:bg-gray-100 rounded-full"
-                    disabled={isSearching}
-                  >
-                    <MagnifyingGlassIcon className="w-5 h-5 text-gray-400" />
-                  </button>
+                <button
+  onClick={handleSearch}
+  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+  disabled={isSearching}
+>
+  <MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />
+</button>
                 </div>
               </div>
             </div>
@@ -189,7 +189,7 @@ export default function Dashboard() {
               >
                 {/* Glow Effect */}
                 <div className={`absolute inset-0 bg-gradient-to-r ${card.color} opacity-0 
-                  transition-opacity duration-300 blur-xl
+                  transition-opacity duration-300 blur-xl 
                   ${hoveredCard === index ? 'opacity-20' : ''}`}
                 />
 
@@ -338,7 +338,7 @@ export default function Dashboard() {
                     <option value={50}>50</option>
                   </select>
                   <span className="text-sm text-gray-500">
-                    Showing {startIndex + 1} to {Math.min(endIndex, vehicles.length)} of {vehicles.length} entries
+                    Showing {startIndex + 1} to {Math.min(endIndex, filteredVehicles.length)} of {filteredVehicles.length} entries
                   </span>
 
                   {/* Export Button with Dropdown */}

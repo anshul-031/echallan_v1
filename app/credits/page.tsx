@@ -131,7 +131,7 @@
 //       frame++;
 //       const progress = frame / totalFrames;
 //       const currentValue = Math.round(progress * targetCredits);
-      
+
 //       setCurrentCredits(currentValue);
 
 //       if (frame === totalFrames) {
@@ -156,7 +156,7 @@
 //         frame++;
 //         const progress = frame / totalFrames;
 //         const currentValue = Math.round(startValue + progress * (targetValue - startValue));
-        
+
 //         setAnimatedPrices(prev => {
 //           const newValues = [...prev];
 //           newValues[index] = currentValue;
@@ -283,7 +283,7 @@
 //         ref={canvasRef} 
 //         className="absolute inset-0 w-full h-full pointer-events-none"
 //       />
-      
+
 //       <div className="relative z-10 space-y-6">
 //         {/* Header with animated gradient */}
 //         <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white shadow-lg animate-gradient">
@@ -314,7 +314,7 @@
 //               </button>
 //             </div>
 //           </div>
-          
+
 //           {/* Credit Usage Visualization */}
 //           <div className="mt-6">
 //             <div className="flex justify-between items-center mb-2">
@@ -347,13 +347,13 @@
 //                   MOST POPULAR
 //                 </div>
 //               )}
-              
+
 //               {/* Animated Background Gradient */}
 //               <div className={`absolute inset-0 bg-gradient-to-r ${pkg.gradient} opacity-0 
 //                 transition-opacity duration-300 blur-xl
 //                 ${hoveredPackage === index ? 'opacity-20' : ''}`}
 //               />
-              
+
 //               {/* Card Content */}
 //               <div className={`relative bg-white rounded-xl p-6 h-full border ${
 //                 pkg.popular ? 'border-purple-200' : 'border-gray-200'
@@ -370,12 +370,12 @@
 //                     <pkg.icon className={`w-6 h-6 text-${pkg.color}-500`} />
 //                   </div>
 //                 </div>
-                
+
 //                 <p className="text-3xl font-bold mb-1">
 //                   ₹{animatedPrices[index].toLocaleString()}
 //                 </p>
 //                 <p className="text-sm text-gray-500 mb-6">{pkg.credits} credits</p>
-                
+
 //                 <ul className="space-y-3 mb-6">
 //                   {pkg.features.map((feature, idx) => (
 //                     <li key={idx} className="flex items-center text-sm text-gray-600 animate-fadeIn" style={{ animationDelay: `${idx * 0.1}s` }}>
@@ -384,7 +384,7 @@
 //                     </li>
 //                   ))}
 //                 </ul>
-                
+
 //                 <button 
 //                   onClick={() => handlePurchase(pkg.id)}
 //                   className={`w-full px-4 py-3 bg-gradient-to-r ${pkg.gradient} text-white rounded-lg hover:opacity-90 transition-all duration-300 transform hover:translate-y-[-2px] hover:shadow-md flex items-center justify-center`}
@@ -458,7 +458,7 @@
 //             </div>
 //           </div>
 //         </div>
-        
+
 //         {/* Additional Information */}
 //         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 //           <div className="bg-white rounded-xl shadow-sm p-6">
@@ -490,7 +490,7 @@
 //               </div>
 //             </div>
 //           </div>
-          
+
 //           <div className="bg-white rounded-xl shadow-sm p-6">
 //             <h3 className="text-lg font-medium text-gray-900 mb-4">Need Help?</h3>
 //             <div className="space-y-4">
@@ -517,7 +517,7 @@
 //           </div>
 //         </div>
 //       </div>
-      
+
 //       {/* Payment Modal */}
 //       {showPaymentModal && selectedPackage && (
 //         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn">
@@ -533,7 +533,7 @@
 //                 <XMarkIcon className="w-6 h-6" />
 //               </button>
 //             </div>
-            
+
 //             <div className="p-6">
 //               <div className="mb-6">
 //                 <p className="text-gray-700 mb-2">You are purchasing:</p>
@@ -553,7 +553,7 @@
 //                   </div>
 //                 </div>
 //               </div>
-              
+
 //               <div className="space-y-4 mb-6">
 //                 <div>
 //                   <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">
@@ -566,7 +566,7 @@
 //                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
 //                   />
 //                 </div>
-                
+
 //                 <div className="grid grid-cols-2 gap-4">
 //                   <div>
 //                     <label htmlFor="expiry" className="block text-sm font-medium text-gray-700 mb-1">
@@ -592,7 +592,7 @@
 //                   </div>
 //                 </div>
 //               </div>
-              
+
 //               <div className="flex justify-end space-x-3">
 //                 <button
 //                   onClick={() => setShowPaymentModal(false)}
@@ -624,10 +624,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { 
-  CreditCardIcon, 
-  ArrowPathIcon, 
-  PlusIcon, 
+import {
+  CreditCardIcon,
+  ArrowPathIcon,
+  PlusIcon,
   SparklesIcon,
   ShieldCheckIcon,
   ClockIcon,
@@ -638,10 +638,16 @@ import {
   ArrowTrendingUpIcon,
   CurrencyRupeeIcon,
   BanknotesIcon,
-  EnvelopeIcon, 
+  EnvelopeIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import Script from 'next/script';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 const creditPackages = [
   {
@@ -743,8 +749,8 @@ const transactionHistory = [
 export default function CreditsPage() {
   const [currentCredits, setCurrentCredits] = useState(0);
   const [targetCredits] = useState(450);
-  const [hoveredPackage, setHoveredPackage] = useState(null);
-  const [selectedPackage, setSelectedPackage] = useState(null);
+  const [hoveredPackage, setHoveredPackage] = useState<number | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<number | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [animatedPrices, setAnimatedPrices] = useState([0, 0, 0]);
   const canvasRef = useRef(null);
@@ -762,7 +768,7 @@ export default function CreditsPage() {
       frame++;
       const progress = frame / totalFrames;
       const currentValue = Math.round(progress * targetCredits);
-      
+
       setCurrentCredits(currentValue);
 
       if (frame === totalFrames) {
@@ -787,7 +793,7 @@ export default function CreditsPage() {
         frame++;
         const progress = frame / totalFrames;
         const currentValue = Math.round(startValue + progress * (targetValue - startValue));
-        
+
         setAnimatedPrices(prev => {
           const newValues = [...prev];
           newValues[index] = currentValue;
@@ -805,7 +811,7 @@ export default function CreditsPage() {
 
   // Abstract background effect
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = canvasRef.current as HTMLCanvasElement | null;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
@@ -821,7 +827,16 @@ export default function CreditsPage() {
     window.addEventListener('resize', resizeCanvas);
 
     // Particles
-    const particles = [];
+    interface Particle {
+      x: number;
+      y: number;
+      radius: number;
+      color: string;
+      speedX: number;
+      speedY: number;
+    }
+
+    const particles: Particle[] = [];
 
     // Create particles
     const createParticles = () => {
@@ -895,7 +910,7 @@ export default function CreditsPage() {
     };
   }, []);
 
-  const handlePurchase = (id) => {
+  const handlePurchase = (id: number) => {
     setSelectedPackage(id);
     setShowPaymentModal(true);
   };
@@ -926,7 +941,7 @@ export default function CreditsPage() {
       name: "Fleet Manager",
       description: `Purchase ${packageDetails.name} Package`,
       image: "https://yourdomain.com/logo.png", // Your company logo
-      handler: function(response) {
+      handler: function (response: object) {
         // Handle successful payment
         // In production, you would verify this on your server
         console.log("Payment successful", response);
@@ -945,7 +960,7 @@ export default function CreditsPage() {
         color: "#3399cc"
       },
       modal: {
-        ondismiss: function() {
+        ondismiss: function () {
           setPaymentProcessing(false);
           console.log("Payment modal closed");
         }
@@ -962,15 +977,28 @@ export default function CreditsPage() {
   };
 
   // Handle successful payment
-  const handlePaymentSuccess = (packageDetails) => {
+  interface PackageDetails {
+    id: number;
+    name: string;
+    credits: number;
+    price: string;
+    priceAmount: number;
+    color: string;
+    gradient: string;
+    icon: React.ComponentType;
+    features: string[];
+    popular: boolean;
+  }
+
+  const handlePaymentSuccess = (packageDetails: PackageDetails) => {
     // Update credits and add to transaction history
     // In production, this would be synced with your backend
     setCurrentCredits(prev => prev + packageDetails.credits);
-    
+
     // Close the modal
     setShowPaymentModal(false);
     setPaymentProcessing(false);
-    
+
     // Show success message or notification
     alert(`Successfully purchased ${packageDetails.credits} credits!`);
   };
@@ -982,13 +1010,13 @@ export default function CreditsPage() {
         src="https://checkout.razorpay.com/v1/checkout.js"
         onLoad={handleRazorpayLoad}
       />
-      
+
       {/* Abstract Background Canvas */}
-      <canvas 
-        ref={canvasRef} 
+      <canvas
+        ref={canvasRef}
         className="absolute inset-0 w-full h-full pointer-events-none"
       />
-      
+
       <div className="relative z-10 space-y-6">
         {/* Header with animated gradient */}
         <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white shadow-lg animate-gradient">
@@ -1019,7 +1047,7 @@ export default function CreditsPage() {
               </button>
             </div>
           </div>
-          
+
           {/* Credit Usage Visualization */}
           <div className="mt-6">
             <div className="flex justify-between items-center mb-2">
@@ -1027,7 +1055,7 @@ export default function CreditsPage() {
               <span className="text-sm font-medium text-gray-900">50 credits</span>
             </div>
             <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out"
                 style={{ width: '10%' }}
               ></div>
@@ -1040,10 +1068,8 @@ export default function CreditsPage() {
           {creditPackages.map((pkg, index) => (
             <div
               key={pkg.id}
-              className={`relative overflow-hidden rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${
-                pkg.popular ? 'md:scale-105 md:-translate-y-1 z-10' : ''
-              }`}
-              onMouseEnter={() => setHoveredPackage(index)}
+              className={`relative overflow-hidden rounded-xl transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${pkg.popular ? 'md:scale-105 md:-translate-y-1 z-10' : ''
+                }`}
               onMouseEnter={() => setHoveredPackage(index)}
               onMouseLeave={() => setHoveredPackage(null)}
             >
@@ -1053,35 +1079,32 @@ export default function CreditsPage() {
                   MOST POPULAR
                 </div>
               )}
-              
+
               {/* Animated Background Gradient */}
               <div className={`absolute inset-0 bg-gradient-to-r ${pkg.gradient} opacity-0 
                 transition-opacity duration-300 blur-xl
                 ${hoveredPackage === index ? 'opacity-20' : ''}`}
               />
-              
+
               {/* Card Content */}
-              <div className={`relative bg-white rounded-xl p-6 h-full border ${
-                pkg.popular ? 'border-purple-200' : 'border-gray-200'
-              } transition-all duration-300 ${
-                hoveredPackage === index ? `shadow-lg shadow-${pkg.color}-500/20` : 'shadow-sm'
-              }`}>
+              <div className={`relative bg-white rounded-xl p-6 h-full border ${pkg.popular ? 'border-purple-200' : 'border-gray-200'
+                } transition-all duration-300 ${hoveredPackage === index ? `shadow-lg shadow-${pkg.color}-500/20` : 'shadow-sm'
+                }`}>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className={`text-xl font-bold bg-gradient-to-r ${pkg.gradient} bg-clip-text text-transparent`}>
                     {pkg.name}
                   </h3>
-                  <div className={`p-3 rounded-full bg-${pkg.color}-50 transition-all duration-300 ${
-                    hoveredPackage === index ? `bg-${pkg.color}-100` : ''
-                  }`}>
+                  <div className={`p-3 rounded-full bg-${pkg.color}-50 transition-all duration-300 ${hoveredPackage === index ? `bg-${pkg.color}-100` : ''
+                    }`}>
                     <pkg.icon className={`w-6 h-6 text-${pkg.color}-500`} />
                   </div>
                 </div>
-                
+
                 <p className="text-3xl font-bold mb-1">
                   ₹{animatedPrices[index].toLocaleString()}
                 </p>
                 <p className="text-sm text-gray-500 mb-6">{pkg.credits} credits</p>
-                
+
                 <ul className="space-y-3 mb-6">
                   {pkg.features.map((feature, idx) => (
                     <li key={idx} className="flex items-center text-sm text-gray-600 animate-fadeIn" style={{ animationDelay: `${idx * 0.1}s` }}>
@@ -1090,8 +1113,8 @@ export default function CreditsPage() {
                     </li>
                   ))}
                 </ul>
-                
-                <button 
+
+                <button
                   onClick={() => handlePurchase(pkg.id)}
                   className={`w-full px-4 py-3 bg-gradient-to-r ${pkg.gradient} text-white rounded-lg hover:opacity-90 transition-all duration-300 transform hover:translate-y-[-2px] hover:shadow-md flex items-center justify-center`}
                 >
@@ -1121,8 +1144,8 @@ export default function CreditsPage() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {transactionHistory.map((transaction, index) => (
-                  <tr 
-                    key={transaction.id} 
+                  <tr
+                    key={transaction.id}
                     className="hover:bg-gray-50 transition-colors animate-fadeIn"
                     style={{ animationDelay: `${index * 0.1}s` }}
                   >
@@ -1164,7 +1187,7 @@ export default function CreditsPage() {
             </div>
           </div>
         </div>
-        
+
         {/* Additional Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white rounded-xl shadow-sm p-6">
@@ -1196,7 +1219,7 @@ export default function CreditsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-xl shadow-sm p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Need Help?</h3>
             <div className="space-y-4">
@@ -1223,7 +1246,7 @@ export default function CreditsPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Payment Modal - Updated for Razorpay */}
       {showPaymentModal && selectedPackage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fadeIn">
@@ -1240,7 +1263,7 @@ export default function CreditsPage() {
                 <XMarkIcon className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="p-6">
               <div className="mb-6">
                 <p className="text-gray-700 mb-2">You are purchasing:</p>
@@ -1260,7 +1283,7 @@ export default function CreditsPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="mb-6">
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <div className="flex items-start">
@@ -1269,13 +1292,13 @@ export default function CreditsPage() {
                     </div>
                     <div className="ml-3">
                       <p className="text-sm text-blue-700">
-                        You'll be redirected to Razorpay's secure payment gateway to complete your purchase.
+                        You&apos;ll be redirected to Razorpay&apos;s secure payment gateway to complete your purchase.
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => setShowPaymentModal(false)}

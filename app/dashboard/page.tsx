@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { 
-  MagnifyingGlassIcon, 
-  ArrowPathIcon, 
-  EyeIcon, 
+import {
+  MagnifyingGlassIcon,
+  ArrowPathIcon,
+  EyeIcon,
   TrashIcon,
   ChevronDownIcon,
   DocumentArrowDownIcon,
@@ -16,6 +16,7 @@ import {
   DocumentChartBarIcon
 } from '@heroicons/react/24/outline';
 import LiveDataPanel from '../components/LiveDataPanel';
+import DocumentModal from '../components/DocumentModal';
 
 // Extended demo data
 const vehicles = Array.from({ length: 15 }, (_, index) => ({
@@ -80,6 +81,8 @@ export default function Dashboard() {
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedVRN, setSelectedVRN] = useState<string>('');
 
   // Calculate pagination
   const totalPages = Math.ceil(vehicles.length / rowsPerPage);
@@ -223,7 +226,13 @@ export default function Dashboard() {
                         </button>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <button className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors">
+                        <button
+                          onClick={() => {
+                            setSelectedVRN(row.vrn);
+                            setIsModalOpen(true);
+                          }}
+                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                        >
                           <CloudArrowUpIcon className="w-5 h-5" />
                         </button>
                       </td>
@@ -243,8 +252,8 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <span className="text-sm text-gray-700">Show rows:</span>
-                  <select 
-                    value={rowsPerPage} 
+                  <select
+                    value={rowsPerPage}
                     onChange={(e) => setRowsPerPage(Number(e.target.value))}
                     className="border rounded px-2 py-1 text-sm"
                   >
@@ -288,23 +297,23 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex items-center space-x-2">
-                  <button 
+                  <button
                     className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage(1)}
                   >⟪</button>
-                  <button 
+                  <button
                     className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage(prev => prev - 1)}
                   >⟨</button>
                   <span className="px-3 py-1 bg-blue-600 text-white rounded">{currentPage}</span>
-                  <button 
+                  <button
                     className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage(prev => prev + 1)}
                   >⟩</button>
-                  <button 
+                  <button
                     className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage(totalPages)}
@@ -323,11 +332,18 @@ export default function Dashboard() {
 
       {/* Click Outside Handler */}
       {showExportDropdown && (
-        <div 
+        <div
           className="fixed inset-0 z-40"
           onClick={() => setShowExportDropdown(false)}
         />
       )}
+
+      {/* Document Modal */}
+      <DocumentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        vrn={selectedVRN}
+      />
     </div>
   );
 }

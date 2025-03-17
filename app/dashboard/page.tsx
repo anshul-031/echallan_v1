@@ -39,38 +39,38 @@ const vehicles = Array.from({ length: 15 }, (_, index) => ({
 const summaryCards = [
   {
     title: 'TOTAL VEHICLES',
-    count: '533',
+    count: vehicles.length.toString(),
     color: 'from-blue-500 to-blue-600',
     glowColor: 'blue',
     icon: ChartBarIcon,
     details: [
-      { label: 'Active Vehicles', value: '498' },
-      { label: 'Inactive Vehicles', value: '35' },
-      { label: 'Under Maintenance', value: '12' }
+      { label: 'Active Vehicles', value: vehicles.filter(v => v.status === 'Active').length.toString() },
+      { label: 'Inactive Vehicles', value: '0' },
+      { label: 'Under Maintenance', value: '0' }
     ]
   },
   {
     title: 'EXPIRING DOCUMENTS',
-    count: '33',
+    count: vehicles.length.toString(),
     color: 'from-amber-500 to-amber-600',
     glowColor: 'amber',
     icon: ClockIcon,
     details: [
-      { label: 'Next 30 Days', value: '15' },
-      { label: 'Next 60 Days', value: '8' },
-      { label: 'Next 90 Days', value: '10' }
+      { label: 'Road Tax', value: vehicles.length.toString() },
+      { label: 'Insurance', value: vehicles.length.toString() },
+      { label: 'Fitness', value: vehicles.length.toString() }
     ]
   },
   {
     title: 'EXPIRED DOCUMENTS',
-    count: '71',
+    count: '0',
     color: 'from-red-500 to-red-600',
     glowColor: 'red',
     icon: DocumentChartBarIcon,
     details: [
-      { label: 'Insurance', value: '28' },
-      { label: 'Road Tax', value: '23' },
-      { label: 'Fitness Certificate', value: '20' }
+      { label: 'Insurance', value: '0' },
+      { label: 'Road Tax', value: '0' },
+      { label: 'Fitness Certificate', value: '0' }
     ]
   }
 ];
@@ -181,9 +181,23 @@ export default function Dashboard() {
               <div
                 key={card.title}
                 className={`relative overflow-hidden rounded-lg transition-all duration-500 cursor-pointer
-                  ${expandedCard === index ? 'col-span-2 row-span-2' : ''}
-                  transform hover:scale-[1.02] hover:-translate-y-1
-                `}
+                  ${expandedCard === 0 ? (
+                    index === 0 ? 'col-span-2 row-span-2' :
+                      index === 1 ? 'col-start-3 col-span-1 row-start-1 row-span-1' :
+                        'col-start-3 col-span-1 row-start-2 row-span-1'
+                  ) : expandedCard === 1 ? (
+                    index === 0 ? 'col-span-1 row-span-1' :
+                      index === 1 ? 'col-start-2 col-span-2 row-span-2' :
+                        'col-start-1 col-span-1 row-start-2 row-span-1'
+                  ) : expandedCard === 2 ? (
+                    index === 0 ? 'col-span-1 row-span-1' :
+                      index === 1 ? 'col-start-1 col-span-1 row-start-2 row-span-1' :
+                        'col-start-2 col-span-2 row-span-2 row-start-1'
+                  ) : (
+                    index === 0 ? 'col-span-1 row-span-1 col-start-1' :
+                      index === 1 ? 'col-span-1 row-span-1 col-start-2' :
+                        'col-span-1 row-span-1 col-start-3'
+                  )}`}
                 onMouseEnter={() => setHoveredCard(index)}
                 onMouseLeave={() => setHoveredCard(null)}
               >
@@ -229,10 +243,6 @@ export default function Dashboard() {
                           </div>
                         ))}
                       </div>
-                      <button className="mt-3 w-full py-2 px-4 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm font-medium transition-colors flex items-center justify-center space-x-2">
-                        <span>View Details</span>
-                        <ArrowRightIcon className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
                 </div>

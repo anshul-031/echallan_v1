@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   MagnifyingGlassIcon,
   ArrowPathIcon,
@@ -13,7 +13,8 @@ import {
   CloudArrowUpIcon,
   ChartBarIcon,
   ClockIcon,
-  DocumentChartBarIcon
+  DocumentChartBarIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import LiveDataPanel from '../components/LiveDataPanel';
 import DocumentModal from '../components/DocumentModal';
@@ -73,9 +74,11 @@ const summaryCards = [
     ]
   }
 ];
-
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [filteredVehicles, setFilteredVehicles] = useState(vehicles);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
@@ -84,11 +87,45 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVRN, setSelectedVRN] = useState<string>('');
 
+  // Handle search
+  const handleSearch = useCallback(async () => {
+    if (!searchQuery.trim()) {
+      setFilteredVehicles(vehicles);
+      setSearchError(null);
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError(null);
+    setCurrentPage(1);
+
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const results = vehicles.filter(vehicle =>
+      vehicle.vrn.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    setFilteredVehicles(results);
+    if (results.length === 0) {
+      setSearchError('No results found');
+    }
+    setIsSearching(false);
+  }, [searchQuery]);
+
+  // Handle clear search
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setFilteredVehicles(vehicles);
+    setSearchError(null);
+    setCurrentPage(1);
+  };
+
   // Calculate pagination
-  const totalPages = Math.ceil(vehicles.length / rowsPerPage);
+  const totalPages = Math.ceil(filteredVehicles.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
-  const currentVehicles = vehicles.slice(startIndex, endIndex);
+  const currentVehicles = filteredVehicles.slice(startIndex, endIndex);
 
   const handleExport = (format: 'current-excel' | 'all-excel' | 'pdf') => {
     console.log(`Exporting in ${format} format`);
@@ -111,8 +148,29 @@ export default function Dashboard() {
                   className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch();
+                    }
+                  }}
                 />
-                <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-1">
+                  {searchQuery && (
+                    <button
+                      onClick={handleClearSearch}
+                      className="p-1 hover:bg-gray-100 rounded-full"
+                    >
+                      <XMarkIcon className="w-4 h-4 text-gray-400" />
+                    </button>
+                  )}
+                  <button
+                    onClick={handleSearch}
+                    className="p-1 hover:bg-gray-100 rounded-full"
+                    disabled={isSearching}
+                  >
+                    <MagnifyingGlassIcon className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -181,6 +239,23 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
+
+          {/* Search Status Messages */}
+          {isSearching && (
+            <div className="flex items-center justify-center space-x-2 py-4">
+              <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="text-gray-500">Fetching the results...</span>
+            </div>
+          )}
+
+          {searchError && (
+            <div className="flex justify-center py-4">
+              <span className="text-red-500">{searchError}</span>
+            </div>
+          )}
 
           {/* Table Container */}
           <div className="flex-1 flex flex-col min-h-0 bg-white rounded-lg shadow overflow-hidden">

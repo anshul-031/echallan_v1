@@ -2,6 +2,17 @@
 
 import { useState, useCallback } from 'react';
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '../components/ui/dropdown-menu';
+import { utils as xlsxUtils, writeFile } from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import {
   MagnifyingGlassIcon,
   ArrowPathIcon,
   EyeIcon,
@@ -81,11 +92,91 @@ export default function Dashboard() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVRN, setSelectedVRN] = useState<string>('');
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Define type for export data
+  type ExportData = {
+    'S.no': number;
+    'VRN': string;
+    'Road Tax': string;
+    'Fitness': string;
+    'Insurance': string;
+    'Pollution': string;
+    'State Permit': string;
+    'National Permit': string;
+    'Last Updated': string;
+  };
+
+  // Function to prepare data for export
+  const prepareExportData = (data: typeof vehicles): ExportData[] => {
+    return data.map((vehicle, index) => ({
+      'S.no': index + 1,
+      'VRN': vehicle.vrn,
+      'Road Tax': vehicle.roadTax,
+      'Fitness': vehicle.fitness,
+      'Insurance': vehicle.insurance,
+      'Pollution': vehicle.pollution,
+      'State Permit': vehicle.statePermit,
+      'National Permit': vehicle.nationalPermit,
+      'Last Updated': vehicle.lastUpdated
+    }));
+  };
+
+  const handleExport = async (format: 'current-excel' | 'all-excel' | 'pdf') => {
+    try {
+      setIsExporting(true);
+
+      const data = format === 'current-excel' ? currentVehicles : vehicles;
+      const exportData = prepareExportData(data);
+
+      if (format === 'current-excel' || format === 'all-excel') {
+        const worksheet = xlsxUtils.json_to_sheet(exportData);
+        const workbook = xlsxUtils.book_new();
+        xlsxUtils.book_append_sheet(workbook, worksheet, 'Fleet Data');
+
+        // Auto-size columns
+        const colWidths = Object.keys(exportData[0]).map(key => ({
+          wch: Math.max(key.length, ...exportData.map(row => String(row[key as keyof ExportData]).length))
+        }));
+        worksheet['!cols'] = colWidths;
+
+        const fileName = format === 'current-excel' ? 'current-fleet-data.xlsx' : 'all-fleet-data.xlsx';
+        writeFile(workbook, fileName);
+        toast.success(`${format === 'current-excel' ? 'Current' : 'All'} data exported to Excel successfully`);
+      } else {
+        // PDF Export
+        const doc = new jsPDF();
+        const tableHeaders = Object.keys(exportData[0]);
+        const tableData = exportData.map(row => Object.values(row));
+
+        autoTable(doc, {
+          head: [tableHeaders],
+          body: tableData,
+          styles: { fontSize: 8 },
+          headStyles: {
+            fillColor: [249, 250, 251],
+            textColor: [0, 0, 0],
+            fontSize: 8,
+            fontStyle: 'bold',
+          },
+          alternateRowStyles: { fillColor: [249, 250, 251] },
+          margin: { top: 20 },
+        });
+
+        doc.save('fleet-data.pdf');
+        toast.success('Data exported to PDF successfully');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export data. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Handle search
   const handleSearch = useCallback(async () => {
@@ -127,10 +218,6 @@ export default function Dashboard() {
   const endIndex = startIndex + rowsPerPage;
   const currentVehicles = filteredVehicles.slice(startIndex, endIndex);
 
-  const handleExport = (format: 'current-excel' | 'all-excel' | 'pdf') => {
-    console.log(`Exporting in ${format} format`);
-    setShowExportDropdown(false);
-  };
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen overflow-y-auto lg:overflow-hidden">
@@ -270,7 +357,7 @@ export default function Dashboard() {
           )}
 
           {/* Table Container */}
-          <div className="bg-white rounded-lg shadow overflow-x-auto">
+          <div className="bg-white rounded-lg shadow overflow-x-auto overflow-visible">
             <div className="min-w-full">
               <table className="min-w-full">
                 <thead className="bg-gray-50 sticky top-0 z-10">
@@ -335,9 +422,9 @@ export default function Dashboard() {
             </div>
 
             {/* Pagination Footer */}
-            <div className="px-3 lg:px-6 py-2 lg:py-3 border-t border-gray-200 bg-white">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 lg:space-x-4">
+            <div className="px-3 lg:px-6 py-2 lg:py-3 border-t border-gray-200 bg-white overflow-visible">
+              <div className="flex items-center justify-between overflow-visible">
+                <div className="flex items-center space-x-2 lg:space-x-4 overflow-visible">
                   <span className="text-xs lg:text-sm text-gray-700">Rows:</span>
                   <select
                     value={rowsPerPage}
@@ -354,33 +441,42 @@ export default function Dashboard() {
                   </span>
 
                   {/* Export Button with Dropdown */}
-                  <div className="relative hidden lg:block">
-                    <button
-                      onClick={() => setShowExportDropdown(!showExportDropdown)}
-                      className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium text-sm"
-                    >
-                      <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
-                      Export
-                      <ChevronDownIcon className="w-4 h-4 ml-2" />
-                    </button>
-
-                    {showExportDropdown && (
-                      <div className="absolute left-0 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                        <div className="py-1" role="menu" aria-orientation="vertical">
-                          {['Current Excel', 'All Excel', 'PDF'].map((option) => (
-                            <button
-                              key={option}
-                              onClick={() => handleExport(option.toLowerCase().replace(' ', '-') as any)}
-                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 flex items-center"
-                            >
-                              <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
-                              {option}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        disabled={isExporting}
+                        className="flex items-center px-3 py-1.5 lg:px-4 lg:py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium text-xs lg:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isExporting ? (
+                          <>
+                            <svg className="animate-spin h-3 w-3 lg:h-4 lg:w-4 mr-1.5 lg:mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Exporting...
+                          </>
+                        ) : (
+                          <>
+                            <DocumentArrowDownIcon className="w-3 h-3 lg:w-4 lg:h-4 mr-1.5 lg:mr-2" />
+                            Export
+                          </>
+                        )}
+                        <ChevronDownIcon className="w-3 h-3 lg:w-4 lg:h-4 ml-1.5 lg:ml-2" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-40 lg:w-48">
+                      {['Current Excel', 'All Excel', 'PDF'].map((option) => (
+                        <DropdownMenuItem
+                          key={option}
+                          onClick={() => handleExport(option.toLowerCase().replace(' ', '-') as any)}
+                          className="flex items-center cursor-pointer text-xs lg:text-sm"
+                        >
+                          <DocumentArrowDownIcon className="w-3 h-3 lg:w-4 lg:h-4 mr-1.5 lg:mr-2" />
+                          {option}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <div className="flex items-center space-x-1 lg:space-x-2">
                   <button
@@ -416,15 +512,6 @@ export default function Dashboard() {
         <LiveDataPanel />
       </div>
 
-      {/* Click Outside Handler */}
-      {
-        showExportDropdown && (
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setShowExportDropdown(false)}
-          />
-        )
-      }
 
       {/* Document Modal */}
       <DocumentModal
@@ -432,6 +519,55 @@ export default function Dashboard() {
         onClose={() => setIsModalOpen(false)}
         vrn={selectedVRN}
       />
-    </div >
+
+      {/* Toast Container */}
+      <div className="toastContainer">
+        <ToastContainer
+          position="bottom-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+          className="!w-auto !max-w-[90vw]"
+        />
+      </div>
+      <style jsx global>{`
+        .Toastify__toast {
+          border-radius: 1rem;
+          margin-bottom: 1rem;
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+        .Toastify__toast--success {
+          background: linear-gradient(to right, #2563eb, #3b82f6) !important;
+        }
+        .Toastify__toast--error {
+          background: linear-gradient(to right, #dc2626, #ef4444) !important;
+        }
+        .Toastify__toast-icon {
+          width: 20px;
+          height: 20px;
+          margin-right: 12px;
+        }
+        @media (max-width: 768px) {
+          .Toastify__toast {
+            margin: 0.5rem;
+            margin-bottom: 0.75rem;
+          }
+          .Toastify__toast-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+          }
+          .Toastify__toast-body {
+            padding: 0.5rem 0.75rem;
+          }
+        }
+      `}</style>
+    </div>
   );
 }

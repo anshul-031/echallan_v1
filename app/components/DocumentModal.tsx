@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import Modal from 'react-modal';
-import { ToastContainer, toast } from 'react-toastify';
+import toast from 'react-hot-toast';
 import { DocumentArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import 'react-toastify/dist/ReactToastify.css';
 
 // Document types
 const documentTypes = [
@@ -175,7 +174,6 @@ export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalPro
                     </button>
                 </div>
             </Modal>
-            <ToastContainer position="bottom-right" />
         </>
     );
 }

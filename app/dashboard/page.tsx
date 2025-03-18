@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -10,8 +11,7 @@ import {
 import { utils as xlsxUtils, writeFile } from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { Toaster, toast } from 'react-hot-toast';
 import {
   MagnifyingGlassIcon,
   ArrowPathIcon,
@@ -25,13 +25,31 @@ import {
   ChartBarIcon,
   ClockIcon,
   DocumentChartBarIcon,
-  XMarkIcon
+  XMarkIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline';
 import LiveDataPanel from '../components/LiveDataPanel';
 import DocumentModal from '../components/DocumentModal';
 
 // Extended demo data
-const vehicles = Array.from({ length: 15 }, (_, index) => ({
+interface Vehicle {
+  id: number;
+  vrn: string;
+  roadTax: string;
+  fitness: string;
+  insurance: string;
+  pollution: string;
+  statePermit: string;
+  nationalPermit: string;
+  lastUpdated: string;
+  status: string;
+  owner: string;
+  registeredAt: string;
+  documents: number;
+}
+
+const initialVehicles: Vehicle[] = Array.from({ length: 15 }, (_, index) => ({
   id: index + 1,
   vrn: `RJ09GB${9453 + index}`,
   roadTax: '30-11-2025',
@@ -40,14 +58,18 @@ const vehicles = Array.from({ length: 15 }, (_, index) => ({
   pollution: '02-01-2026',
   statePermit: 'Not available',
   nationalPermit: '01-11-2025',
-  lastUpdated: '21-02-2025',
+  lastUpdated: new Date().toLocaleDateString('en-GB', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).replace(/\//g, '-'),
   status: 'Active',
   owner: 'John Doe',
   registeredAt: 'Mumbai RTO',
   documents: 5
 }));
 
-const summaryCards = [
+const getSummaryCards = (vehicles: Vehicle[]) => [
   {
     title: 'TOTAL VEHICLES',
     count: vehicles.length.toString(),
@@ -55,7 +77,10 @@ const summaryCards = [
     glowColor: 'blue',
     icon: ChartBarIcon,
     details: [
-      { label: 'Active Vehicles', value: vehicles.filter(v => v.status === 'Active').length.toString() },
+      {
+        label: 'Active Vehicles',
+        value: vehicles.filter((v: Vehicle) => v.status === 'Active').length.toString()
+      },
       { label: 'Inactive Vehicles', value: '0' },
       { label: 'Under Maintenance', value: '0' }
     ]
@@ -87,7 +112,8 @@ const summaryCards = [
 ];
 export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredVehicles, setFilteredVehicles] = useState(vehicles);
+  const [vehicles, setVehicles] = useState<Vehicle[]>(initialVehicles);
+  const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>(initialVehicles);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -97,6 +123,87 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVRN, setSelectedVRN] = useState<string>('');
   const [isExporting, setIsExporting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [vehicleToDelete, setVehicleToDelete] = useState<number | null>(null);
+  const [isDeletingVehicle, setIsDeletingVehicle] = useState(false);
+
+  const [updatingRows, setUpdatingRows] = useState<{ [key: number]: boolean }>({});
+
+  const handleDelete = (id: number) => {
+    setVehicleToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleUpdate = async (row: Vehicle) => {
+    try {
+      setUpdatingRows(prev => ({ ...prev, [row.id]: true }));
+
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Generate random dates for demonstration
+      const getRandomDate = () => {
+        const date = new Date();
+        date.setDate(date.getDate() + Math.floor(Math.random() * 365 * 2)); // Random date within 2 years
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}-${month}-${year}`;
+      };
+
+      const updatedVehicle = {
+        ...row,
+        roadTax: getRandomDate(),
+        fitness: getRandomDate(),
+        insurance: getRandomDate(),
+        pollution: getRandomDate(),
+        lastUpdated: new Date().toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
+        }).replace(/\//g, '-')
+      };
+
+      setVehicles(prevVehicles =>
+        prevVehicles.map(v => v.id === row.id ? updatedVehicle : v)
+      );
+      setFilteredVehicles(prevFiltered =>
+        prevFiltered.map(v => v.id === row.id ? updatedVehicle : v)
+      );
+
+      toast.success('Vehicle data updated successfully');
+    } catch (error) {
+      toast.error('Failed to update vehicle data');
+    } finally {
+      setUpdatingRows(prev => ({ ...prev, [row.id]: false }));
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!vehicleToDelete) return;
+
+    try {
+      setIsDeletingVehicle(true);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Update the vehicles list
+      const updatedVehicles = vehicles.filter(v => v.id !== vehicleToDelete);
+      setVehicles(updatedVehicles);
+      setFilteredVehicles(prevFiltered =>
+        prevFiltered.filter(v => v.id !== vehicleToDelete)
+      );
+
+      setIsDeleteModalOpen(false);
+      setVehicleToDelete(null);
+      await new Promise(resolve => setTimeout(resolve, 100)); // Small delay before showing toast
+      toast.success('Record deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete the record');
+    } finally {
+      setIsDeletingVehicle(false);
+    }
+  };
 
   // Define type for export data
   type ExportData = {
@@ -225,47 +332,11 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col">
         <div className="flex-1 flex flex-col p-3 lg:p-6 space-y-4">
           {/* Header */}
-          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-3 lg:space-y-0">
-            <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">Fleet Dashboard</h1>
-            <div className="w-full lg:w-72">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search Vehicle"
-                  className="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-lg"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') {
-                      handleSearch();
-                    }
-                  }}
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center space-x-1">
-                  {searchQuery && (
-                    <button
-                      onClick={handleClearSearch}
-                      className="p-1 hover:bg-gray-100 rounded-full"
-                    >
-                      <XMarkIcon className="w-4 h-4 text-gray-400" />
-                    </button>
-                  )}
-
-                  <button
-                    onClick={handleSearch}
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                    disabled={isSearching}
-                  >
-                    <MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">Fleet Dashboard</h1>
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {summaryCards.map((card, index) => (
+            {getSummaryCards(vehicles).map((card, index) => (
               <div
                 key={card.title}
                 className={`relative overflow-hidden rounded-lg transition-all duration-500 cursor-pointer
@@ -291,8 +362,8 @@ export default function Dashboard() {
                 onMouseLeave={() => setHoveredCard(null)}
               >
                 {/* Glow Effect */}
-                <div className={`absolute inset-0 bg-gradient-to-r ${card.color} opacity-0 
-                  transition-opacity duration-300 blur-xl 
+                <div className={`absolute inset-0 bg-gradient-to-r ${card.color} opacity-0
+                  transition-opacity duration-300 blur-xl
                   ${hoveredCard === index ? 'opacity-20' : ''}`}
                 />
 
@@ -339,64 +410,150 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Search Status Messages */}
-          {isSearching && (
-            <div className="flex items-center justify-center space-x-2 py-4">
-              <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <span className="text-gray-500">Fetching the results...</span>
-            </div>
-          )}
-
+          {/* Table Controls */}
           {searchError && (
-            <div className="flex justify-center py-4">
+            <div className="text-center mb-4">
               <span className="text-red-500">{searchError}</span>
             </div>
           )}
 
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="w-full md:w-64">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search Vehicle"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSearch();
+                    }
+                  }}
+                />
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                {searchQuery && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full"
+                  >
+                    <XMarkIcon className="w-4 h-4 text-gray-400" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {/* Rows Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg flex items-center text-sm">
+                    {rowsPerPage} rows
+                    <ChevronDownIcon className="w-4 h-4 ml-2 opacity-50" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {[5, 10, 20, 50].map((value) => (
+                    <DropdownMenuItem key={value} onClick={() => setRowsPerPage(value)}>
+                      {value} rows
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Export Button with Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    disabled={isExporting}
+                    className="flex items-center px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-sm hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isExporting ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Exporting...
+                      </>
+                    ) : (
+                      <>
+                        <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
+                        Export
+                      </>
+                    )}
+                    <ChevronDownIcon className="w-4 h-4 ml-2" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  {['Current Excel', 'All Excel', 'PDF'].map((option) => (
+                    <DropdownMenuItem
+                      key={option}
+                      onClick={() => handleExport(option.toLowerCase().replace(' ', '-') as any)}
+                      className="flex items-center cursor-pointer text-sm"
+                    >
+                      <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
+                      {option}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
           {/* Table Container */}
-          <div className="bg-white rounded-lg shadow overflow-x-auto overflow-visible">
-            <div className="min-w-full">
-              <table className="min-w-full">
-                <thead className="bg-gray-50 sticky top-0 z-10">
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden relative">
+            {isSearching && (
+              <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center">
+                <div className="flex items-center space-x-2 bg-white p-3 rounded-lg shadow-sm">
+                  <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span className="text-gray-500">Fetching the results...</span>
+                </div>
+              </div>
+            )}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">S.no</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">VRN</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Road tax</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Fitness</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Insurance</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Pollution</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Permit</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">National Permit</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Assign</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Last Updated</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Update</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Upload</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Delete</th>
+                    <th className="w-12 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">S.no</th>
+                    <th className="w-32 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">VRN</th>
+                    <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Road tax</th>
+                    <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Fitness</th>
+                    <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Insurance</th>
+                    <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pollution</th>
+                    <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Permit</th>
+                    <th className="w-32 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">National Permit</th>
+                    <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Last Updated</th>
+                    <th className="w-16 px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Update</th>
+                    <th className="w-16 px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Upload</th>
+                    <th className="w-16 px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Delete</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {currentVehicles.map((row) => (
                     <tr key={row.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-4 text-sm text-gray-500">{row.id}</td>
-                      <td className="px-4 py-4 text-sm font-medium text-gray-900">{row.vrn}</td>
-                      <td className="px-4 py-4 text-sm text-green-600">{row.roadTax}</td>
-                      <td className="px-4 py-4 text-sm text-green-600">{row.fitness}</td>
-                      <td className="px-4 py-4 text-sm text-green-600">{row.insurance}</td>
-                      <td className="px-4 py-4 text-sm text-green-600">{row.pollution}</td>
-                      <td className="px-4 py-4 text-sm text-red-500">{row.statePermit}</td>
-                      <td className="px-4 py-4 text-sm text-green-600">{row.nationalPermit}</td>
+                      <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">{row.id}</td>
+                      <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm font-medium text-gray-900 whitespace-nowrap">{row.vrn}</td>
+                      <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600 whitespace-nowrap">{row.roadTax}</td>
+                      <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600 whitespace-nowrap">{row.fitness}</td>
+                      <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600 whitespace-nowrap">{row.insurance}</td>
+                      <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600 whitespace-nowrap">{row.pollution}</td>
+                      <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-red-500 whitespace-nowrap">{row.statePermit}</td>
+                      <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600 whitespace-nowrap">{row.nationalPermit}</td>
+                      <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">{row.lastUpdated}</td>
                       <td className="px-4 py-4 text-center">
-                        <button className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full transition-colors">
-                          <EyeIcon className="w-5 h-5" />
-                        </button>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-gray-500">{row.lastUpdated}</td>
-                      <td className="px-4 py-4 text-center">
-                        <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
-                          <ArrowPathIcon className="w-5 h-5" />
+                        <button
+                          onClick={() => handleUpdate(row)}
+                          disabled={updatingRows[row.id]}
+                          className={`p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors ${updatingRows[row.id] ? 'bg-blue-50' : ''
+                            }`}
+                        >
+                          <ArrowPathIcon className={`w-5 h-5 ${updatingRows[row.id] ? 'animate-spin' : ''
+                            }`} />
                         </button>
                       </td>
                       <td className="px-4 py-4 text-center">
@@ -411,96 +568,125 @@ export default function Dashboard() {
                         </button>
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors">
+                        <button
+                          onClick={() => handleDelete(row.id)}
+                          disabled={isDeletingVehicle}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50 disabled:hover:bg-transparent disabled:cursor-not-allowed"
+                        >
                           <TrashIcon className="w-5 h-5" />
                         </button>
                       </td>
                     </tr>
                   ))}
+                  {currentVehicles.length === 0 && (
+                    <tr>
+                      <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
+                        {searchError || 'No vehicles found'}
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
 
-            {/* Pagination Footer */}
-            <div className="px-3 lg:px-6 py-2 lg:py-3 border-t border-gray-200 bg-white overflow-visible">
-              <div className="flex items-center justify-between overflow-visible">
-                <div className="flex items-center space-x-2 lg:space-x-4 overflow-visible">
-                  <span className="text-xs lg:text-sm text-gray-700">Rows:</span>
-                  <select
-                    value={rowsPerPage}
-                    onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                    className="border rounded px-1.5 py-0.5 text-xs lg:text-sm"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                  <span className="text-xs lg:text-sm text-gray-500 whitespace-nowrap">
-                    {startIndex + 1}-{Math.min(endIndex, filteredVehicles.length)} of {filteredVehicles.length}
-                  </span>
+            {/* Pagination */}
+            <div className="px-4 py-3 bg-white border-t border-gray-200 sm:px-6 flex items-center justify-between">
+              <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm text-gray-700">
+                    Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                    <span className="font-medium">
+                      {Math.min(endIndex, filteredVehicles.length)}
+                    </span>{' '}
+                    of <span className="font-medium">{filteredVehicles.length}</span> results
+                  </p>
+                </div>
+                <div>
+                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">First</span>
+                      <ChevronLeftIcon className="h-5 w-5 mr-1" />
+                      <ChevronLeftIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">Previous</span>
+                      <ChevronLeftIcon className="h-5 w-5" />
+                    </button>
 
-                  {/* Export Button with Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <button
-                        disabled={isExporting}
-                        className="flex items-center px-3 py-1.5 lg:px-4 lg:py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium text-xs lg:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isExporting ? (
-                          <>
-                            <svg className="animate-spin h-3 w-3 lg:h-4 lg:w-4 mr-1.5 lg:mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Exporting...
-                          </>
-                        ) : (
-                          <>
-                            <DocumentArrowDownIcon className="w-3 h-3 lg:w-4 lg:h-4 mr-1.5 lg:mr-2" />
-                            Export
-                          </>
-                        )}
-                        <ChevronDownIcon className="w-3 h-3 lg:w-4 lg:h-4 ml-1.5 lg:ml-2" />
-                      </button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-40 lg:w-48">
-                      {['Current Excel', 'All Excel', 'PDF'].map((option) => (
-                        <DropdownMenuItem
-                          key={option}
-                          onClick={() => handleExport(option.toLowerCase().replace(' ', '-') as any)}
-                          className="flex items-center cursor-pointer text-xs lg:text-sm"
+                    {/* Page numbers */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      const pageNumber = currentPage <= 3
+                        ? i + 1
+                        : currentPage >= totalPages - 2
+                          ? totalPages - 4 + i
+                          : currentPage - 2 + i;
+
+                      if (pageNumber <= 0 || pageNumber > totalPages) return null;
+
+                      return (
+                        <button
+                          key={pageNumber}
+                          onClick={() => setCurrentPage(pageNumber)}
+                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === pageNumber
+                            ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                            : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
                         >
-                          <DocumentArrowDownIcon className="w-3 h-3 lg:w-4 lg:h-4 mr-1.5 lg:mr-2" />
-                          {option}
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      disabled={currentPage === totalPages}
+                      className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">Next</span>
+                      <ChevronRightIcon className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={currentPage === totalPages}
+                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="sr-only">Last</span>
+                      <ChevronRightIcon className="h-5 w-5 mr-1" />
+                      <ChevronRightIcon className="h-5 w-5" />
+                    </button>
+                  </nav>
                 </div>
-                <div className="flex items-center space-x-1 lg:space-x-2">
-                  <button
-                    className="p-0.5 lg:p-1 rounded text-sm lg:text-base hover:bg-gray-100 disabled:opacity-50"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(1)}
-                  >{'<<'}</button>
-                  <button
-                    className="p-0.5 lg:p-1 rounded text-sm lg:text-base hover:bg-gray-100 disabled:opacity-50"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(prev => prev - 1)}
-                  >{'<'}</button>
-                  <span className="px-2 lg:px-3 py-0.5 lg:py-1 bg-blue-600 text-white text-sm lg:text-base rounded">{currentPage}</span>
-                  <button
-                    className="p-0.5 lg:p-1 rounded text-sm lg:text-base hover:bg-gray-100 disabled:opacity-50"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(prev => prev + 1)}
-                  >{'>'}</button>
-                  <button
-                    className="p-0.5 lg:p-1 rounded text-sm lg:text-base hover:bg-gray-100 disabled:opacity-50"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage(totalPages)}
-                  >{'>>'}</button>
+              </div>
+
+              {/* Mobile pagination */}
+              <div className="flex items-center sm:hidden">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Previous
+                </button>
+                <div className="mx-4">
+                  <span className="text-sm text-gray-700">
+                    Page {currentPage} of {totalPages}
+                  </span>
                 </div>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Next
+                </button>
               </div>
             </div>
           </div>
@@ -512,7 +698,6 @@ export default function Dashboard() {
         <LiveDataPanel />
       </div>
 
-
       {/* Document Modal */}
       <DocumentModal
         isOpen={isModalOpen}
@@ -520,54 +705,42 @@ export default function Dashboard() {
         vrn={selectedVRN}
       />
 
-      {/* Toast Container */}
-      <div className="toastContainer">
-        <ToastContainer
-          position="bottom-right"
-          autoClose={3000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="colored"
-          className="!w-auto !max-w-[90vw]"
-        />
-      </div>
-      <style jsx global>{`
-        .Toastify__toast {
-          border-radius: 1rem;
-          margin-bottom: 1rem;
-          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-        }
-        .Toastify__toast--success {
-          background: linear-gradient(to right, #2563eb, #3b82f6) !important;
-        }
-        .Toastify__toast--error {
-          background: linear-gradient(to right, #dc2626, #ef4444) !important;
-        }
-        .Toastify__toast-icon {
-          width: 20px;
-          height: 20px;
-          margin-right: 12px;
-        }
-        @media (max-width: 768px) {
-          .Toastify__toast {
-            margin: 0.5rem;
-            margin-bottom: 0.75rem;
-          }
-          .Toastify__toast-icon {
-            width: 16px;
-            height: 16px;
-            margin-right: 8px;
-          }
-          .Toastify__toast-body {
-            padding: 0.5rem 0.75rem;
-          }
-        }
-      `}</style>
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setVehicleToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeletingVehicle}
+      />
+
+      {/* Toast */}
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#fff',
+            color: '#363636',
+            borderRadius: '0.5rem',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          },
+          success: {
+            style: {
+              background: 'linear-gradient(to right, #2563eb, #3b82f6)',
+              color: '#fff',
+            },
+          },
+          error: {
+            style: {
+              background: 'linear-gradient(to right, #dc2626, #ef4444)',
+              color: '#fff',
+            },
+          },
+        }}
+      />
     </div>
   );
 }

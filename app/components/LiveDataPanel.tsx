@@ -48,7 +48,7 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
       rc_status: "Active",
       rc_blacklist_status: "Clean"
     };
-    
+
     setVehicleDetails(mockDetails);
     setShowDetailsModal(true);
   };
@@ -67,7 +67,7 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
   }
 
   return (
-    <div className="w-full xl:w-96 bg-white h-screen max-h-screen">
+    <div className="w-full xl:w-96 bg-white h-auto lg:h-screen lg:max-h-screen overflow-y-auto">
       <div className="p-4 border-b">
         <h2 className="text-lg font-semibold text-gray-900 mb-1">Live Data Fetch</h2>
         <p className="text-sm text-gray-500">Search and verify vehicle information</p>
@@ -77,7 +77,7 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
         {/* Search Input */}
         <div className="relative">
           <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <Image 
+            <Image
               src="https://echallan.app/application/fleet/images/india.svg"
               alt="India"
               width={20}
@@ -130,9 +130,8 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
               <div key={index} className="bg-gray-50 rounded-lg p-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">{doc.label}</span>
-                  <span className={`text-sm font-medium ${
-                    doc.status === 'Not Available' ? 'text-red-600' : 'text-green-600'
-                  }`}>
+                  <span className={`text-sm font-medium ${doc.status === 'Not Available' ? 'text-red-600' : 'text-green-600'
+                    }`}>
                     {doc.status}
                   </span>
                 </div>
@@ -147,7 +146,7 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
             <PlusIcon className="w-5 h-5" />
             <span>Add New Vehicle</span>
           </button>
-          <button 
+          <button
             onClick={handleViewDetails}
             className="w-full px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center justify-center space-x-2"
           >
@@ -184,7 +183,7 @@ export default function LiveDataPanel({ collapsed = false }: LiveDataPanelProps)
                         .map(([key, value]) => (
                           <div key={key} className="bg-gray-50 p-3 rounded-lg">
                             <label className="text-sm text-gray-500">
-                              {key.replace('rc_', '').split('_').map(word => 
+                              {key.replace('rc_', '').split('_').map(word =>
                                 word.charAt(0).toUpperCase() + word.slice(1)
                               ).join(' ')}
                             </label>

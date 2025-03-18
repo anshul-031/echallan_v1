@@ -133,14 +133,14 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex flex-col lg:flex-row min-h-screen overflow-y-auto lg:overflow-hidden">
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <div className="flex-1 flex flex-col p-6 space-y-4 overflow-hidden">
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col p-3 lg:p-6 space-y-4">
           {/* Header */}
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-semibold text-gray-900">Fleet Dashboard</h1>
-            <div className="w-72">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-3 lg:space-y-0">
+            <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">Fleet Dashboard</h1>
+            <div className="w-full lg:w-72">
               <div className="relative">
                 <input
                   type="text"
@@ -177,27 +177,28 @@ export default function Dashboard() {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {summaryCards.map((card, index) => (
               <div
                 key={card.title}
                 className={`relative overflow-hidden rounded-lg transition-all duration-500 cursor-pointer
+                  ${expandedCard === index ? 'row-span-2' : 'row-span-1'}
                   ${expandedCard === 0 ? (
-                    index === 0 ? 'col-span-2 row-span-2' :
-                      index === 1 ? 'col-start-3 col-span-1 row-start-1 row-span-1' :
-                        'col-start-3 col-span-1 row-start-2 row-span-1'
+                    index === 0 ? 'lg:col-span-2 lg:row-span-2' :
+                      index === 1 ? 'lg:col-start-3 lg:col-span-1 lg:row-start-1 lg:row-span-1' :
+                        'lg:col-start-3 lg:col-span-1 lg:row-start-2 lg:row-span-1'
                   ) : expandedCard === 1 ? (
-                    index === 0 ? 'col-span-1 row-span-1' :
-                      index === 1 ? 'col-start-2 col-span-2 row-span-2' :
-                        'col-start-1 col-span-1 row-start-2 row-span-1'
+                    index === 0 ? 'lg:col-span-1 lg:row-span-1' :
+                      index === 1 ? 'lg:col-start-2 lg:col-span-2 lg:row-span-2' :
+                        'lg:col-start-1 lg:col-span-1 lg:row-start-2 lg:row-span-1'
                   ) : expandedCard === 2 ? (
-                    index === 0 ? 'col-span-1 row-span-1' :
-                      index === 1 ? 'col-start-1 col-span-1 row-start-2 row-span-1' :
-                        'col-start-2 col-span-2 row-span-2 row-start-1'
+                    index === 0 ? 'lg:col-span-1 lg:row-span-1' :
+                      index === 1 ? 'lg:col-start-1 lg:col-span-1 lg:row-start-2 lg:row-span-1' :
+                        'lg:col-start-2 lg:col-span-2 lg:row-span-2 lg:row-start-1'
                   ) : (
-                    index === 0 ? 'col-span-1 row-span-1 col-start-1' :
-                      index === 1 ? 'col-span-1 row-span-1 col-start-2' :
-                        'col-span-1 row-span-1 col-start-3'
+                    index === 0 ? 'lg:col-span-1 lg:row-span-1 lg:col-start-1' :
+                      index === 1 ? 'lg:col-span-1 lg:row-span-1 lg:col-start-2' :
+                        'lg:col-span-1 lg:row-span-1 lg:col-start-3'
                   )}`}
                 onMouseEnter={() => setHoveredCard(index)}
                 onMouseLeave={() => setHoveredCard(null)}
@@ -209,17 +210,17 @@ export default function Dashboard() {
                 />
 
                 {/* Card Content */}
-                <div className={`relative bg-gradient-to-r ${card.color} p-4 h-full
+                <div className={`relative bg-gradient-to-r ${card.color} p-2 lg:p-4 h-full
                   transition-all duration-500
-                  ${hoveredCard === index ? 'shadow-lg shadow-' + card.glowColor + '-500/50' : ''}`}
+                  ${hoveredCard === index ? 'shadow-md lg:shadow-lg shadow-' + card.glowColor + '-500/50' : ''}`}
                 >
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="flex items-center space-x-2">
-                        <card.icon className="w-5 h-5 text-white/80" />
-                        <p className="text-white/80 text-sm font-medium">{card.title}</p>
+                      <div className="flex items-center space-x-1 lg:space-x-2">
+                        <card.icon className="w-4 h-4 lg:w-5 lg:h-5 text-white/80" />
+                        <p className="text-white/80 text-xs lg:text-sm font-medium">{card.title}</p>
                       </div>
-                      <p className="text-white text-2xl font-bold mt-1">{card.count}</p>
+                      <p className="text-white text-xl lg:text-2xl font-bold mt-1">{card.count}</p>
                     </div>
                     <button
                       onClick={() => setExpandedCard(expandedCard === index ? null : index)}
@@ -235,12 +236,12 @@ export default function Dashboard() {
                   <div className={`mt-2 overflow-hidden transition-all duration-500 ease-in-out
                     ${expandedCard === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
                   >
-                    <div className="pt-2 border-t border-white/20">
-                      <div className="space-y-2">
+                    <div className="pt-1.5 lg:pt-2 border-t border-white/20">
+                      <div className="space-y-1 lg:space-y-2">
                         {card.details.map((detail, idx) => (
                           <div key={idx} className="flex justify-between items-center">
-                            <span className="text-white/80 text-sm">{detail.label}</span>
-                            <span className="text-white font-medium">{detail.value}</span>
+                            <span className="text-white/80 text-xs lg:text-sm">{detail.label}</span>
+                            <span className="text-white text-xs lg:text-sm font-medium">{detail.value}</span>
                           </div>
                         ))}
                       </div>
@@ -269,8 +270,8 @@ export default function Dashboard() {
           )}
 
           {/* Table Container */}
-          <div className="flex-1 flex flex-col min-h-0 bg-white rounded-lg shadow overflow-hidden">
-            <div className="flex-1 overflow-auto">
+          <div className="bg-white rounded-lg shadow overflow-x-auto">
+            <div className="min-w-full">
               <table className="min-w-full">
                 <thead className="bg-gray-50 sticky top-0 z-10">
                   <tr>
@@ -334,26 +335,26 @@ export default function Dashboard() {
             </div>
 
             {/* Pagination Footer */}
-            <div className="px-6 py-3 border-t border-gray-200 bg-white">
+            <div className="px-3 lg:px-6 py-2 lg:py-3 border-t border-gray-200 bg-white">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <span className="text-sm text-gray-700">Show rows:</span>
+                <div className="flex items-center space-x-2 lg:space-x-4">
+                  <span className="text-xs lg:text-sm text-gray-700">Rows:</span>
                   <select
                     value={rowsPerPage}
                     onChange={(e) => setRowsPerPage(Number(e.target.value))}
-                    className="border rounded px-2 py-1 text-sm"
+                    className="border rounded px-1.5 py-0.5 text-xs lg:text-sm"
                   >
                     <option value={5}>5</option>
                     <option value={10}>10</option>
                     <option value={20}>20</option>
                     <option value={50}>50</option>
                   </select>
-                  <span className="text-sm text-gray-500">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredVehicles.length)} of {filteredVehicles.length} entries
+                  <span className="text-xs lg:text-sm text-gray-500 whitespace-nowrap">
+                    {startIndex + 1}-{Math.min(endIndex, filteredVehicles.length)} of {filteredVehicles.length}
                   </span>
 
                   {/* Export Button with Dropdown */}
-                  <div className="relative">
+                  <div className="relative hidden lg:block">
                     <button
                       onClick={() => setShowExportDropdown(!showExportDropdown)}
                       className="flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium text-sm"
@@ -381,29 +382,28 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
-
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1 lg:space-x-2">
                   <button
-                    className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                    className="p-0.5 lg:p-1 rounded text-sm lg:text-base hover:bg-gray-100 disabled:opacity-50"
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage(1)}
-                  >⟪</button>
+                  >{'<<'}</button>
                   <button
-                    className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                    className="p-0.5 lg:p-1 rounded text-sm lg:text-base hover:bg-gray-100 disabled:opacity-50"
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage(prev => prev - 1)}
-                  >⟨</button>
-                  <span className="px-3 py-1 bg-blue-600 text-white rounded">{currentPage}</span>
+                  >{'<'}</button>
+                  <span className="px-2 lg:px-3 py-0.5 lg:py-1 bg-blue-600 text-white text-sm lg:text-base rounded">{currentPage}</span>
                   <button
-                    className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                    className="p-0.5 lg:p-1 rounded text-sm lg:text-base hover:bg-gray-100 disabled:opacity-50"
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage(prev => prev + 1)}
-                  >⟩</button>
+                  >{'>'}</button>
                   <button
-                    className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                    className="p-0.5 lg:p-1 rounded text-sm lg:text-base hover:bg-gray-100 disabled:opacity-50"
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage(totalPages)}
-                  >⟫</button>
+                  >{'>>'}</button>
                 </div>
               </div>
             </div>
@@ -412,17 +412,19 @@ export default function Dashboard() {
       </div>
 
       {/* Live Data Panel */}
-      <div className="w-96 border-l border-gray-200">
+      <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-gray-200">
         <LiveDataPanel />
       </div>
 
       {/* Click Outside Handler */}
-      {showExportDropdown && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setShowExportDropdown(false)}
-        />
-      )}
+      {
+        showExportDropdown && (
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setShowExportDropdown(false)}
+          />
+        )
+      }
 
       {/* Document Modal */}
       <DocumentModal
@@ -430,6 +432,6 @@ export default function Dashboard() {
         onClose={() => setIsModalOpen(false)}
         vrn={selectedVRN}
       />
-    </div>
+    </div >
   );
 }

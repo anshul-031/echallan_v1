@@ -13,7 +13,6 @@ import {
   CreditCardIcon,
   CodeBracketIcon,
   Bars3Icon,
-  XMarkIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   UserCircleIcon,
@@ -46,7 +45,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   const toggleSidebar = () => setIsOpen(!isOpen);
-  
+
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
@@ -59,10 +58,10 @@ export default function Sidebar() {
     const handleClickOutside = (event: MouseEvent) => {
       const profileMenu = document.getElementById('profile-menu');
       const profileButton = document.getElementById('profile-button');
-      
-      if (profileMenu && profileButton && 
-          !profileMenu.contains(event.target as Node) && 
-          !profileButton.contains(event.target as Node)) {
+
+      if (profileMenu && profileButton &&
+        !profileMenu.contains(event.target as Node) &&
+        !profileButton.contains(event.target as Node)) {
         setShowProfileMenu(false);
       }
     };
@@ -82,13 +81,9 @@ export default function Sidebar() {
     <>
       <button
         onClick={toggleSidebar}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        className="lg:hidden fixed top-4 left-4 z-30 p-2 rounded-lg bg-white dark:bg-gray-800 shadow-md hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
       >
-        {isOpen ? (
-          <XMarkIcon className="w-6 h-6 text-gray-600 dark:text-gray-300" />
-        ) : (
-          <Bars3Icon className="w-6 h-6 text-gray-600 dark:text-gray-300" />
-        )}
+        <Bars3Icon className="w-6 h-6 text-gray-600 dark:text-gray-300" />
       </button>
 
       {isOpen && (
@@ -99,11 +94,9 @@ export default function Sidebar() {
       )}
 
       <aside
-        className={`fixed lg:sticky top-0 inset-y-0 left-0 z-40 transform ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 transition-all duration-300 ease-in-out flex flex-col bg-[#F7F9FC] dark:bg-gray-900 border-r border-[#E4E7EC] dark:border-gray-800 h-screen ${
-          isCollapsed ? 'w-20' : 'w-64'
-        }`}
+        className={`fixed lg:sticky top-0 inset-y-0 left-0 z-40 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0 transition-all duration-300 ease-in-out flex flex-col bg-[#F7F9FC] dark:bg-gray-900 border-r border-[#E4E7EC] dark:border-gray-800 h-screen ${isCollapsed ? 'w-20' : 'w-64'
+          }`}
       >
         <div className={`flex items-center h-16 px-4 border-b border-[#E4E7EC] dark:border-gray-800 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
           <div className="flex items-center">
@@ -141,12 +134,12 @@ export default function Sidebar() {
             <ChevronRightIcon className="w-4 h-4" />
           </button>
         )}
-        
+
         <nav className="flex-1 overflow-y-auto p-4 space-y-2">
           {navigation.map((item, index) => {
             const isActive = pathname === item.href;
             const isHovered = activeNavItem === index;
-            
+
             return (
               <Link
                 key={item.name}
@@ -158,43 +151,38 @@ export default function Sidebar() {
                 }}
                 onMouseEnter={() => handleNavHover(index)}
                 onMouseLeave={() => handleNavHover(null)}
-                className={`flex items-center ${
-                  isCollapsed ? 'justify-center' : 'px-4'
-                } py-3 rounded-lg group transition-all duration-200 ${
-                  isActive
+                className={`flex items-center ${isCollapsed ? 'justify-center' : 'px-4'
+                  } py-3 rounded-lg group transition-all duration-200 ${isActive
                     ? 'bg-white dark:bg-gray-800 shadow-sm'
                     : 'hover:bg-white dark:hover:bg-gray-800 hover:shadow-sm'
-                }`}
+                  }`}
               >
-                <div className={`relative transition-all duration-300 ${
-                  (isActive || isHovered) && !isCollapsed ? 'scale-110' : ''
-                }`}>
-                  <item.icon 
+                <div className={`relative transition-all duration-300 ${(isActive || isHovered) && !isCollapsed ? 'scale-110' : ''
+                  }`}>
+                  <item.icon
                     className={`w-6 h-6 ${isCollapsed ? 'mx-0' : 'mr-3'} transition-all duration-300`}
                     style={{ color: item.color }}
                   />
-                  
+
                   {isActive && (
-                    <span 
+                    <span
                       className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-current animate-pulse"
                       style={{ color: item.color }}
                     ></span>
                   )}
                 </div>
-                
-                <span 
-                  className={`whitespace-nowrap font-medium transition-all duration-300 ${
-                    isCollapsed ? 'opacity-0 w-0 absolute' : 'opacity-100 w-auto relative'
-                  }`}
+
+                <span
+                  className={`whitespace-nowrap font-medium transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 absolute' : 'opacity-100 w-auto relative'
+                    }`}
                   style={{ color: isActive ? item.color : '#4A5568' }}
                 >
                   {item.name}
                 </span>
-                
+
                 {isCollapsed && (
                   <div className={`absolute left-16 transform -translate-x-2 bg-[#2D3748] dark:bg-gray-700 text-white px-2 py-1 rounded text-sm 
-                    transition-all duration-200 whitespace-nowrap z-50 ${
-                      isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'
+                    transition-all duration-200 whitespace-nowrap z-50 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'
                     }`}>
                     {item.name}
                   </div>
@@ -215,9 +203,8 @@ export default function Sidebar() {
               <UserCircleIcon className="w-10 h-10 text-gray-400 dark:text-gray-300 transition-transform duration-300 group-hover:rotate-12" />
               <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
             </div>
-            <div className={`flex-1 text-left transition-all duration-300 ${
-              isCollapsed ? 'opacity-0 w-0 absolute' : 'opacity-100 w-auto relative'
-            }`}>
+            <div className={`flex-1 text-left transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 absolute' : 'opacity-100 w-auto relative'
+              }`}>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-200">John Doe</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Administrator</p>
             </div>

@@ -20,13 +20,14 @@ declare module "next-auth" {
       email: string;
       name?: string | null;
       role: string;
-    }
+    };
   }
 }
 
 // Extend the built-in token types
 declare module "next-auth/jwt" {
   interface JWT {
+    id?: string;  // Add id to the token
     role?: string;
   }
 }
@@ -37,21 +38,21 @@ const authOptions: NextAuthOptions = {
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Please enter an email and password');
+          throw new Error("Please enter an email and password");
         }
 
         const user = await prisma.user.findUnique({
           where: {
-            email: credentials.email
-          }
+            email: credentials.email,
+          },
         });
 
         if (!user) {
-          throw new Error('No user found with this email');
+          throw new Error("No user found with this email");
         }
 
         const isPasswordValid = await bcrypt.compare(
@@ -60,7 +61,7 @@ const authOptions: NextAuthOptions = {
         );
 
         if (!isPasswordValid) {
-          throw new Error('Invalid password');
+          throw new Error("Invalid password");
         }
 
         return {
@@ -69,32 +70,34 @@ const authOptions: NextAuthOptions = {
           name: user.name,
           role: user.role,
         };
-      }
-    })
+      },
+    }),
   ],
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
   },
   pages: {
-    signIn: '/auth/login',
-    signOut: '/auth/login',
-    error: '/auth/login',
+    signIn: "/auth/login",
+    signOut: "/auth/login",
+    error: "/auth/login",
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = user.role;
+        token.id = user.id;  // Add user id to the token
+        token.role = user.role;  // Add role to the token
       }
       return token;
     },
     async session({ session, token }) {
       if (session?.user) {
-        session.user.role = token.role as string;
+        session.user.id = token.id as string;  // Add id to session.user
+        session.user.role = token.role as string;  // Add role to session.user
       }
       return session;
-    }
-  }
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+export { handler as GET, handler as POST  , authOptions};

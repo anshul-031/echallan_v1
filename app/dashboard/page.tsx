@@ -775,6 +775,7 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import LiveDataPanel from '../components/LiveDataPanel';
+import { getSession } from 'next-auth/react';
 
 interface Vehicle {
   id: number;
@@ -860,6 +861,8 @@ export default function Dashboard() {
     const fetchVehicles = async () => {
       try {
         setIsLoading(true);
+        const session = await getSession();
+        console.log(session)
         const response = await fetch('/api/vehicles');
         if (!response.ok) throw new Error('Failed to fetch vehicles');
         const data = await response.json();
@@ -894,21 +897,28 @@ export default function Dashboard() {
     }
   };
 
+
+
   const handleUpdate = async (row: Vehicle) => {
     try {
       setUpdatingRows((prev) => ({ ...prev, [row.id]: true }));
+
+      // Only update the lastUpdated field if something has actually changed
+      const payload = {
+        ...row,
+        lastUpdated: new Date().toLocaleDateString('en-GB', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        }).replace(/\//g, '-'),
+      };
+
       const response = await fetch(`/api/vehicles/${row.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...row,
-          lastUpdated: new Date().toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          }).replace(/\//g, '-'),
-        }),
+        body: JSON.stringify(payload),
       });
+
       if (!response.ok) throw new Error('Failed to update vehicle');
       const updatedVehicle = await response.json();
       setVehicles((prev) => prev.map((v) => (v.id === row.id ? updatedVehicle : v)));
@@ -922,6 +932,7 @@ export default function Dashboard() {
     }
   };
 
+
   const handleDelete = (id: number) => {
     setVehicleToDelete(id);
     setIsDeleteModalOpen(true);
@@ -931,7 +942,7 @@ export default function Dashboard() {
     if (!vehicleToDelete) return;
     try {
       setIsDeletingVehicle(true);
-      const response = await fetch(`/api/vehicles/${vehicleToDelete}`, {
+      const response = await fetch(`/api/vehicles?id=${vehicleToDelete}`, {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Failed to delete vehicle');
@@ -1243,14 +1254,14 @@ export default function Dashboard() {
                 {!isLoading && currentVehicles.map((row) => (
                   <tr key={row.id} className="hover:bg-gray-50">
                     <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500">{row.id}</td>
-                    <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm font-medium text-gray-900">{row.vrn}</td>
-                    <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600">{row.roadTax}</td>
-                    <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600">{row.fitness}</td>
-                    <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600">{row.insurance}</td>
-                    <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600">{row.pollution}</td>
-                    <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-red-500">{row.statePermit}</td>
-                    <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600">{row.nationalPermit}</td>
-                    <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500">{row.lastUpdated}</td>
+                    <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm font-medium text-gray-900">{row.vrn}</td>
+                    <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600">{row.roadTax}</td>
+                    <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600">{row.fitness}</td>
+                    <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600">{row.insurance}</td>
+                    <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600">{row.pollution}</td>
+                    <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-red-500">{row.statePermit}</td>
+                    <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-green-600">{row.nationalPermit}</td>
+                    <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500">{row.lastUpdated}</td>
                     <td className="px-4 py-4 text-center">
                       <button
                         onClick={() => handleUpdate(row)}

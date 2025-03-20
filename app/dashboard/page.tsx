@@ -298,18 +298,22 @@ export default function Dashboard() {
     setCurrentPage(1);
 
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    const results = vehicles.filter(vehicle =>
+    const results = vehicles.filter((vehicle) =>
       vehicle.vrn.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     setFilteredVehicles(results);
+
     if (results.length === 0) {
-      setSearchError('No results found');
+      setSearchError("No results found");
     }
+
     setIsSearching(false);
-  }, [searchQuery]);
+  }, [searchQuery, vehicles]); // ✅ Correct dependency array
+  // ✅ Added 'vehicles' to the dependency array
+
 
   // Handle clear search
   const handleClearSearch = () => {

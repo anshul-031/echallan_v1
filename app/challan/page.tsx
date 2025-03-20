@@ -195,7 +195,9 @@ export default function ChallanDashboard() {
                           <p className="text-gray-600 font-medium">{item.title}</p>
                         </div>
                         <p className={`text-2xl font-bold mt-3 ${item.textGradient} bg-clip-text text-transparent`}>
-                          {item.count}
+                          {item.title === 'Total Challans' ? challanData.reduce((total, data) => total + data.challans, 0) : ''}
+                          {item.title === 'Total Vehicles' ? challanData.length : ''}
+                          {item.title === 'Total Amount' ? `₹${challanData.reduce((total, data) => total + data.amount, 0)}` : ''}
                         </p>
                       </div>
                       

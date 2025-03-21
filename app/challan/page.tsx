@@ -330,8 +330,8 @@ export default function ChallanDashboard() {
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.vehicleNo}</td>
                         <td className="px-6 py-4 text-sm text-center text-gray-500">{row.challans}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">₹{row.amount}</td>
-                        <td className="px-6 py-4 text-sm text-center text-gray-500">{row.online}</td>
-                        <td className="px-6 py-4 text-sm text-center text-gray-500">{row.offline}</td>
+                        <td className="px-6 py-4 text-sm text-center">{row.online}</td>
+                        <td className="px-6 py-4 text-sm text-center">{row.offline}</td>
                         <td className="px-2 py-4 text-sm text-gray-500">
                           <button className="px-4 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
                           >

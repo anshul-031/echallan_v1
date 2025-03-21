@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from 'react-modal';
 import toast from 'react-hot-toast';
 import { DocumentArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -32,6 +32,26 @@ interface DocumentModalProps {
 export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalProps) {
     const [uploading, setUploading] = useState<string | null>(null);
     const [uploadedDocs, setUploadedDocs] = useState<Record<string, string>>({});
+
+    useEffect(() => {
+        const fetchDocuments = async () => {
+            try {
+                const response = await fetch(`/api/documents/list?vrn=${vrn}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch documents');
+                }
+                const data = await response.json();
+                setUploadedDocs(data);
+            } catch (error) {
+                console.error('Error fetching documents:', error);
+                toast.error('Failed to load documents');
+            }
+        };
+
+        if (isOpen) {
+            fetchDocuments();
+        }
+    }, [isOpen, vrn]);
 
     const handleFileUpload = async (docType: string, file: File | null) => {
         if (!file) return;
@@ -138,22 +158,46 @@ export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalPro
                                         ) : 'Upload'}
                                     </label>
                                 </div>
-
-                                <button
-                                    onClick={() => handleDownload(docType)}
-                                    disabled={!uploadedDocs[docType]}
-                                    className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md
-                    ${uploadedDocs[docType] !== undefined
-                                            ? 'bg-gray-600 text-white hover:bg-gray-700'
-                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                        } transition-colors`}
-                                >
-                                    <DocumentArrowDownIcon className="w-4 h-4 mr-1" />
-                                    Preview
-                                </button>
+                                {uploadedDocs[docType] ? (
+                                    <button
+                                        onClick={() => handleDownload(docType)}
+                                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-gray-600 text-white hover:bg-gray-700 transition-colors"
+                                    >
+                                        <DocumentArrowDownIcon className="w-4 h-4 mr-1" />
+                                        Preview
+                                    </button>
+                                ) : (
+                                    <button
+                                        disabled
+                                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-400 cursor-not-allowed transition-colors"
+                                    >
+                                        <DocumentArrowDownIcon className="w-4 h-4 mr-1" />
+                                        Preview
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
+                    {Object.keys(uploadedDocs).length > 0 && (
+                        <div className="mt-4">
+                            <h3 className="text-sm font-medium text-gray-700">Uploaded Documents:</h3>
+                            <ul className="mt-2 space-y-1">
+                                {Object.entries(uploadedDocs).map(([docType, fileName]) => (
+                                    <li key={docType} className="flex items-center justify-between p-2 bg-gray-100 rounded-md">
+                                        <span className="text-sm text-gray-700">{docType}</span>
+                                        <a
+                                            href={`/api/documents/download?vrn=${vrn}&docType=${docType}&fileName=${encodeURIComponent(fileName)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-600 hover:text-blue-700"
+                                        >
+                                            {fileName}
+                                        </a>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex justify-end space-x-3 mt-6">

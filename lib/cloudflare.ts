@@ -14,4 +14,39 @@ export const r2Client = new S3Client({
   },
 });
 
+import { ListObjectsV2Command } from '@aws-sdk/client-s3';
+
 export const BUCKET_NAME = process.env.R2_BUCKET_NAME;
+
+export const listDocuments = async (vrn: string): Promise<Record<string, string>> => {
+  try {
+    const command = new ListObjectsV2Command({
+      Bucket: BUCKET_NAME,
+      Prefix: vrn + '/', // Assuming documents are stored in a folder named after the VRN
+      Delimiter: '/',
+    });
+
+    const response = await r2Client.send(command);
+
+    if (!response.Contents) {
+      return {};
+    }
+
+    const documents: Record<string, string> = {};
+    response.Contents.forEach((object) => {
+      if (object.Key) {
+        const parts = object.Key.split('/');
+        const docType = parts[1];
+        const fileName = parts[2];
+        if (docType && fileName) {
+          documents[docType] = fileName;
+        }
+      }
+    });
+
+    return documents;
+  } catch (error) {
+    console.error('Error listing documents:', error);
+    return {};
+  }
+};

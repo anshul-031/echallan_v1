@@ -107,7 +107,7 @@ const challanData = [
 ];
 
 export default function ChallanDashboard() {
-  const [selectedVehicle, setSelectedVehicle] = useState('');
+  // const [selectedVehicle, setSelectedVehicle] = useState('');
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
@@ -195,7 +195,9 @@ export default function ChallanDashboard() {
                           <p className="text-gray-600 font-medium">{item.title}</p>
                         </div>
                         <p className={`text-2xl font-bold mt-3 ${item.textGradient} bg-clip-text text-transparent`}>
-                          {item.count}
+                          {item.title === 'Total Challans' ? challanData.reduce((total, data) => total + data.challans, 0) : ''}
+                          {item.title === 'Total Vehicles' ? challanData.length : ''}
+                          {item.title === 'Total Amount' ? `₹${challanData.reduce((total, data) => total + data.amount, 0)}` : ''}
                         </p>
                       </div>
                       
@@ -253,54 +255,68 @@ export default function ChallanDashboard() {
 
             {/* Mobile View */}
             <div className="lg:hidden bg-white rounded-lg shadow-sm">
-              <div className="grid grid-cols-3 gap-2 px-4 py-3 border-b bg-gray-50">
-                <div className="text-xs font-medium text-gray-500 uppercase">#</div>
-                <div className="text-xs font-medium text-gray-500 uppercase">VRN</div>
-                <div className="text-xs font-medium text-gray-500 uppercase text-center">Actions</div>
-              </div>
-              {challanData.map((item) => (
-                <div key={item.id} className="border-b last:border-b-0">
-                  <div className="grid grid-cols-3 gap-2 px-4 py-3 items-center">
-                    <div className="text-sm text-gray-500">#{item.id}</div>
-                    <div className="text-sm font-medium">{item.vehicleNo}</div>
-                    <div className="flex justify-center">
-                      <button 
-                        onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}
-                        className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-full"
-                      >
-                        <EyeIcon className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                  {expandedId === item.id && (
-                    <div className="px-4 py-3 bg-gray-50 border-t">
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Challans:</span>
-                          <span className="text-sm font-medium">{item.challans}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Amount:</span>
-                          <span className="text-sm font-medium">₹{item.amount}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Online/Offline:</span>
-                          <span className="text-sm font-medium">{item.online}/{item.offline}</span>
-                        </div>
-                        <div className="flex justify-end space-x-2 pt-2 mt-2 border-t">
-                          <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full">
-                            <ArrowPathIcon className="w-5 h-5" />
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">VRN</th>
+                    <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase">Challans</th>
+                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Pay</th>
+                    <th className="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {challanData.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-4 text-sm font-medium">{item.vehicleNo}</td>
+                      <td className="px-3 py-4 text-sm text-gray-500 text-center">{item.challans}</td>
+                      <td className="py-4 text-center">
+                        <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full">
+                          {/* <ArrowPathIcon className="w-5 h-5" /> */}
+                          <button className="px-3 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+                          >
+                            {/* onClick={(e) => this.parentElement.classList.toggle('bg-blue-500')} */}
+                            Pay
                           </button>
-                          <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full">
-                            <TrashIcon className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
+                        </button>
+                      </td>
+                      <td className="px-3 py-4 text-center">
+                        <button 
+                          onClick={() => setExpandedId(item.id)} 
+                          className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full"
+                        >
+                          <EyeIcon className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+
+            {/* Details Modal */}
+            {expandedId !== null && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                <div className="bg-white rounded-lg p-6 w-11/12 max-w-md">
+                  <h2 className="text-lg font-semibold mb-4">Challan Details</h2>
+                  {challanData.filter(item => item.id === expandedId).map(item => (
+                    <div key={item.id} className="space-y-2">
+                      <p><strong>Vehicle No:</strong> {item.vehicleNo}</p>
+                      <p><strong>Challans:</strong> {item.challans}</p>
+                      <p><strong>Amount:</strong> ₹{item.amount}</p>
+                      <p><strong>Online:</strong> {item.online}</p>
+                      <p><strong>Offline:</strong> {item.offline}</p>
+                      <p><strong>Last Updated:</strong> {item.lastUpdated}</p>
+                    </div>
+                  ))}
+                  <button 
+                    onClick={() => setExpandedId(null)} 
+                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Desktop Table */}
             <div className="hidden lg:block bg-white rounded-lg shadow-sm">
@@ -314,6 +330,10 @@ export default function ChallanDashboard() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Online</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Offline</th>
+                      
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pay</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Update</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delete</th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Updated</th>
                     </tr>
@@ -327,7 +347,14 @@ export default function ChallanDashboard() {
                         <td className="px-6 py-4 text-sm text-gray-900">₹{row.amount}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{row.online}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{row.offline}</td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-2 py-4 text-sm text-gray-500">
+                          <button className="px-4 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+                          >
+                            {/* onClick={(e) => this.parentElement.classList.toggle('bg-blue-500')} */}
+                            Pay
+                          </button>
+                        </td>
+                        {/* <td className="px-6 py-4 text-center">
                           <div className="flex justify-center space-x-2">
                             <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full">
                               <ArrowPathIcon className="w-5 h-5" />
@@ -339,6 +366,23 @@ export default function ChallanDashboard() {
                               <EyeIcon className="w-5 h-5" />
                             </button>
                           </div>
+                        </td> */}
+                        <td className="px-6 py-4 text-center">
+                          
+                            <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full">
+                              <ArrowPathIcon className="w-5 h-5" />
+                            </button>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                            <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full">
+                              <TrashIcon className="w-5 h-5" />
+                            </button>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                            <button className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full">
+                              <EyeIcon className="w-5 h-5" />
+                            </button>
+                          
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">{row.lastUpdated}</td>
                       </tr>

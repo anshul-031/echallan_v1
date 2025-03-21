@@ -434,9 +434,37 @@ export default function RenewalsPage() {
               <option value={50}>50 rows</option>
             </select>
             
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+            <button onClick={() => {
+  const csvData = renewalData.map(item => ({
+    VRN: item.vrn,
+    'Road Tax': item.roadTax,
+    Fitness: item.fitness,
+    Insurance: item.insurance,
+    Pollution: item.pollution,
+    'State Permit': item.statePermit,
+    'National Permit': item.nationalPermit,
+    'Last Updated': item.lastUpdated,
+    'Assigned To': item.assignedTo,
+  }));
+
+  const csvContent = [
+    Object.keys(csvData[0]).join(','),
+    ...csvData.map(row => Object.values(row).join(','))
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'renewal_data.csv');
+  link.style.visibility = 'hidden';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
               <CloudArrowUpIcon className="w-5 h-5" />
               <span>Export</span>
+              
             </button>
           </div>
         </div>
@@ -452,6 +480,8 @@ export default function RenewalsPage() {
                       S.No {getSortIcon('id')}
                     </div>
                   </th>
+
+                  
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
                     <div className="flex items-center cursor-pointer" onClick={() => handleSort('vrn')}>
                       VRN {getSortIcon('vrn')}

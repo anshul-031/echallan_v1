@@ -7,6 +7,11 @@ const nextConfig = {
         hostname: 'echallan.app',
         pathname: '/application/fleet/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.deepai.org',
+        pathname: '/**',
+      },
     ],
   },
 };

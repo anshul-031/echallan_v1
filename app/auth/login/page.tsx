@@ -107,13 +107,10 @@ export default function LoginPage() {
             transition={{ delay: 0.5, duration: 0.8 }}
             className="text-center text-white"
           >
-<h1 className="text-5xl font-bold mb-20">Welcome to Fleet Manager</h1>
-<p className="text-xl max-w-xl mx-5 -mt-5 mb-20" style={{ color: 'Black' }}>
-Streamline your Fleet: Track vehicles, manage docs, and stay compliant—all in one platform.
-
+            <h1 className="text-5xl font-bold mb-20">Welcome to Fleet Manager</h1>
+            <p className="text-xl text-black-600 max-w-2xl mb-2 mx-15">
+  Efficiently manage your fleet—track vehicles, handle documents, and ensure compliance in one platform.
 </p>
-
-
 
           </motion.div>
         </div>
@@ -137,7 +134,7 @@ Streamline your Fleet: Track vehicles, manage docs, and stay compliant—all in 
             >
               <Image
                 src="https://echallan.app/application/fleet/logoicon.png"
-                alt="Fleet Manager"  
+                alt="Fleet Manager"
                 width={56}
                 height={56}
                 className="transition-all duration-500 hover:rotate-360"
@@ -315,8 +312,8 @@ Streamline your Fleet: Track vehicles, manage docs, and stay compliant—all in 
             </div>
 
             <div className="text-center">
-                <p className="text-sm text-gray-600">
-                  Don&apos;t have an account?&nbsp;
+              <p className="text-sm text-gray-600">
+                Don&apos;t have an account?&nbsp;
 
                 <Link
                   href="/auth/signup"
@@ -379,7 +376,7 @@ Streamline your Fleet: Track vehicles, manage docs, and stay compliant—all in 
 
                 <h3>3. Disclaimer</h3>
                 <p>
-                  The materials on Fleet Manager&apos;s service are provided on an "as is" basis.
+                  The materials on Fleet Manager&apos;s service are provided on an &quot;as is&quot; basis.
 
 
 
@@ -406,7 +403,12 @@ Streamline your Fleet: Track vehicles, manage docs, and stay compliant—all in 
                 </p>
 
                 <h3>5. Revisions</h3>
-                <p>Fleet Manager may revise these terms of service at any time without notice. By using this service you are agreeing to be bound by the then current version of these terms of service."</p>
+                <p>
+                  Fleet Manager may revise these terms of service at any time without notice.
+                  By using this service you are agreeing to be bound by the then current version
+                  of these terms of service.
+                </p>
+
 
 
                 <h3>6. Governing Law</h3>

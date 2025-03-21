@@ -172,20 +172,13 @@ export default function ChallanDashboard() {
               {summaryData.map((item, index) => (
                 <div
                   key={item.title}
-                  className={`relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer
-                    ${expandedId === index ? 'md:col-span-2 md:row-span-2' : ''}
-                    transform hover:scale-[1.02] hover:-translate-y-1`}
-                  onMouseEnter={() => setHoveredCard(index)}
-                  onMouseLeave={() => setHoveredCard(null)}
-                  onClick={() => setExpandedId(expandedId === index ? null : index)}
+                  className={`relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] hover:-translate-y-1`}
                 >
                   {/* Card Background with Gradient */}
                   <div className={`absolute inset-0 ${item.gradient} animate-gradient`} />
                   
                   {/* Card Content */}
-                  <div className={`relative bg-white/80 backdrop-blur-sm border ${item.borderGradient} p-6 h-full
-                    transition-all duration-300 ${hoveredCard === index ? item.shadowColor : ''}`}
-                  >
+                  <div className={`relative bg-white/80 backdrop-blur-sm border ${item.borderGradient} p-6 h-full transition-all duration-300`}>
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center space-x-3">
@@ -201,7 +194,7 @@ export default function ChallanDashboard() {
                         </p>
                       </div>
                       
-                      <div className="flex items-center space-x-2">
+                      {/* <div className="flex items-center space-x-2">
                         {item.isPositive ? (
                           <ArrowTrendingUpIcon className="w-4 h-4 text-green-500" />
                         ) : (
@@ -210,44 +203,36 @@ export default function ChallanDashboard() {
                         <span className={item.isPositive ? 'text-green-500' : 'text-red-500'}>
                           {item.trend}
                         </span>
-                      </div>
+                      </div> */}
                     </div>
 
                     {/* Mini Chart */}
-                    <div className={`mt-4 transition-all duration-300
-                      ${expandedId === index ? 'opacity-0 h-0' : 'opacity-100'}`}>
+                    {/* <div className={`mt-4 transition-all duration-300`}>
                       {renderMiniChart(item.chart.data, item.chart.color)}
-                    </div>
+                    </div> */}
 
                     {/* Expandable Details */}
-                    <div className={`space-y-4 transition-all duration-300 ease-in-out
-                      ${expandedId === index ? 'opacity-100 max-h-96 mt-4' : 'opacity-0 max-h-0'}`}
-                    >
-                      {item.details.map((detail, idx) => (
+                    {/* <div className={`space-y-4 transition-all duration-300 ease-in-out`}> */}
+                      {/* {item.details.map((detail, idx) => (
                         <div key={idx} className="flex justify-between items-center p-3 rounded-lg bg-gray-50">
                           <span className="text-gray-600 text-sm">{detail.label}</span>
                           <div className="text-right">
                             <span className="font-medium block">{detail.value}</span>
-                            <span className={`text-xs ${
-                              detail.trend.startsWith('+') ? 'text-green-500' : 'text-red-500'
-                            }`}>
+                            <span className={`text-xs ${detail.trend.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
                               {detail.trend}
                             </span>
                           </div>
                         </div>
-                      ))}
+                      ))} */}
                       
                       {/* Detailed Chart */}
-                      <div className="h-32 mt-4">
+                      {/* <div className="h-32 mt-4">
                         {renderMiniChart(item.chart.data.concat(item.chart.data), item.chart.color)}
-                      </div>
-                    </div>
+                      </div> */}
+                    {/* </div> */}
 
                     {/* Hover Effect Indicator */}
-                    <div className={`absolute bottom-2 right-2 w-2 h-2 rounded-full transition-all duration-300
-                      ${item.iconGradient}
-                      ${hoveredCard === index ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
-                    />
+                    {/* <div className={`absolute bottom-2 right-2 w-2 h-2 rounded-full transition-all duration-300 ${item.iconGradient}`} /> */}
                   </div>
                 </div>
               ))}
@@ -343,10 +328,10 @@ export default function ChallanDashboard() {
                       <tr key={row.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 text-sm text-gray-500">{row.id}</td>
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.vehicleNo}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{row.challans}</td>
+                        <td className="px-6 py-4 text-sm text-center text-gray-500">{row.challans}</td>
                         <td className="px-6 py-4 text-sm text-gray-900">₹{row.amount}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{row.online}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{row.offline}</td>
+                        <td className="px-6 py-4 text-sm text-center text-gray-500">{row.online}</td>
+                        <td className="px-6 py-4 text-sm text-center text-gray-500">{row.offline}</td>
                         <td className="px-2 py-4 text-sm text-gray-500">
                           <button className="px-4 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
                           >

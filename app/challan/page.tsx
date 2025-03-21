@@ -107,7 +107,7 @@ const challanData = [
 ];
 
 export default function ChallanDashboard() {
-  const [selectedVehicle, setSelectedVehicle] = useState('');
+  // const [selectedVehicle, setSelectedVehicle] = useState('');
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
@@ -316,7 +316,10 @@ export default function ChallanDashboard() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Online</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Offline</th>
+                      
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pay</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Update</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delete</th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Updated</th>
                     </tr>
@@ -330,14 +333,14 @@ export default function ChallanDashboard() {
                         <td className="px-6 py-4 text-sm text-gray-900">₹{row.amount}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{row.online}</td>
                         <td className="px-6 py-4 text-sm text-gray-500">{row.offline}</td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          <button className="px-4 py-2 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+                        <td className="px-2 py-4 text-sm text-gray-500">
+                          <button className="px-4 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
                           >
                             {/* onClick={(e) => this.parentElement.classList.toggle('bg-blue-500')} */}
                             Pay
                           </button>
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        {/* <td className="px-6 py-4 text-center">
                           <div className="flex justify-center space-x-2">
                             <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full">
                               <ArrowPathIcon className="w-5 h-5" />
@@ -349,6 +352,23 @@ export default function ChallanDashboard() {
                               <EyeIcon className="w-5 h-5" />
                             </button>
                           </div>
+                        </td> */}
+                        <td className="px-6 py-4 text-center">
+                          
+                            <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full">
+                              <ArrowPathIcon className="w-5 h-5" />
+                            </button>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                            <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full">
+                              <TrashIcon className="w-5 h-5" />
+                            </button>
+                            </td>
+                            <td className="px-6 py-4 text-center">
+                            <button className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full">
+                              <EyeIcon className="w-5 h-5" />
+                            </button>
+                          
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">{row.lastUpdated}</td>
                       </tr>

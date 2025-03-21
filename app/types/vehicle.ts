@@ -1,19 +1,17 @@
 export interface Vehicle {
   id: number;
   vrn: string;
-  roadTaxExpiry: string;
-  fitnessExpiry: string;
-  insuranceValidity: string;
-  pollutionExpiry: string;
-  permitExpiry: string;
-  nationalPermitExpiry: string;
+  roadTax: string;
+  fitness: string;
+  insurance: string;
+  pollution: string;
+  statePermit: string;
+  nationalPermit: string;
   lastUpdated: string;
-  chassisNumber?: string;
-  engineNumber?: string;
-  financerName?: string;
-  insuranceCompany?: string;
-  blacklistStatus?: boolean;
-  rtoLocation?: string;
+  status: string;
+  owner: string;
+  registeredAt: string;
+  documents: number;
 }
 
 export interface SummaryCard {

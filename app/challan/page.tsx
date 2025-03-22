@@ -13,7 +13,7 @@ import {
   DocumentDuplicateIcon,
 } from '@heroicons/react/24/outline';
 import LiveChallanPanel from '../components/challan/LiveChallanPanel';
-import PendingChallansModal from '../components/PendingChallansModal';
+
 // import Mukul from '../components/Mukul';
 // import { getSession } from 'next-auth/react';
 
@@ -179,19 +179,7 @@ export default function ChallanDashboard() {
             {/* Header */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
               <h1 className="text-2xl font-semibold text-gray-900">Challan Dashboard</h1>
-              <div className="w-full lg:w-72">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search Vehicle"
-                    className="w-full h-10 pl-4 pr-10 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={handleSearch}
-                  />
-                  <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                </div>
-              </div>
+              
             </div>
 
             {/* Enhanced Summary Cards */}
@@ -413,13 +401,13 @@ export default function ChallanDashboard() {
             </div>
 
             {/* Pending Challans Modal */}
-            {isPendingModalOpen && (
+            {/* {isPendingModalOpen && (
               <PendingChallansModal
                 isOpen={isPendingModalOpen}
                 onClose={() => setIsPendingModalOpen(false)}
                 pendingChallans={pendingChallans}
               />
-            )}
+            )} */}
           </div>
         </div>
 
@@ -429,7 +417,8 @@ export default function ChallanDashboard() {
           ${showMobilePanel ? 'fixed inset-0 z-40 bg-white' : 'hidden'}
           lg:relative lg:flex-none
         `}>
-          <LiveChallanPanel vehicleData={vehicleData} />
+          {/* <LiveChallanPanel vehicleData={vehicleData} /> */}
+          <LiveChallanPanel />
         </div>
       </div>
     </div>

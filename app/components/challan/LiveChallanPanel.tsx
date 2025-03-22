@@ -13,6 +13,8 @@ export default function LiveChallanPanel() {
   const [searchPendingResults, setSearchPendingResults] = useState<any[]>([]); // State to hold search results
   const [searchDisposedData, setSearchDisposedData] = useState<any[]>([]);
   const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
+  const [isDisposedModalOpen, setIsDisposedModalOpen] = useState(false);
+  
   // const disposedData = vehicleData?.data?.Disposed_data || [];
   // const pendingData = vehicleData?.data?.Pending_data || [];
 
@@ -90,7 +92,7 @@ export default function LiveChallanPanel() {
                 pendingChallans={searchPendingResults}
               />
             )}
-            {isPendingModalOpen && (
+            {isDisposedModalOpen && (
               <PendingChallansModal
                 isOpen={isPendingModalOpen}
                 onClose={() => setIsPendingModalOpen(false)}

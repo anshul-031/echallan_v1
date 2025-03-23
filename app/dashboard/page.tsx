@@ -1,15 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
-import DocumentModal from '../components/DocumentModal';
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from '../components/ui/dropdown-menu';
-import { utils as xlsxUtils, writeFile } from 'xlsx';
+import { utils as xlsxUtils, read, writeFile } from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Toaster, toast } from 'react-hot-toast';
@@ -32,8 +24,8 @@ import { getSession } from 'next-auth/react';
 import { Vehicle } from '@/app/types/vehicle';
 import { getExpirationColor } from '@/lib/utils';
 import { isDocumentExpiring, isDocumentExpired } from '@/lib/documentUtils';
-
-
+import DocumentModal from '../components/DocumentModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 
 const getSummaryCards = (vehicles: Vehicle[]) => [
   {
@@ -112,6 +104,11 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVRN, setSelectedVRN] = useState<string>('');
   const [isExporting, setIsExporting] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadResults, setUploadResults] = useState<any>(null);
+
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [vehicleToDelete, setVehicleToDelete] = useState<number | null>(null);
   const [isDeletingVehicle, setIsDeletingVehicle] = useState(false);
@@ -143,7 +140,123 @@ export default function Dashboard() {
 
   }, []);
 
-  // CRUD Operations
+  // File Upload Operation
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!file) {
+      toast.error('Please select a file first');
+      return;
+    }
+    
+    setIsUploading(true);
+    setUploadResults(null);
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = read(data, { type: 'array' });
+        const vehiclesSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const vehicles = xlsxUtils.sheet_to_json(vehiclesSheet);
+        
+        const response = await fetch('/api/vehicles/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(vehicles),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to upload vehicles');
+        }
+        
+        const result = await response.json();
+        setUploadResults(result);
+        
+        if (result.results && result.results.some((r: any) => r.success)) {
+          toast.success(`Successfully uploaded ${result.results.filter((r: any) => r.success).length} vehicles`);
+          // Refresh the vehicles list
+          const fetchResponse = await fetch('/api/vehicles');
+          if (fetchResponse.ok) {
+            const updatedVehicles = await fetchResponse.json();
+            setVehicles(updatedVehicles);
+            setFilteredVehicles(updatedVehicles);
+          }
+        }
+        
+        if (result.results && result.results.some((r: any) => !r.success)) {
+          toast.error(`Failed to upload ${result.results.filter((r: any) => !r.success).length} vehicles`);
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast.error('Failed to upload vehicles');
+      } finally {
+        setIsUploading(false);
+      }
+    };
+    
+    reader.readAsArrayBuffer(file);
+  };
+
+  const downloadSampleExcel = () => {
+    // Create sample data
+    const sampleData = [
+      {
+        vrn: 'AB12CD3456',
+        roadTax: '2023-12-31',
+        fitness: '2023-11-30',
+        insurance: '2024-01-31',
+        pollution: '2023-10-31',
+        statePermit: '2023-12-15',
+        nationalPermit: '2024-02-28',
+        status: 'Active',
+        registeredAt: '2022-01-01'
+      },
+      {
+        vrn: 'XY98ZW7654',
+        roadTax: '2024-01-15',
+        fitness: '2023-12-20',
+        insurance: '2024-02-15',
+        pollution: '2023-11-10',
+        statePermit: '2024-01-05',
+        nationalPermit: '',
+        status: 'Active',
+        registeredAt: '2022-03-15'
+      }
+    ];
+    
+    // Create worksheet
+    const ws = xlsxUtils.json_to_sheet(sampleData);
+    
+    // Add column descriptions in the second sheet
+    const descriptions = [
+      { Field: 'vrn', Description: 'Vehicle Registration Number (Required)', Format: 'Text, e.g., AB12CD3456' },
+      { Field: 'roadTax', Description: 'Road Tax Expiry Date', Format: 'YYYY-MM-DD' },
+      { Field: 'fitness', Description: 'Fitness Certificate Expiry Date', Format: 'YYYY-MM-DD' },
+      { Field: 'insurance', Description: 'Insurance Expiry Date', Format: 'YYYY-MM-DD' },
+      { Field: 'pollution', Description: 'Pollution Certificate Expiry Date', Format: 'YYYY-MM-DD' },
+      { Field: 'statePermit', Description: 'State Permit Expiry Date', Format: 'YYYY-MM-DD' },
+      { Field: 'nationalPermit', Description: 'National Permit Expiry Date', Format: 'YYYY-MM-DD' },
+      { Field: 'status', Description: 'Vehicle Status', Format: 'Text: Active, Inactive, or Maintenance' },
+      { Field: 'registeredAt', Description: 'Registration Date', Format: 'YYYY-MM-DD' }
+    ];
+    
+    const wsDesc = xlsxUtils.json_to_sheet(descriptions);
+    
+    // Create workbook
+    const wb = xlsxUtils.book_new();
+    xlsxUtils.book_append_sheet(wb, ws, 'Sample Vehicles');
+    xlsxUtils.book_append_sheet(wb, wsDesc, 'Field Descriptions');
+    
+    // Download
+    writeFile(wb, 'vehicle_upload_template.xlsx');
+  };
+
   const handleCreate = async (newVehicle: Omit<Vehicle, 'id' | 'lastUpdated'>) => {
     try {
       const response = await fetch('/api/vehicles', {
@@ -409,78 +522,43 @@ export default function Dashboard() {
 
         {/* Table Controls */}
         {searchError && <div className="text-center mb-4 text-red-500">{searchError}</div>}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="w-full md:w-64 relative">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
+          <div className="relative w-full md:w-64 lg:w-96">
             <input
               type="text"
-              placeholder="Search Vehicle"
-              className="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Search by VRN..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
             />
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full"
+                className="absolute right-3 top-2.5"
               >
-                <XMarkIcon className="w-4 h-4 text-gray-400" />
+                <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-white" />
               </button>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="px-4 py-2 bg-white border border-gray-200 rounded-lg flex items-center text-sm">
-                  {rowsPerPage} rows
-                  <ChevronDownIcon className="w-4 h-4 ml-2 opacity-50" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {[5, 10, 20, 50].map((value) => (
-                  <DropdownMenuItem key={value} onClick={() => setRowsPerPage(value)}>
-                    {value} rows
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  disabled={isExporting}
-                  className="flex items-center px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-sm hover:from-blue-600 hover:to-blue-700 transition-all duration-200 font-medium text-sm disabled:opacity-50"
-                >
-                  {isExporting ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Exporting...
-                    </>
-                  ) : (
-                    <>
-                      <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
-                      Export
-                    </>
-                  )}
-                  <ChevronDownIcon className="w-4 h-4 ml-2" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48">
-                {['Current Excel', 'All Excel', 'PDF'].map((option) => (
-                  <DropdownMenuItem
-                    key={option}
-                    onClick={() => handleExport(option.toLowerCase().replace(' ', '-') as any)}
-                    className="flex items-center cursor-pointer text-sm"
-                  >
-                    <DocumentArrowDownIcon className="w-4 h-4 mr-2" />
-                    {option}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+          
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setShowUploadModal(true)}
+              className="flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-md text-sm font-medium transition-colors"
+            >
+              <CloudArrowUpIcon className="h-5 w-5" />
+              <span>Bulk Upload</span>
+            </button>
+            
+            <button
+              onClick={() => handleExport('current-excel')}
+              className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 rounded-md text-sm font-medium transition-colors"
+              disabled={isExporting}
+            >
+              <DocumentArrowDownIcon className="h-5 w-5" />
+              <span>Export Excel</span>
+            </button>
           </div>
         </div>
 
@@ -695,6 +773,135 @@ export default function Dashboard() {
           error: { style: { background: 'linear-gradient(to right, #dc2626, #ef4444)', color: '#fff' } },
         }}
       />
+
+      {/* Bulk Upload Modal */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Bulk Upload Vehicles</h3>
+              <button
+                onClick={() => {
+                  setShowUploadModal(false);
+                  setFile(null);
+                  setUploadResults(null);
+                }}
+                className="p-1 rounded-full hover:bg-gray-700"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-gray-300 mb-2">Upload multiple vehicles using an Excel file.</p>
+              <button
+                onClick={downloadSampleExcel}
+                className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 rounded-md text-sm font-medium transition-colors mb-4"
+              >
+                <DocumentArrowDownIcon className="h-5 w-5" />
+                <span>Download Sample Template</span>
+              </button>
+              
+              <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center">
+                <input
+                  type="file"
+                  id="file-upload"
+                  className="hidden"
+                  accept=".xlsx, .xls"
+                  onChange={handleFileChange}
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="cursor-pointer flex flex-col items-center justify-center"
+                >
+                  <CloudArrowUpIcon className="h-10 w-10 text-gray-400 mb-2" />
+                  <span className="text-gray-300">
+                    {file ? file.name : 'Click to select Excel file'}
+                  </span>
+                </label>
+              </div>
+            </div>
+            
+            {file && (
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setFile(null);
+                    setUploadResults(null);
+                  }}
+                  className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-md text-sm font-medium transition-colors"
+                  disabled={isUploading}
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={handleUpload}
+                  className="flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors"
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                      <span>Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CloudArrowUpIcon className="h-5 w-5" />
+                      <span>Upload</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+            
+            {uploadResults && (
+              <div className="mt-4 border-t border-gray-700 pt-4">
+                <h4 className="font-medium mb-2">Upload Results</h4>
+                
+                {uploadResults.results && uploadResults.results.length > 0 && (
+                  <div className="max-h-60 overflow-y-auto bg-gray-900 rounded-md p-2">
+                    <div className="text-sm mb-2">
+                      <span className="text-green-500">{uploadResults.results.filter((r: any) => r.success).length} successful</span>
+                      {' • '}
+                      <span className="text-red-500">{uploadResults.results.filter((r: any) => !r.success).length} failed</span>
+                    </div>
+                    
+                    {uploadResults.results.filter((r: any) => !r.success).length > 0 && (
+                      <div className="mb-2">
+                        <h5 className="text-sm font-medium text-red-500 mb-1">Errors:</h5>
+                        <ul className="list-disc pl-5 text-xs space-y-1">
+                          {uploadResults.results
+                            .filter((r: any) => !r.success)
+                            .map((result: any, idx: number) => (
+                              <li key={idx} className="text-gray-300">
+                                <span className="font-medium">{result.vrn}</span>: {result.error}
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                    
+                    {uploadResults.results.filter((r: any) => r.success).length > 0 && (
+                      <div>
+                        <h5 className="text-sm font-medium text-green-500 mb-1">Successful Uploads:</h5>
+                        <ul className="list-disc pl-5 text-xs space-y-1">
+                          {uploadResults.results
+                            .filter((r: any) => r.success)
+                            .map((result: any, idx: number) => (
+                              <li key={idx} className="text-gray-300">
+                                <span className="font-medium">{result.vrn}</span>
+                              </li>
+                            ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

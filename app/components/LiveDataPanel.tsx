@@ -177,7 +177,7 @@ export default function LiveDataPanel({ collapsed = false, vehicles, setVehicles
             </button>
           </div>
         </form>
-        <div className='relative h-full w-full absolute inset-0'>
+        <div className='relative h-full w-full inset-0'>
 
           {isLoading && (
             <div className="bg-white/80 backdrop-blur-sm h-full w-full z-20 flex items-center justify-center">

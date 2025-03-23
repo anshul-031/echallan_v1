@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   MagnifyingGlassIcon, 
   ArrowPathIcon, 
@@ -9,18 +9,13 @@ import {
   Bars3Icon,
   XMarkIcon,
   TruckIcon,
-  DocumentTextIcon,
-  CurrencyRupeeIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ClipboardDocumentListIcon,
   BanknotesIcon,
   DocumentDuplicateIcon,
-  ChartBarIcon
 } from '@heroicons/react/24/outline';
 import LiveChallanPanel from '../components/challan/LiveChallanPanel';
+
+// import Mukul from '../components/Mukul';
+// import { getSession } from 'next-auth/react';
 
 const summaryData = [
   {
@@ -111,69 +106,17 @@ export default function ChallanDashboard() {
   ]);
   
   const [showMobilePanel, setShowMobilePanel] = useState(false);
-  const [expandedId, setExpandedId] = useState(null);
-  const [hoveredCard, setHoveredCard] = useState(null);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [vehicleToDelete, setVehicleToDelete] = useState(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [vehicleData, setVehicleData] = useState<any>(null);
+  const [pendingChallans, setPendingChallans] = useState<any[]>([]);
+  const [disposedCount, setDisposedCount] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
+  
 
-  // Function to handle payment
-  const handlePayment = (id) => {
-    setSelectedVehicle(challanData.find(item => item.id === id));
-    setShowPaymentModal(true);
-  };
-
-  // Function to confirm payment
-  const confirmPayment = () => {
-    setChallanData(challanData.map(item => {
-      if (item.id === selectedVehicle.id) {
-        return { 
-          ...item, 
-          isPaid: true,
-          lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 19)
-        };
-      }
-      return item;
-    }));
-    setShowPaymentModal(false);
-  };
-
-  // Function to handle delete
-  const handleDelete = (id) => {
-    setVehicleToDelete(id);
-    setShowConfirmDelete(true);
-  };
-
-  // Function to confirm delete
-  const confirmDelete = () => {
-    setChallanData(challanData.filter(item => item.id !== vehicleToDelete));
-    setShowConfirmDelete(false);
-  };
-
-  // Function to handle update
-  const handleUpdate = (id) => {
-    // Generate random new values for demonstration
-    setChallanData(challanData.map(item => {
-      if (item.id === id) {
-        const newChallans = item.challans + 1;
-        const newAmount = item.amount + Math.floor(Math.random() * 5000) + 1000;
-        const isOnline = Math.random() > 0.5;
-        
-        return {
-          ...item,
-          challans: newChallans,
-          amount: newAmount,
-          online: isOnline ? item.online + 1 : item.online,
-          offline: !isOnline ? item.offline + 1 : item.offline,
-          lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 19)
-        };
-      }
-      return item;
-    }));
-  };
-
-  const renderMiniChart = (data) => {
+  const renderMiniChart = (data: number[], color: string) => {
     const max = Math.max(...data);
     const min = Math.min(...data);
     const range = max - min;
@@ -193,6 +136,28 @@ export default function ChallanDashboard() {
         })}
       </div>
     );
+  };
+
+  const handleSearch = async (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') {
+      try {
+        const response = await fetch(`/api/vahanfin/vehicle?rc_no=${searchQuery}`);
+        if (!response.ok) throw new Error('Failed to fetch vehicle data');
+        const data = await response.json();
+        console.log(data); // Log the API output
+        setVehicleData(data);
+
+        // Extract disposed and pending data
+        const disposedData = data.data.Disposed_data || [];
+        const pendingData = data.data.Pending_data || [];
+
+        setDisposedCount(disposedData.length);
+        setPendingCount(pendingData.length);
+        setPendingChallans(pendingData); // Store pending data for modal
+      } catch (error) {
+        console.error('API call error:', error);
+      }
+    }
   };
 
   return (
@@ -216,16 +181,7 @@ export default function ChallanDashboard() {
             {/* Header */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
               <h1 className="text-2xl font-semibold text-gray-900">Challan Dashboard</h1>
-              <div className="w-full lg:w-72">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search Vehicle"
-                    className="w-full h-10 pl-4 pr-10 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <MagnifyingGlassIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                </div>
-              </div>
+              
             </div>
 
             {/* Enhanced Summary Cards */}
@@ -254,7 +210,10 @@ export default function ChallanDashboard() {
                           {item.title === 'Total Amount' ? `₹${challanData.reduce((total, data) => total + data.amount, 0).toLocaleString()}` : ''}
                         </p>
                       </div>
+                      
+                     
                     </div>
+
                   </div>
                 </div>
               ))}
@@ -368,6 +327,39 @@ export default function ChallanDashboard() {
               </div>
             </div>
 
+            {/* Summary Table */}
+            {/* <div className="bg-white rounded-lg shadow-sm overflow-hidden mt-4">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Count</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">View</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  <tr>
+                    <td className="px-4 py-2 text-sm font-medium">Disposed</td>
+                    <td className="px-4 py-2 text-sm">{disposedCount}</td>
+                    <td className="px-4 py-2 text-center">
+                      <button onClick={() => console.log('View Disposed Data')} className="text-blue-600 hover:underline">
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 text-sm font-medium">Pending</td>
+                    <td className="px-4 py-2 text-sm">{pendingCount}</td>
+                    <td className="px-4 py-2 text-center">
+                      <button onClick={() => setIsPendingModalOpen(true)} className="text-blue-600 hover:underline">
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div> */}
+
             {/* Pagination */}
             <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 rounded-lg mt-4">
               <div className="flex items-center space-x-2">
@@ -378,6 +370,15 @@ export default function ChallanDashboard() {
                 <button className="px-3 py-1 text-sm text-gray-600 hover:bg-gray-100 rounded">Last</button>
               </div>
             </div>
+
+            {/* Pending Challans Modal */}
+            {/* {isPendingModalOpen && (
+              <PendingChallansModal
+                isOpen={isPendingModalOpen}
+                onClose={() => setIsPendingModalOpen(false)}
+                pendingChallans={pendingChallans}
+              />
+            )} */}
           </div>
         </div>
 
@@ -387,6 +388,7 @@ export default function ChallanDashboard() {
           ${showMobilePanel ? 'fixed inset-0 z-40 bg-white' : 'hidden'}
           lg:relative lg:flex-none
         `}>
+          {/* <LiveChallanPanel vehicleData={vehicleData} /> */}
           <LiveChallanPanel />
         </div>
       </div>

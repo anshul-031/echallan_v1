@@ -85,34 +85,95 @@ const summaryData = [
   }
 ];
 
-const challanData = [
-  {
-    id: 1,
-    vehicleNo: 'RJ09GB9453',
-    challans: 5,
-    amount: 29200,
-    online: 3,
-    offline: 2,
-    lastUpdated: '2025-01-23 13:38:52'
-  },
-  {
-    id: 2,
-    vehicleNo: 'RJ09GB9450',
-    challans: 2,
-    amount: 22500,
-    online: 1,
-    offline: 1,
-    lastUpdated: '2025-01-23 13:38:53'
-  }
-];
-
 export default function ChallanDashboard() {
-  // const [selectedVehicle, setSelectedVehicle] = useState('');
+  // State for challan data with useState to allow modifications
+  const [challanData, setChallanData] = useState([
+    {
+      id: 1,
+      vehicleNo: 'RJ09GB9453',
+      challans: 5,
+      amount: 29200,
+      online: 3,
+      offline: 2,
+      lastUpdated: '2025-01-23 13:38:52',
+      isPaid: false
+    },
+    {
+      id: 2,
+      vehicleNo: 'RJ09GB9450',
+      challans: 2,
+      amount: 22500,
+      online: 1,
+      offline: 1,
+      lastUpdated: '2025-01-23 13:38:53',
+      isPaid: false
+    }
+  ]);
+  
   const [showMobilePanel, setShowMobilePanel] = useState(false);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState(null);
+  const [hoveredCard, setHoveredCard] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [vehicleToDelete, setVehicleToDelete] = useState(null);
 
-  const renderMiniChart = (data: number[], color: string) => {
+  // Function to handle payment
+  const handlePayment = (id) => {
+    setSelectedVehicle(challanData.find(item => item.id === id));
+    setShowPaymentModal(true);
+  };
+
+  // Function to confirm payment
+  const confirmPayment = () => {
+    setChallanData(challanData.map(item => {
+      if (item.id === selectedVehicle.id) {
+        return { 
+          ...item, 
+          isPaid: true,
+          lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 19)
+        };
+      }
+      return item;
+    }));
+    setShowPaymentModal(false);
+  };
+
+  // Function to handle delete
+  const handleDelete = (id) => {
+    setVehicleToDelete(id);
+    setShowConfirmDelete(true);
+  };
+
+  // Function to confirm delete
+  const confirmDelete = () => {
+    setChallanData(challanData.filter(item => item.id !== vehicleToDelete));
+    setShowConfirmDelete(false);
+  };
+
+  // Function to handle update
+  const handleUpdate = (id) => {
+    // Generate random new values for demonstration
+    setChallanData(challanData.map(item => {
+      if (item.id === id) {
+        const newChallans = item.challans + 1;
+        const newAmount = item.amount + Math.floor(Math.random() * 5000) + 1000;
+        const isOnline = Math.random() > 0.5;
+        
+        return {
+          ...item,
+          challans: newChallans,
+          amount: newAmount,
+          online: isOnline ? item.online + 1 : item.online,
+          offline: !isOnline ? item.offline + 1 : item.offline,
+          lastUpdated: new Date().toISOString().replace('T', ' ').substring(0, 19)
+        };
+      }
+      return item;
+    }));
+  };
+
+  const renderMiniChart = (data) => {
     const max = Math.max(...data);
     const min = Math.min(...data);
     const range = max - min;
@@ -125,7 +186,7 @@ export default function ChallanDashboard() {
             <div
               key={i}
               style={{ height: `${height}%` }}
-              className={`w-1 rounded-t-sm bg-${color}-500 opacity-50 transition-all duration-300
+              className={`w-1 rounded-t-sm bg-blue-500 opacity-50 transition-all duration-300
                 ${hoveredCard !== null ? 'hover:opacity-100' : ''}`}
             />
           );
@@ -190,49 +251,10 @@ export default function ChallanDashboard() {
                         <p className={`text-2xl font-bold mt-3 ${item.textGradient} bg-clip-text text-transparent`}>
                           {item.title === 'Total Challans' ? challanData.reduce((total, data) => total + data.challans, 0) : ''}
                           {item.title === 'Total Vehicles' ? challanData.length : ''}
-                          {item.title === 'Total Amount' ? `₹${challanData.reduce((total, data) => total + data.amount, 0)}` : ''}
+                          {item.title === 'Total Amount' ? `₹${challanData.reduce((total, data) => total + data.amount, 0).toLocaleString()}` : ''}
                         </p>
                       </div>
-                      
-                      {/* <div className="flex items-center space-x-2">
-                        {item.isPositive ? (
-                          <ArrowTrendingUpIcon className="w-4 h-4 text-green-500" />
-                        ) : (
-                          <ArrowTrendingDownIcon className="w-4 h-4 text-red-500" />
-                        )}
-                        <span className={item.isPositive ? 'text-green-500' : 'text-red-500'}>
-                          {item.trend}
-                        </span>
-                      </div> */}
                     </div>
-
-                    {/* Mini Chart */}
-                    {/* <div className={`mt-4 transition-all duration-300`}>
-                      {renderMiniChart(item.chart.data, item.chart.color)}
-                    </div> */}
-
-                    {/* Expandable Details */}
-                    {/* <div className={`space-y-4 transition-all duration-300 ease-in-out`}> */}
-                      {/* {item.details.map((detail, idx) => (
-                        <div key={idx} className="flex justify-between items-center p-3 rounded-lg bg-gray-50">
-                          <span className="text-gray-600 text-sm">{detail.label}</span>
-                          <div className="text-right">
-                            <span className="font-medium block">{detail.value}</span>
-                            <span className={`text-xs ${detail.trend.startsWith('+') ? 'text-green-500' : 'text-red-500'}`}>
-                              {detail.trend}
-                            </span>
-                          </div>
-                        </div>
-                      ))} */}
-                      
-                      {/* Detailed Chart */}
-                      {/* <div className="h-32 mt-4">
-                        {renderMiniChart(item.chart.data.concat(item.chart.data), item.chart.color)}
-                      </div> */}
-                    {/* </div> */}
-
-                    {/* Hover Effect Indicator */}
-                    {/* <div className={`absolute bottom-2 right-2 w-2 h-2 rounded-full transition-all duration-300 ${item.iconGradient}`} /> */}
                   </div>
                 </div>
               ))}
@@ -255,13 +277,12 @@ export default function ChallanDashboard() {
                       <td className="px-3 py-4 text-sm font-medium">{item.vehicleNo}</td>
                       <td className="px-3 py-4 text-sm text-gray-500 text-center">{item.challans}</td>
                       <td className="py-4 text-center">
-                        <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full">
-                          {/* <ArrowPathIcon className="w-5 h-5" /> */}
-                          <button className="px-3 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
-                          >
-                            {/* onClick={(e) => this.parentElement.classList.toggle('bg-blue-500')} */}
-                            Pay
-                          </button>
+                        <button 
+                          className={`px-3 py-1 rounded-xl text-white ${item.isPaid ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'} focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50`}
+                          onClick={() => handlePayment(item.id)}
+                          disabled={item.isPaid}
+                        >
+                          {item.isPaid ? 'Paid' : 'Pay'}
                         </button>
                       </td>
                       <td className="px-3 py-4 text-center">
@@ -278,31 +299,6 @@ export default function ChallanDashboard() {
               </table>
             </div>
 
-            {/* Details Modal */}
-            {expandedId !== null && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                <div className="bg-white rounded-lg p-6 w-11/12 max-w-md">
-                  <h2 className="text-lg font-semibold mb-4">Challan Details</h2>
-                  {challanData.filter(item => item.id === expandedId).map(item => (
-                    <div key={item.id} className="space-y-2">
-                      <p><strong>Vehicle No:</strong> {item.vehicleNo}</p>
-                      <p><strong>Challans:</strong> {item.challans}</p>
-                      <p><strong>Amount:</strong> ₹{item.amount}</p>
-                      <p><strong>Online:</strong> {item.online}</p>
-                      <p><strong>Offline:</strong> {item.offline}</p>
-                      <p><strong>Last Updated:</strong> {item.lastUpdated}</p>
-                    </div>
-                  ))}
-                  <button 
-                    onClick={() => setExpandedId(null)} 
-                    className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Desktop Table */}
             <div className="hidden lg:block bg-white rounded-lg shadow-sm">
               <div className="overflow-x-auto">
@@ -315,7 +311,6 @@ export default function ChallanDashboard() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Online</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Offline</th>
-                      
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pay</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Update</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delete</th>
@@ -329,45 +324,41 @@ export default function ChallanDashboard() {
                         <td className="px-6 py-4 text-sm text-gray-500">{row.id}</td>
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.vehicleNo}</td>
                         <td className="px-6 py-4 text-sm text-center text-gray-500">{row.challans}</td>
-                        <td className="px-6 py-4 text-sm text-gray-900">₹{row.amount}</td>
+                        <td className="px-6 py-4 text-sm text-gray-900">₹{row.amount.toLocaleString()}</td>
                         <td className="px-6 py-4 text-sm text-center">{row.online}</td>
                         <td className="px-6 py-4 text-sm text-center">{row.offline}</td>
                         <td className="px-2 py-4 text-sm text-gray-500">
-                          <button className="px-4 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+                          <button 
+                            className={`px-4 py-1 rounded-xl text-white ${row.isPaid ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'} focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50`}
+                            onClick={() => handlePayment(row.id)}
+                            disabled={row.isPaid}
                           >
-                            {/* onClick={(e) => this.parentElement.classList.toggle('bg-blue-500')} */}
-                            Pay
+                            {row.isPaid ? 'Paid' : 'Pay'}
                           </button>
                         </td>
-                        {/* <td className="px-6 py-4 text-center">
-                          <div className="flex justify-center space-x-2">
-                            <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full">
-                              <ArrowPathIcon className="w-5 h-5" />
-                            </button>
-                            <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full">
-                              <TrashIcon className="w-5 h-5" />
-                            </button>
-                            <button className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full">
-                              <EyeIcon className="w-5 h-5" />
-                            </button>
-                          </div>
-                        </td> */}
                         <td className="px-6 py-4 text-center">
-                          
-                            <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full">
-                              <ArrowPathIcon className="w-5 h-5" />
-                            </button>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                            <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full">
-                              <TrashIcon className="w-5 h-5" />
-                            </button>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                            <button className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full">
-                              <EyeIcon className="w-5 h-5" />
-                            </button>
-                          
+                          <button 
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full"
+                            onClick={() => handleUpdate(row.id)}
+                          >
+                            <ArrowPathIcon className="w-5 h-5" />
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <button 
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-full"
+                            onClick={() => handleDelete(row.id)}
+                          >
+                            <TrashIcon className="w-5 h-5" />
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <button 
+                            className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full"
+                            onClick={() => setExpandedId(row.id)}
+                          >
+                            <EyeIcon className="w-5 h-5" />
+                          </button>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">{row.lastUpdated}</td>
                       </tr>
@@ -399,6 +390,95 @@ export default function ChallanDashboard() {
           <LiveChallanPanel />
         </div>
       </div>
+
+      {/* Details Modal */}
+      {expandedId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 w-11/12 max-w-md">
+            <h2 className="text-lg font-semibold mb-4">Challan Details</h2>
+            {challanData.filter(item => item.id === expandedId).map(item => (
+              <div key={item.id} className="space-y-2">
+                <p><strong>Vehicle No:</strong> {item.vehicleNo}</p>
+                <p><strong>Challans:</strong> {item.challans}</p>
+                <p><strong>Amount:</strong> ₹{item.amount.toLocaleString()}</p>
+                <p><strong>Online:</strong> {item.online}</p>
+                <p><strong>Offline:</strong> {item.offline}</p>
+                <p><strong>Status:</strong> <span className={item.isPaid ? 'text-green-600' : 'text-yellow-600'}>{item.isPaid ? 'Paid' : 'Pending'}</span></p>
+                <p><strong>Last Updated:</strong> {item.lastUpdated}</p>
+              </div>
+            ))}
+            <button 
+              onClick={() => setExpandedId(null)} 
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedVehicle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 w-11/12 max-w-md">
+            <h2 className="text-lg font-semibold mb-4">Payment Confirmation</h2>
+            <div className="space-y-3">
+              <p><strong>Vehicle No:</strong> {selectedVehicle.vehicleNo}</p>
+              <p><strong>Total Challans:</strong> {selectedVehicle.challans}</p>
+              <p><strong>Amount to Pay:</strong> <span className="text-lg font-bold">₹{selectedVehicle.amount.toLocaleString()}</span></p>
+              
+              <div className="bg-blue-50 p-3 rounded-lg mt-3">
+                <p className="text-blue-800 text-sm">Payment will be processed securely. Continue?</p>
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmPayment}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Confirm Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Modal */}
+      {showConfirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 w-11/12 max-w-md">
+            <h2 className="text-lg font-semibold mb-4">Confirm Delete</h2>
+            <div className="space-y-3">
+              <p>Are you sure you want to delete this challan record?</p>
+              <p>This action cannot be undone.</p>
+              
+              <div className="bg-red-50 p-3 rounded-lg mt-3">
+                <p className="text-red-800 text-sm">All associated data will be permanently removed.</p>
+              </div>
+            </div>
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setShowConfirmDelete(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

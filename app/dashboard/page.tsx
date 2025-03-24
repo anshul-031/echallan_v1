@@ -172,7 +172,44 @@ export default function Dashboard() {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = read(data, { type: 'array' });
         const vehiclesSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const vehicles = xlsxUtils.sheet_to_json(vehiclesSheet);
+        let vehicles = xlsxUtils.sheet_to_json(vehiclesSheet);
+
+        // Iterate through the vehicles array and rename "vehicle no" to "vrn" if it exists
+        vehicles = vehicles.map((vehicle: any) => {
+          if (vehicle["Vehicle number"]) {
+            vehicle["vrn"] = vehicle["Vehicle number"];
+            delete vehicle["Vehicle number"];
+          }
+          if (vehicle["Road tax"]) {
+            vehicle["roadTax"] = vehicle["Road tax"];
+            delete vehicle["Road tax"];
+          }
+          if (vehicle["Fitness"]) {
+            vehicle["fitness"] = vehicle["Fitness"];
+            delete vehicle["Fitness"];
+          }
+          if (vehicle["Insurance"]) {
+            vehicle["insurance"] = vehicle["Insurance"];
+            delete vehicle["Insurance"];
+          }
+          if (vehicle["Pollution"]) {
+            vehicle["pollution"] = vehicle["Pollution"];
+            delete vehicle["Pollution"];
+          }
+          if (vehicle["Satate permit"]) {
+            vehicle["statePermit"] = vehicle["Satate permit"];
+            delete vehicle["Satate permit"];
+          }
+          if (vehicle["National permit"]) {
+            vehicle["nationalPermit"] = vehicle["National permit"];
+            delete vehicle["National permit"];
+          }
+          if (vehicle["Last updated"]) {
+            vehicle["lastUpdated"] = vehicle["Last updated"];
+            delete vehicle["Last updated"];
+          }
+          return vehicle;
+        });
 
         const response = await fetch('/api/vehicles/bulk', {
           method: 'POST',
@@ -594,7 +631,6 @@ export default function Dashboard() {
         </div>
 
         {/* Table Controls */}
-        {searchError && <div className="text-center mb-4 text-red-500">{searchError}</div>}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
           <div className="relative w-full md:w-64 lg:w-96">
             <input
@@ -664,7 +700,7 @@ export default function Dashboard() {
         {/* Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden relative overflow-x-auto min-w-full">
           {/* Loading Overlay */}
-          {isLoading && (
+          {(isLoading || isSearching) && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center">
               <div className="flex items-center space-x-2 bg-white p-3 rounded-lg shadow-sm">
                 <svg className="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
@@ -675,18 +711,8 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-          {/* Search Overlay (kept as-is) */}
-          {isSearching && (
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center">
-              <div className="flex items-center space-x-2 bg-white p-3 rounded-lg shadow-sm">
-                <svg className="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                <span className="text-gray-500">Fetching results...</span>
-              </div>
-            </div>
-          )}
+
+
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '100%' }}>
               <thead className="bg-gray-50">
@@ -701,8 +727,8 @@ export default function Dashboard() {
                   <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Permit</th>
                   <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">National Permit</th>
                   <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Last Updated</th>
-                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Update</th>
-                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Upload</th>
+                  <th className=" md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Update</th>
+                  <th className=" md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Upload</th>
                   <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Delete</th>
                 </tr>
               </thead>
@@ -749,6 +775,18 @@ export default function Dashboard() {
                         {row.roadTax}
                       </td>
                       <td
+                        onClick={() => {
+                          const exipryDate = new Date(row.fitness);
+                          const currentDate = new Date();
+                          const oneMonthFromNow = new Date(currentDate);
+                          oneMonthFromNow.setMonth(currentDate.getMonth() + 1);
+                          console.log(exipryDate <= oneMonthFromNow)
+                          console.log(exipryDate, oneMonthFromNow)
+                          console.log(getExpirationColor(
+                            row.fitness
+                          ))
+                          console.log(row.fitness)
+                        }}
                         className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
                           row.fitness
                         )} whitespace-nowrap`}
@@ -786,7 +824,7 @@ export default function Dashboard() {
                       <td className="hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">
                         {row.lastUpdated}
                       </td>
-                      <td className="hidden md:table-cell px-4 py-4 text-center whitespace-nowrap">
+                      <td className=" md:table-cell px-4 py-4 text-center whitespace-nowrap">
                         <button
                           onClick={() => handleUpdate(row)}
                           disabled={updatingRows[row.id]}
@@ -798,7 +836,7 @@ export default function Dashboard() {
                           />
                         </button>
                       </td>
-                      <td className="hidden md:table-cell px-4 py-4 text-center whitespace-nowrap">
+                      <td className=" md:table-cell px-4 py-4 text-center whitespace-nowrap">
                         <button
                           onClick={() => {
                             setSelectedVRN(row.vrn);

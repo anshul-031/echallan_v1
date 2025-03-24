@@ -199,7 +199,7 @@ export default function LiveDataPanel({ collapsed = false, vehicles, setVehicles
             {/* Document Status */}
             <div className="mt-4">
               <h3 className="text-sm font-medium text-gray-900 mb-3">Vehicle Details</h3>
-              <div className="space-y-2">
+              <div className="space-y-2 overflow-y-auto max-h-[70vh]">
                 {[
                   { label: 'Insurance', value: vehicleDetails.rc_insurance_upto },
                   { label: 'Fitness', value: vehicleDetails.rc_fit_upto },

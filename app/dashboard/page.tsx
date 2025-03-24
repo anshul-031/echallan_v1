@@ -182,8 +182,6 @@ export default function Dashboard() {
         if (!response.ok) {
           throw new Error('Failed to upload vehicles');
         }
-
-
         const result = await response.json();
         setUploadResults(result);
 

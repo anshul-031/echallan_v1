@@ -69,6 +69,7 @@ const summaryData = [
     shadowColor: 'shadow-emerald-500/20',
     trend: '+15%',
     isPositive: true,
+    Status:['Unpaid','Paid'],
     details: [
       { label: 'Collected', value: '₹1,98,255', trend: '+22%' },
       { label: 'Pending', value: '₹59,000', trend: '-8%' }
@@ -106,12 +107,7 @@ export default function ChallanDashboard() {
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [vehicleData, setVehicleData] = useState<any>(null);
-  const [pendingChallans, setPendingChallans] = useState<any[]>([]);
-  const [disposedCount, setDisposedCount] = useState(0);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
+  
   
 
   const renderMiniChart = (data: number[], color: string) => {
@@ -136,30 +132,12 @@ export default function ChallanDashboard() {
     );
   };
 
-  const handleSearch = async (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      try {
-        const response = await fetch(`/api/vahanfin/vehicle?rc_no=${searchQuery}`);
-        if (!response.ok) throw new Error('Failed to fetch vehicle data');
-        const data = await response.json();
-        console.log(data); // Log the API output
-        setVehicleData(data);
+  
 
-        // Extract disposed and pending data
-        const disposedData = data.data.Disposed_data || [];
-        const pendingData = data.data.Pending_data || [];
-
-        setDisposedCount(disposedData.length);
-        setPendingCount(pendingData.length);
-        setPendingChallans(pendingData); // Store pending data for modal
-      } catch (error) {
-        console.error('API call error:', error);
-      }
-    }
-  };
+  
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ">
       {/* Mobile Toggle Button */}
       <button
         onClick={() => setShowMobilePanel(!showMobilePanel)}
@@ -172,9 +150,9 @@ export default function ChallanDashboard() {
         )}
       </button>
 
-      <div className="flex flex-col lg:flex-row min-h-screen">
+      <div className="flex flex-col lg:flex-row min-h-screen ">
         {/* Main Content */}
-        <div className="flex-1 p-4 lg:p-6">
+        <div className="flex-1 p-4 lg:p-6 overflow-hidden">
           <div className="max-w-[calc(100vw-2rem)] lg:max-w-[calc(100vw-26rem)] mx-auto">
             {/* Header */}
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
@@ -297,6 +275,8 @@ export default function ChallanDashboard() {
                       
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pay</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Update</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stutus</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delete</th>
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Updated</th>
@@ -308,6 +288,7 @@ export default function ChallanDashboard() {
                         <td className="px-6 py-4 text-sm text-gray-500">{row.id}</td>
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.vehicleNo}</td>
                         <td className="px-6 py-4 text-sm text-center text-gray-500">{row.challans}</td>
+                        
                         <td className="px-6 py-4 text-sm text-gray-900">₹{row.amount}</td>
                         <td className="px-6 py-4 text-sm text-center">{row.online}</td>
                         <td className="px-6 py-4 text-sm text-center">{row.offline}</td>
@@ -318,6 +299,7 @@ export default function ChallanDashboard() {
                             Pay
                           </button>
                         </td>
+                        
                         {/* <td className="px-6 py-4 text-center">
                           <div className="flex justify-center space-x-2">
                             <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full">
@@ -337,6 +319,8 @@ export default function ChallanDashboard() {
                               <ArrowPathIcon className="w-5 h-5" />
                             </button>
                             </td>
+                            <td className="px-6 py-4 text-sm text-center">Paid</td>
+                        <td className="px-6 py-4 text-sm text-center">Reciept</td>
                             <td className="px-6 py-4 text-center">
                             <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full">
                               <TrashIcon className="w-5 h-5" />

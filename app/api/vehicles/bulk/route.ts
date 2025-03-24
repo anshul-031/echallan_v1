@@ -66,7 +66,7 @@ export async function POST(request: Request) {
               pollution: pollution || '',
               statePermit: statePermit || '',
               nationalPermit: nationalPermit || '',
-              lastUpdated: new Date().toISOString(),
+              lastUpdated: new Date().toLocaleDateString('en-CA'),
               status: status || 'Active',
               registeredAt: registeredAt || new Date().toISOString(),
               documents: 0,
@@ -105,4 +105,4 @@ export async function POST(request: Request) {
       details: error.message 
     }, { status: 500 });
   }
-} 
+}

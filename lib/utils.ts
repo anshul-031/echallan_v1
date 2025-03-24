@@ -6,9 +6,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getExpirationColor(date: string): string {
-  const currentDate = new Date('2025-03-21');
-  const threeMonthsFromNow = new Date(currentDate);
-  threeMonthsFromNow.setMonth(currentDate.getMonth() + 4);
+  const currentDate = new Date();
+  const oneMonthFromNow = new Date(currentDate);
+  oneMonthFromNow.setMonth(currentDate.getMonth() + 1);
 
   if (date === "LTT") {
     return "text-blue-500";
@@ -22,7 +22,7 @@ export function getExpirationColor(date: string): string {
 
   if (expiryDate < currentDate) {
     return "text-red-500";
-  } else if (expiryDate <= threeMonthsFromNow) {
+  } else if (expiryDate <= oneMonthFromNow) {
     return "text-yellow-500";
   } else {
     return "text-green-500";

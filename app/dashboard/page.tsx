@@ -21,7 +21,6 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import LiveDataPanel from '../components/LiveDataPanel';
-import { getSession } from 'next-auth/react';
 import { Vehicle } from '@/app/types/vehicle';
 import { getExpirationColor } from '@/lib/utils';
 import { isDocumentExpiring, isDocumentExpired } from '@/lib/documentUtils';
@@ -120,6 +119,8 @@ export default function Dashboard() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [vehicleToDelete, setVehicleToDelete] = useState<number | null>(null);
   const [isDeletingVehicle, setIsDeletingVehicle] = useState(false);
+  const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [updatingRows, setUpdatingRows] = useState<{ [key: number]: boolean }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -347,6 +348,8 @@ export default function Dashboard() {
       setVehicles((prev) => prev.filter((v) => v.id !== vehicleToDelete));
       setFilteredVehicles((prev) => prev.filter((v) => v.id !== vehicleToDelete));
       toast.success('Vehicle deleted successfully');
+      setIsDetailsPopupOpen(false);
+      setSelectedVehicle(null);
     } catch (error) {
       console.error('Delete error:', error);
       toast.error('Failed to delete vehicle');
@@ -617,13 +620,13 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex w-full justify-end gap-2 ">
             <button
               onClick={() => setShowUploadModal(true)}
               className="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-md text-sm font-medium transition-colors"
             >
               <CloudArrowUpIcon className="h-5 w-5" />
-              <span>Bulk Upload</span>
+              <span className='hidden lg:block'>Bulk Upload</span>
             </button>
 
             <DropdownMenu>
@@ -633,7 +636,7 @@ export default function Dashboard() {
                   disabled={isExporting}
                 >
                   <DocumentArrowDownIcon className="h-5 w-5" />
-                  <span>Export</span>
+                  <span className='hidden lg:block'>Export</span>
                   <ChevronDownIcon className="h-4 w-4 ml-1" />
                 </button>
               </DropdownMenuTrigger>
@@ -659,7 +662,7 @@ export default function Dashboard() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden relative overflow-x-auto">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden relative overflow-x-auto min-w-full">
           {/* Loading Overlay */}
           {isLoading && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center">
@@ -690,16 +693,17 @@ export default function Dashboard() {
                 <tr>
                   <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">S.no</th>
                   <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">VRN</th>
-                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Road Tax</th>
-                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Fitness</th>
-                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Insurance</th>
-                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pollution</th>
-                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Permit</th>
-                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">National Permit</th>
-                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Last Updated</th>
-                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Update</th>
-                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Upload</th>
-                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Delete</th>
+                  <th className="md:hidden px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Details</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Road Tax</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Fitness</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Insurance</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pollution</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Permit</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">National Permit</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Last Updated</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Update</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Upload</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Delete</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -719,59 +723,70 @@ export default function Dashboard() {
                 )}
                 {!isLoading &&
                   currentVehicles.map((row) => (
-                    <tr key={row.id} className="hover:bg-gray-50">
+                    <tr key={row.id} className="hover:bg-gray-50 py-6">
                       <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">
                         {row.id}
                       </td>
                       <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm font-medium text-gray-900 whitespace-nowrap">
                         {row.vrn}
                       </td>
+                      <td className="md:hidden text-center">
+                        <button
+                          onClick={() => {
+                            setIsDetailsPopupOpen(true);
+                            setSelectedVehicle(row);
+                          }}
+                          className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                        >
+                          Show Details
+                        </button>
+                      </td>
                       <td
-                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
                           row.roadTax
                         )} whitespace-nowrap`}
                       >
                         {row.roadTax}
                       </td>
                       <td
-                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
                           row.fitness
                         )} whitespace-nowrap`}
                       >
                         {row.fitness === 'LTT' ? 'LTT' : row.fitness}
                       </td>
                       <td
-                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
                           row.insurance
                         )} whitespace-nowrap`}
                       >
                         {row.insurance === 'LTT' ? 'LTT' : row.insurance}
                       </td>
                       <td
-                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
                           row.pollution
                         )} whitespace-nowrap`}
                       >
                         {row.pollution === 'LTT' ? 'LTT' : row.pollution}
                       </td>
                       <td
-                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
                           row.statePermit
                         )} whitespace-nowrap`}
                       >
                         {row.statePermit === 'LTT' ? 'LTT' : row.statePermit}
                       </td>
                       <td
-                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
                           row.nationalPermit
                         )} whitespace-nowrap`}
                       >
                         {row.nationalPermit === 'LTT' ? 'LTT' : row.nationalPermit}
                       </td>
-                      <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">
+                      <td className="hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">
                         {row.lastUpdated}
                       </td>
-                      <td className="px-4 py-4 text-center whitespace-nowrap">
+                      <td className="hidden md:table-cell px-4 py-4 text-center whitespace-nowrap">
                         <button
                           onClick={() => handleUpdate(row)}
                           disabled={updatingRows[row.id]}
@@ -783,7 +798,7 @@ export default function Dashboard() {
                           />
                         </button>
                       </td>
-                      <td className="px-4 py-4 text-center whitespace-nowrap">
+                      <td className="hidden md:table-cell px-4 py-4 text-center whitespace-nowrap">
                         <button
                           onClick={() => {
                             setSelectedVRN(row.vrn);
@@ -794,7 +809,7 @@ export default function Dashboard() {
                           <CloudArrowUpIcon className="w-5 h-5" />
                         </button>
                       </td>
-                      <td className="px-4 py-4 text-center whitespace-nowrap">
+                      <td className="hidden md:table-cell px-4 py-4 text-center whitespace-nowrap">
                         <button
                           onClick={() => handleDelete(row.id)}
                           disabled={isDeletingVehicle}
@@ -1041,6 +1056,64 @@ export default function Dashboard() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Vehicle Details Popup */}
+      {isDetailsPopupOpen && selectedVehicle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-all duration-300">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full md:w-[90vw] transition-all duration-300">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Vehicle Details</h3>
+              <button
+                onClick={() => {
+                  setIsDetailsPopupOpen(false);
+                  setSelectedVehicle(null);
+                }}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Vehicle No.:</span>
+              <span className="text-gray-800 font-medium mb-2">{selectedVehicle.vrn}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Road Tax:</span>
+              <span className={` font-medium mb-2 ${getExpirationColor(selectedVehicle.roadTax)}`}>{selectedVehicle.roadTax}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Fitness:</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.fitness)}`}>{selectedVehicle.fitness}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Insurance:</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.insurance)}`}>{selectedVehicle.insurance}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Pollution:</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.pollution)}`}>{selectedVehicle.pollution}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Permit:</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.statePermit)}`}>{selectedVehicle.statePermit}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">National Permit:</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.nationalPermit)}`}>{selectedVehicle.nationalPermit}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Last Updated:</span>
+              <span className="text-gray-800 font-medium mb-2">{selectedVehicle.lastUpdated}</span>
+            </div>
+            <button
+              onClick={() => handleDelete(selectedVehicle.id)}
+              className="flex items-center gap-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm font-medium transition-colors"
+            >
+              <TrashIcon className="h-5 w-5" />
+              <span>Delete Now</span>
+            </button>
           </div>
         </div>
       )}

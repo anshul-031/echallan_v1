@@ -9,6 +9,12 @@
   padding: 2px;
 }
 
+@media (max-width: 768px) {
+  td {
+    padding-top: 0.75rem; /* 12px */
+    padding-bottom: 0.75rem; /* 12px */
+  }
+}
 .table-container::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 10px;
@@ -75,16 +81,29 @@
   .Toastify__toast {
     margin: 0.5rem !important;
   }
-  
+
   .Toastify__toast-body {
     font-size: 0.75rem !important;
     line-height: 1rem !important;
     padding: 0.5rem 0.75rem !important;
   }
-  
+
   .Toastify__toast-icon {
     width: 16px !important;
     height: 16px !important;
     margin-inline-end: 8px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .table-container table td {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
   }
 }

@@ -25,6 +25,12 @@ import { Vehicle } from '@/app/types/vehicle';
 import { getExpirationColor } from '@/lib/utils';
 import { isDocumentExpiring, isDocumentExpired } from '@/lib/documentUtils';
 import DocumentModal from '../components/DocumentModal';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 
 const getSummaryCards = (vehicles: Vehicle[]) => [
@@ -117,6 +123,10 @@ export default function Dashboard() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
   useEffect(() => {
+    setFilteredVehicles(vehicles);
+  }, [vehicles]);
+
+  useEffect(() => {
     const fetchVehicles = async () => {
       try {
         setIsLoading(true);
@@ -153,10 +163,10 @@ export default function Dashboard() {
       toast.error('Please select a file first');
       return;
     }
-    
+
     setIsUploading(true);
     setUploadResults(null);
-    
+
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
@@ -164,20 +174,20 @@ export default function Dashboard() {
         const workbook = read(data, { type: 'array' });
         const vehiclesSheet = workbook.Sheets[workbook.SheetNames[0]];
         const vehicles = xlsxUtils.sheet_to_json(vehiclesSheet);
-        
+
         const response = await fetch('/api/vehicles/bulk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(vehicles),
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to upload vehicles');
         }
-        
+
         const result = await response.json();
         setUploadResults(result);
-        
+
         if (result.results && result.results.some((r: any) => r.success)) {
           toast.success(`Successfully uploaded ${result.results.filter((r: any) => r.success).length} vehicles`);
           // Refresh the vehicles list
@@ -188,7 +198,7 @@ export default function Dashboard() {
             setFilteredVehicles(updatedVehicles);
           }
         }
-        
+
         if (result.results && result.results.some((r: any) => !r.success)) {
           toast.error(`Failed to upload ${result.results.filter((r: any) => !r.success).length} vehicles`);
         }
@@ -199,7 +209,7 @@ export default function Dashboard() {
         setIsUploading(false);
       }
     };
-    
+
     reader.readAsArrayBuffer(file);
   };
 
@@ -229,10 +239,10 @@ export default function Dashboard() {
         registeredAt: '2022-03-15'
       }
     ];
-    
+
     // Create worksheet
     const ws = xlsxUtils.json_to_sheet(sampleData);
-    
+
     // Add column descriptions in the second sheet
     const descriptions = [
       { Field: 'vrn', Description: 'Vehicle Registration Number (Required)', Format: 'Text, e.g., AB12CD3456' },
@@ -245,14 +255,14 @@ export default function Dashboard() {
       { Field: 'status', Description: 'Vehicle Status', Format: 'Text: Active, Inactive, or Maintenance' },
       { Field: 'registeredAt', Description: 'Registration Date', Format: 'YYYY-MM-DD' }
     ];
-    
+
     const wsDesc = xlsxUtils.json_to_sheet(descriptions);
-    
+
     // Create workbook
     const wb = xlsxUtils.book_new();
     xlsxUtils.book_append_sheet(wb, ws, 'Sample Vehicles');
     xlsxUtils.book_append_sheet(wb, wsDesc, 'Field Descriptions');
-    
+
     // Download
     writeFile(wb, 'vehicle_upload_template.xlsx');
   };
@@ -350,34 +360,43 @@ export default function Dashboard() {
     }
   };
 
-  // Export Logic
   type ExportData = {
-    'S.no': number;
-    VRN: string;
-    'Road Tax': string;
-    Fitness: string;
-    Insurance: string;
-    Pollution: string;
-    'State Permit': string;
-    'National Permit': string;
-    'Last Updated': string;
+    vrn: string;
+    roadTax: string;
+    fitness: string;
+    insurance: string;
+    pollution: string;
+    statePermit: string;
+    nationalPermit: string;
+    status: string;
+    registeredAt: string;
   };
 
   const prepareExportData = (data: Vehicle[]): ExportData[] => {
-    return data.map((vehicle, index) => ({
-      'S.no': index + 1,
-      VRN: vehicle.vrn,
-      'Road Tax': vehicle.roadTax,
-      Fitness: vehicle.fitness,
-      Insurance: vehicle.insurance,
-      Pollution: vehicle.pollution,
-      'State Permit': vehicle.statePermit,
-      'National Permit': vehicle.nationalPermit,
-      'Last Updated': vehicle.lastUpdated,
-    }));
+    return data.map((vehicle) => {
+      const lastUpdatedDate = vehicle.lastUpdated ? new Date(vehicle.lastUpdated) : null;
+      const formattedLastUpdated = lastUpdatedDate ? lastUpdatedDate.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      }) : "";
+
+      return {
+        vrn: vehicle.vrn,
+        roadTax: vehicle.roadTax,
+        fitness: vehicle.fitness,
+        insurance: vehicle.insurance,
+        pollution: vehicle.pollution,
+        statePermit: vehicle.statePermit,
+        nationalPermit: vehicle.nationalPermit,
+        status: vehicle.status,
+        registeredAt: vehicle.registeredAt,
+        lastUpdated: formattedLastUpdated,
+      };
+    });
   };
 
-  const handleExport = async (format: 'current-excel' | 'all-excel' | 'pdf') => {
+  const handleExport = async (format: 'current-excel' | 'all-excel' | 'pdf' | 'csv' | 'json') => {
     try {
       setIsExporting(true);
       const data = format === 'current-excel' ? currentVehicles : vehicles;
@@ -390,6 +409,33 @@ export default function Dashboard() {
         const fileName = format === 'current-excel' ? 'current-fleet-data.xlsx' : 'all-fleet-data.xlsx';
         writeFile(workbook, fileName);
         toast.success(`${format === 'current-excel' ? 'Current' : 'All'} data exported to Excel`);
+      } else if (format === 'csv') {
+        const worksheet = xlsxUtils.json_to_sheet(exportData);
+        const csv = xlsxUtils.sheet_to_csv(worksheet);
+        const fileName = 'fleet-data.csv';
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Data exported to CSV');
+      } else if (format === 'json') {
+        const json = JSON.stringify(exportData, null, 2);
+        const fileName = 'fleet-data.json';
+        const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', fileName);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Data exported to JSON');
       } else {
         const doc = new jsPDF();
         autoTable(doc, {
@@ -412,23 +458,38 @@ export default function Dashboard() {
   };
 
   // Search Logic
-  const handleSearch = useCallback(() => {
-    if (!searchQuery.trim()) {
-      setFilteredVehicles(vehicles);
-      setSearchError(null);
+  const handleSearch = useCallback(async () => {
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) {
+      setSearchError('Please enter a VRN to search');
       return;
     }
+
     setIsSearching(true);
     setSearchError(null);
     setCurrentPage(1);
 
-    const results = vehicles.filter((vehicle) =>
-      vehicle.vrn.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredVehicles(results);
-    if (results.length === 0) setSearchError('No results found');
-    setIsSearching(false);
-  }, [searchQuery, vehicles]);
+    try {
+      const response = await fetch(`/api/vehicles?vrn=${trimmedQuery}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch vehicles');
+      }
+      const data = await response.json();
+
+      if (data.length === 0) {
+        setFilteredVehicles([]);
+        setSearchError('No results found');
+      } else {
+        setFilteredVehicles(data);
+      }
+    } catch (error: any) {
+      console.error('Search error:', error);
+      setSearchError('Failed to perform search');
+      setFilteredVehicles([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchQuery]);
 
   const handleClearSearch = () => {
     setSearchQuery('');
@@ -529,41 +590,67 @@ export default function Dashboard() {
               placeholder="Search by VRN..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-blue-500"
+              className="w-full pl-4 pr-4 py-2 bg-white border border-blue-700 rounded-lg text-black focus:outline-none focus:border-blue-500"
             />
-            <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+            <button
+              onClick={handleSearch}
+              className="absolute right-2 top-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded"
+            >
+              <MagnifyingGlassIcon className="h-5 w-5 bg-none" />
+            </button>
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
-                className="absolute right-3 top-2.5"
+                className="absolute right-12 top-2.5"
               >
                 <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-white" />
               </button>
             )}
           </div>
-          
+
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowUploadModal(true)}
-              className="flex items-center gap-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-md text-sm font-medium transition-colors"
+              className="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-md text-sm font-medium transition-colors"
             >
               <CloudArrowUpIcon className="h-5 w-5" />
               <span>Bulk Upload</span>
             </button>
-            
-            <button
-              onClick={() => handleExport('current-excel')}
-              className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 rounded-md text-sm font-medium transition-colors"
-              disabled={isExporting}
-            >
-              <DocumentArrowDownIcon className="h-5 w-5" />
-              <span>Export Excel</span>
-            </button>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="flex items-center gap-1 px-3 py-2 bg-blue-500 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors text-white"
+                  disabled={isExporting}
+                >
+                  <DocumentArrowDownIcon className="h-5 w-5" />
+                  <span>Export</span>
+                  <ChevronDownIcon className="h-4 w-4 ml-1" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuItem onClick={() => handleExport('all-excel')}>
+                  Excel (All Data)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('current-excel')}>
+                  Excel (Current View)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('csv' as any)}>
+                  CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                  PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json' as any)}>
+                  JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden relative">
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden relative overflow-x-auto">
           {/* Loading Overlay */}
           {isLoading && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center">
@@ -589,85 +676,126 @@ export default function Dashboard() {
             </div>
           )}
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '100%' }}>
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="w-12 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">S.no</th>
-                  <th className="w-32 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">VRN</th>
-                  <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">Road Tax</th>
-                  <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">Fitness</th>
-                  <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">Insurance</th>
-                  <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">Pollution</th>
-                  <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">Permit</th>
-                  <th className="w-32 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">National Permit</th>
-                  <th className="w-28 px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-                  <th className="w-16 px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">Update</th>
-                  <th className="w-16 px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">Upload</th>
-                  <th className="w-16 px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider">Delete</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">S.no</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">VRN</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Road Tax</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Fitness</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Insurance</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pollution</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Permit</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">National Permit</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Last Updated</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Update</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Upload</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Delete</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {!isLoading && currentVehicles.map((row) => (
-                  <tr key={row.id} className="hover:bg-gray-50">
-                    <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500">{row.id}</td>
-                    <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm font-medium text-gray-900">{row.vrn}</td>
-                    <td className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.roadTax)}`}>
-                      {row.roadTax}
-                    </td>
-                    <td className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.fitness)}`}>
-                      {row.fitness === "LTT" ? "LTT" : row.fitness}
-                    </td>
-                    <td className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.insurance)}`}>
-                      {row.insurance === "LTT" ? "LTT" : row.insurance}
-                    </td>
-                    <td className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.pollution)}`}>
-                      {row.pollution === "LTT" ? "LTT" : row.pollution}
-                    </td>
-                    <td className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.statePermit)}`}>
-                      {row.statePermit === "LTT" ? "LTT" : row.statePermit}
-                    </td>
-                    <td className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.nationalPermit)}`}>
-                      {row.nationalPermit === "LTT" ? "LTT" : row.nationalPermit}
-                    </td>
-                    <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500">{row.lastUpdated}</td>
-                    <td className="px-4 py-4 text-center">
-                      <button
-                        onClick={() => handleUpdate(row)}
-                        disabled={updatingRows[row.id]}
-                        className={`p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors ${updatingRows[row.id] ? 'bg-blue-50' : ''}`}
-                      >
-                        <ArrowPathIcon className={`w-5 h-5 ${updatingRows[row.id] ? 'animate-spin' : ''}`} />
-                      </button>
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <button
-                        onClick={() => {
-                          setSelectedVRN(row.vrn);
-                          setIsModalOpen(true);
-                        }}
-                        className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
-                      >
-                        <CloudArrowUpIcon className="w-5 h-5" />
-                      </button>
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <button
-                        onClick={() => handleDelete(row.id)}
-                        disabled={isDeletingVehicle}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {!isLoading && currentVehicles.length === 0 && (
+                {searchError && (
                   <tr>
                     <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
-                      {searchError || 'No vehicles found'}
+                      {searchError}
                     </td>
                   </tr>
                 )}
+                {!isLoading && filteredVehicles.length === 0 && !searchError && (
+                  <tr>
+                    <td colSpan={12} className="px-4 py-8 text-center text-gray-500">
+                      No vehicles found
+                    </td>
+                  </tr>
+                )}
+                {!isLoading &&
+                  currentVehicles.map((row) => (
+                    <tr key={row.id} className="hover:bg-gray-50">
+                      <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">
+                        {row.id}
+                      </td>
+                      <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm font-medium text-gray-900 whitespace-nowrap">
+                        {row.vrn}
+                      </td>
+                      <td
+                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                          row.roadTax
+                        )} whitespace-nowrap`}
+                      >
+                        {row.roadTax}
+                      </td>
+                      <td
+                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                          row.fitness
+                        )} whitespace-nowrap`}
+                      >
+                        {row.fitness === 'LTT' ? 'LTT' : row.fitness}
+                      </td>
+                      <td
+                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                          row.insurance
+                        )} whitespace-nowrap`}
+                      >
+                        {row.insurance === 'LTT' ? 'LTT' : row.insurance}
+                      </td>
+                      <td
+                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                          row.pollution
+                        )} whitespace-nowrap`}
+                      >
+                        {row.pollution === 'LTT' ? 'LTT' : row.pollution}
+                      </td>
+                      <td
+                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                          row.statePermit
+                        )} whitespace-nowrap`}
+                      >
+                        {row.statePermit === 'LTT' ? 'LTT' : row.statePermit}
+                      </td>
+                      <td
+                        className={`px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                          row.nationalPermit
+                        )} whitespace-nowrap`}
+                      >
+                        {row.nationalPermit === 'LTT' ? 'LTT' : row.nationalPermit}
+                      </td>
+                      <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">
+                        {row.lastUpdated}
+                      </td>
+                      <td className="px-4 py-4 text-center whitespace-nowrap">
+                        <button
+                          onClick={() => handleUpdate(row)}
+                          disabled={updatingRows[row.id]}
+                          className={`p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors ${updatingRows[row.id] ? 'bg-blue-50' : ''
+                            }`}
+                        >
+                          <ArrowPathIcon
+                            className={`w-5 h-5 ${updatingRows[row.id] ? 'animate-spin' : ''}`}
+                          />
+                        </button>
+                      </td>
+                      <td className="px-4 py-4 text-center whitespace-nowrap">
+                        <button
+                          onClick={() => {
+                            setSelectedVRN(row.vrn);
+                            setIsModalOpen(true);
+                          }}
+                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                        >
+                          <CloudArrowUpIcon className="w-5 h-5" />
+                        </button>
+                      </td>
+                      <td className="px-4 py-4 text-center whitespace-nowrap">
+                        <button
+                          onClick={() => handleDelete(row.id)}
+                          disabled={isDeletingVehicle}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -777,7 +905,7 @@ export default function Dashboard() {
       {/* Bulk Upload Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Bulk Upload Vehicles</h3>
               <button
@@ -786,23 +914,23 @@ export default function Dashboard() {
                   setFile(null);
                   setUploadResults(null);
                 }}
-                className="p-1 rounded-full hover:bg-gray-700"
+                className="p-1 rounded-full hover:bg-gray-100"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-            
+
             <div className="mb-4">
-              <p className="text-gray-300 mb-2">Upload multiple vehicles using an Excel file.</p>
+              <p className="text-gray-500 mb-2">Upload multiple vehicles using an Excel file.</p>
               <button
                 onClick={downloadSampleExcel}
-                className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 rounded-md text-sm font-medium transition-colors mb-4"
+                className="flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium transition-colors mb-4"
               >
                 <DocumentArrowDownIcon className="h-5 w-5" />
                 <span>Download Sample Template</span>
               </button>
-              
-              <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center">
+
+              <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 text-center">
                 <input
                   type="file"
                   id="file-upload"
@@ -815,13 +943,13 @@ export default function Dashboard() {
                   className="cursor-pointer flex flex-col items-center justify-center"
                 >
                   <CloudArrowUpIcon className="h-10 w-10 text-gray-400 mb-2" />
-                  <span className="text-gray-300">
+                  <span className="text-gray-500">
                     {file ? file.name : 'Click to select Excel file'}
                   </span>
                 </label>
               </div>
             </div>
-            
+
             {file && (
               <div className="flex justify-end gap-2">
                 <button
@@ -829,14 +957,14 @@ export default function Dashboard() {
                     setFile(null);
                     setUploadResults(null);
                   }}
-                  className="px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-md text-sm font-medium transition-colors"
+                  className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-medium transition-colors"
                   disabled={isUploading}
                 >
                   Clear
                 </button>
                 <button
                   onClick={handleUpload}
-                  className="flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors"
+                  className="flex items-center gap-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
                   disabled={isUploading}
                 >
                   {isUploading ? (
@@ -853,19 +981,19 @@ export default function Dashboard() {
                 </button>
               </div>
             )}
-            
+
             {uploadResults && (
-              <div className="mt-4 border-t border-gray-700 pt-4">
+              <div className="mt-4 border-t border-gray-200 pt-4">
                 <h4 className="font-medium mb-2">Upload Results</h4>
-                
+
                 {uploadResults.results && uploadResults.results.length > 0 && (
-                  <div className="max-h-60 overflow-y-auto bg-gray-900 rounded-md p-2">
+                  <div className="max-h-60 overflow-y-auto bg-gray-100 rounded-md p-2">
                     <div className="text-sm mb-2">
                       <span className="text-green-500">{uploadResults.results.filter((r: any) => r.success).length} successful</span>
                       {' • '}
                       <span className="text-red-500">{uploadResults.results.filter((r: any) => !r.success).length} failed</span>
                     </div>
-                    
+
                     {uploadResults.results.filter((r: any) => !r.success).length > 0 && (
                       <div className="mb-2">
                         <h5 className="text-sm font-medium text-red-500 mb-1">Errors:</h5>
@@ -873,14 +1001,14 @@ export default function Dashboard() {
                           {uploadResults.results
                             .filter((r: any) => !r.success)
                             .map((result: any, idx: number) => (
-                              <li key={idx} className="text-gray-300">
+                              <li key={idx} className="text-gray-500">
                                 <span className="font-medium">{result.vrn}</span>: {result.error}
                               </li>
                             ))}
                         </ul>
                       </div>
                     )}
-                    
+
                     {uploadResults.results.filter((r: any) => r.success).length > 0 && (
                       <div>
                         <h5 className="text-sm font-medium text-green-500 mb-1">Successful Uploads:</h5>
@@ -888,7 +1016,7 @@ export default function Dashboard() {
                           {uploadResults.results
                             .filter((r: any) => r.success)
                             .map((result: any, idx: number) => (
-                              <li key={idx} className="text-gray-300">
+                              <li key={idx} className="text-gray-500">
                                 <span className="font-medium">{result.vrn}</span>
                               </li>
                             ))}

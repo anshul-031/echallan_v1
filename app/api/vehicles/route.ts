@@ -4,26 +4,40 @@ import prisma from '@/lib/prisma';
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 // GET handler to fetch vehicles (all for admin, user-specific for regular users)
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
-    
+    const { searchParams } = new URL(request.url);
+    const vrn = searchParams.get('vrn');
+
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    let whereClause = {};
+
+    if (vrn) {
+      whereClause = {
+        vrn: {
+          contains: vrn,
+          mode: 'insensitive', // Perform case-insensitive search
+        },
+      };
     }
 
     // Admin can see all vehicles
     if (session.user.role === 'admin') {
       const vehicles = await prisma.vehicle.findMany({
+        where: whereClause,
         include: {
           owner: {
             select: {
               id: true,
               name: true,
-              email: true
-            }
-          }
-        }
+              email: true,
+            },
+          },
+        },
       });
       return NextResponse.json(vehicles, { status: 200 });
     }
@@ -31,20 +45,20 @@ export async function GET() {
     // Regular users can only see their vehicles
     const vehicles = await prisma.vehicle.findMany({
       where: {
-        ownerId: session.user.id
+        ...whereClause,
+        ownerId: session.user.id,
       },
       include: {
         owner: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
-        }
-      }
+            email: true,
+          },
+        },
+      },
     });
     return NextResponse.json(vehicles, { status: 200 });
-
   } catch (error) {
     console.error('Fetch error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

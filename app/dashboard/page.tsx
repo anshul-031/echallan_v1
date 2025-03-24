@@ -15,6 +15,7 @@ import {
   ChartBarIcon,
   ClockIcon,
   DocumentChartBarIcon,
+  Bars3Icon,
   XMarkIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -99,6 +100,7 @@ const getSummaryCards = (vehicles: Vehicle[]) => [
 ];
 
 export default function Dashboard() {
+  const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -130,8 +132,6 @@ export default function Dashboard() {
     const fetchVehicles = async () => {
       try {
         setIsLoading(true);
-        const session = await getSession();
-        console.log(session)
         const response = await fetch('/api/vehicles');
         if (!response.ok) throw new Error('Failed to fetch vehicles');
         const data = await response.json();
@@ -146,8 +146,6 @@ export default function Dashboard() {
     };
 
     fetchVehicles();
-
-
   }, []);
 
   // File Upload Operation
@@ -184,7 +182,6 @@ export default function Dashboard() {
         if (!response.ok) {
           throw new Error('Failed to upload vehicles');
         }
-
         const result = await response.json();
         setUploadResults(result);
 
@@ -506,6 +503,18 @@ export default function Dashboard() {
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen overflow-y-auto lg:overflow-hidden">
+      {/* Mobile Toggle Button */}
+      <button
+        onClick={() => setShowMobilePanel(!showMobilePanel)}
+        className="fixed right-4 top-4 z-50 lg:hidden bg-white p-2 rounded-lg shadow-md"
+      >
+        {showMobilePanel ? (
+          <XMarkIcon className="w-6 h-6" />
+        ) : (
+          <Bars3Icon className="w-6 h-6" />
+        )}
+      </button>
+
       <div className="flex-1 flex flex-col p-3 lg:p-6 space-y-4">
         <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">Fleet Dashboard</h1>
 
@@ -878,7 +887,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-gray-200">
+      {/* Live Data Panel */}
+      <div className={`
+        w-full lg:w-96 border-t lg:border-t-0 lg:border-l border-gray-200
+        ${showMobilePanel ? 'fixed inset-0 z-40 bg-white' : 'hidden'}
+        lg:relative lg:block
+      `}>
         <LiveDataPanel vehicles={vehicles} setVehicles={setVehicles} />
       </div>
 

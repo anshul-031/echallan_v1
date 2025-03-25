@@ -17,7 +17,7 @@ model User {
   updatedAt DateTime  @updatedAt @map("updated_at")
   challans  Challan[]
   vehicles  Vehicle[]
-
+  preference Preference?
   @@map("users")
 }
 
@@ -67,4 +67,20 @@ model Challan {
   @@index([user_id])
   @@index([challan_no])
   @@index([vehicle_id])
+}
+
+model Preference {
+  id                       String   @id @default(uuid())
+  userId                  String   @unique
+  roadTaxVisibility       Boolean  @default(true)
+  fitnessVisibility       Boolean  @default(true)
+  insuranceVisibility     Boolean  @default(true)
+  pollutionVisibility     Boolean  @default(true)
+  statePermitVisibility   Boolean  @default(true)
+  nationalPermitVisibility Boolean @default(true)
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
+  user                    User     @relation(fields: [userId], references: [id])
+
+  @@map("preferences")
 }

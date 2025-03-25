@@ -115,7 +115,6 @@ export default function Dashboard() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResults, setUploadResults] = useState<any>(null);
-
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [vehicleToDelete, setVehicleToDelete] = useState<number | null>(null);
   const [isDeletingVehicle, setIsDeletingVehicle] = useState(false);
@@ -124,6 +123,14 @@ export default function Dashboard() {
   const [updatingRows, setUpdatingRows] = useState<{ [key: number]: boolean }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [preferences, setPreferences] = useState({
+    roadTaxVisibility: true,
+    fitnessVisibility: true,
+    insuranceVisibility: true,
+    pollutionVisibility: true,
+    statePermitVisibility: true,
+    nationalPermitVisibility: true,
+  });
 
   useEffect(() => {
     setFilteredVehicles(vehicles);
@@ -146,7 +153,20 @@ export default function Dashboard() {
       }
     };
 
+    const fetchPreferences = async () => {
+      try {
+        const response = await fetch('/api/preferences');
+        if (!response.ok) throw new Error('Failed to fetch preferences');
+        const data = await response.json();
+        setPreferences(data);
+      } catch (error) {
+        console.error('Fetch preferences error:', error);
+        toast.error('Failed to load preferences');
+      }
+    };
+
     fetchVehicles();
+    fetchPreferences();
   }, []);
 
   // File Upload Operation
@@ -738,14 +758,27 @@ export default function Dashboard() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">S.no</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">S.no</th>
                   <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">VRN</th>
                   <th className="md:hidden px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Details</th>
-                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Road Tax</th>
-                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Fitness</th>
-                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Insurance</th>
-                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pollution</th>
-                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Permit</th>
-                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">National Permit</th>
+                  {preferences.roadTaxVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Road Tax</th>
+                  )}
+                  {preferences.fitnessVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Fitness</th>
+                  )}
+                  {preferences.insuranceVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Insurance</th>
+                  )}
+                  {preferences.pollutionVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pollution</th>
+                  )}
+                  {preferences.statePermitVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Permit</th>
+                  )}
+                  {preferences.nationalPermitVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">National Permit</th>
+                  )}
                   <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Last Updated</th>
                   <th className=" md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Update</th>
                   <th className=" md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Upload</th>
@@ -787,60 +820,60 @@ export default function Dashboard() {
                           Show Details
                         </button>
                       </td>
-                      <td
-                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                          row.roadTax
-                        )} whitespace-nowrap`}
-                      >
-                        {row.roadTax}
-                      </td>
-                      <td
-                        onClick={() => {
-                          const exipryDate = new Date(row.fitness);
-                          const currentDate = new Date();
-                          const oneMonthFromNow = new Date(currentDate);
-                          oneMonthFromNow.setMonth(currentDate.getMonth() + 1);
-                          console.log(exipryDate <= oneMonthFromNow)
-                          console.log(exipryDate, oneMonthFromNow)
-                          console.log(getExpirationColor(
+                      {preferences.roadTaxVisibility && (
+                        <td
+                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                            row.roadTax
+                          )} whitespace-nowrap`}
+                        >
+                          {row.roadTax}
+                        </td>
+                      )}
+                      {preferences.fitnessVisibility && (
+                        <td
+                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
                             row.fitness
-                          ))
-                          console.log(row.fitness)
-                        }}
-                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                          row.fitness
-                        )} whitespace-nowrap`}
-                      >
-                        {row.fitness === 'LTT' ? 'LTT' : row.fitness}
-                      </td>
-                      <td
-                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                          row.insurance
-                        )} whitespace-nowrap`}
-                      >
-                        {row.insurance === 'LTT' ? 'LTT' : row.insurance}
-                      </td>
-                      <td
-                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                          row.pollution
-                        )} whitespace-nowrap`}
-                      >
-                        {row.pollution === 'LTT' ? 'LTT' : row.pollution}
-                      </td>
-                      <td
-                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                          row.statePermit
-                        )} whitespace-nowrap`}
-                      >
-                        {row.statePermit === 'LTT' ? 'LTT' : row.statePermit}
-                      </td>
-                      <td
-                        className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                          row.nationalPermit
-                        )} whitespace-nowrap`}
-                      >
-                        {row.nationalPermit === 'LTT' ? 'LTT' : row.nationalPermit}
-                      </td>
+                          )} whitespace-nowrap`}
+                        >
+                          {row.fitness === 'LTT' ? 'LTT' : row.fitness}
+                        </td>
+                      )}
+                      {preferences.insuranceVisibility && (
+                        <td
+                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                            row.insurance
+                          )} whitespace-nowrap`}
+                        >
+                          {row.insurance === 'LTT' ? 'LTT' : row.insurance}
+                        </td>
+                      )}
+                      {preferences.pollutionVisibility && (
+                        <td
+                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                            row.pollution
+                          )} whitespace-nowrap`}
+                        >
+                          {row.pollution === 'LTT' ? 'LTT' : row.pollution}
+                        </td>
+                      )}
+                      {preferences.statePermitVisibility && (
+                        <td
+                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                            row.statePermit
+                          )} whitespace-nowrap`}
+                        >
+                          {row.statePermit === 'LTT' ? 'LTT' : row.statePermit}
+                        </td>
+                      )}
+                      {preferences.nationalPermitVisibility && (
+                        <td
+                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
+                            row.nationalPermit
+                          )} whitespace-nowrap`}
+                        >
+                          {row.nationalPermit === 'LTT' ? 'LTT' : row.nationalPermit}
+                        </td>
+                      )}
                       <td className="hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">
                         {row.lastUpdated}
                       </td>

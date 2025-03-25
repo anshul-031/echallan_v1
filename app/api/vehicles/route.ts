@@ -14,21 +14,72 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let whereClause = {};
+    const userEmail = session?.user?.email;
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email: userEmail as string,
+      },
+      include: {
+        preference: true,
+      },
+    });
+
+    if (!user) {
+      return new NextResponse(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+    }
+
+    const preferences = user.preference || {
+      roadTaxVisibility: true,
+      fitnessVisibility: true,
+      insuranceVisibility: true,
+      pollutionVisibility: true,
+      statePermitVisibility: true,
+      nationalPermitVisibility: true,
+    };
+
+    let whereClause: any = {};
 
     if (vrn) {
-      whereClause = {
-        vrn: {
-          contains: vrn,
-          mode: 'insensitive', // Perform case-insensitive search
-        },
+      whereClause.vrn = {
+        contains: vrn,
+        mode: 'insensitive',
       };
     }
+
+    const visibilityFilters = {
+      roadTax: preferences.roadTaxVisibility ? undefined : null,
+      fitness: preferences.fitnessVisibility ? undefined : null,
+      insurance: preferences.insuranceVisibility ? undefined : null,
+      pollution: preferences.pollutionVisibility ? undefined : null,
+      statePermit: preferences.statePermitVisibility ? undefined : null,
+      nationalPermit: preferences.nationalPermitVisibility ? undefined : null,
+    };
 
     // Admin can see all vehicles
     if (session.user.role === 'admin') {
       const vehicles = await prisma.vehicle.findMany({
         where: whereClause,
+        select: {
+          id: true,
+        vrn: true,
+        roadTax: preferences.roadTaxVisibility,
+        fitness: preferences.fitnessVisibility,
+        insurance: preferences.insuranceVisibility,
+        pollution: preferences.pollutionVisibility,
+        statePermit: preferences.statePermitVisibility,
+        nationalPermit: preferences.nationalPermitVisibility,
+        lastUpdated: true,
+        status: true,
+        registeredAt: true,
+          documents: true,
+          ownerId: true,
+        },
       });
       return NextResponse.json(vehicles, { status: 200 });
     }
@@ -39,7 +90,20 @@ export async function GET(request: Request) {
         ...whereClause,
         ownerId: session.user.id,
       },
-      include: {
+      select: {
+        id: true,
+        vrn: true,
+        roadTax: preferences.roadTaxVisibility,
+        fitness: preferences.fitnessVisibility,
+        insurance: preferences.insuranceVisibility,
+        pollution: preferences.pollutionVisibility,
+        statePermit: preferences.statePermitVisibility,
+        nationalPermit: preferences.nationalPermitVisibility,
+        lastUpdated: true,
+        status: true,
+        registeredAt: true,
+        documents: true,
+        ownerId: true,
         owner: {
           select: {
             id: true,

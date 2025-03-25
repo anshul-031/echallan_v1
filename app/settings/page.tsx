@@ -114,7 +114,7 @@ export default function SettingsPage() {
       }
 
       setPreferences(updatedPreferences);
-      toast.success(`${key.charAt(0).toUpperCase() + key.slice(1)} visibility ${updatedPreferences[key] ? 'enabled' : 'disabled'}`);
+      toast.success(`  ${updatedPreferences[key] ? 'Visible' : 'Hidden'}`);
     } catch (err) {
       console.error("Could not update preferences:", err);
       setError('Failed to update preferences. Please try again.');

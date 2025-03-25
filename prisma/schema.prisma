@@ -40,3 +40,16 @@ model Vehicle {
 
   @@map("vehicles")
 }
+
+
+model ChallanRecord {
+  id             String   @id @default(cuid())
+  rc_no          String
+  user_id        String
+  last_update    DateTime @default(now()) @updatedAt
+  challan_data   Json
+  created_at     DateTime @default(now())
+  @@index([rc_no])
+  @@index([user_id])
+}
+

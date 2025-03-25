@@ -12,6 +12,18 @@ type ChallanData = {
   fine_imposed: string;
   challan_date_time: string;
 };
+type ChallanDisposedData = {
+  challan_no: string;
+  challan_status: string;
+  sent_to_reg_court: string;
+  remark: string;
+  sent_to_virtual_court: string;
+  amount_of_fine_imposed: string | null;
+  state_code: string;
+  fine_imposed: string;
+  challan_date_time: string;
+  receipt_no:string
+};
 
 type ApiResponse = {
   error: string;
@@ -19,7 +31,7 @@ type ApiResponse = {
   message: string;
   data: {
     Pending_data: ChallanData[];
-    Disposed_data: ChallanData[];
+    Disposed_data: ChallanDisposedData[];
   };
 };
 
@@ -75,6 +87,7 @@ export async function GET(request: Request) {
         state_code: challan.state_code,
         fine_imposed: challan.fine_imposed,
         challan_date_time: challan.challan_date_time,
+        receipt_no:challan.receipt_no
       })),
     };
 
@@ -92,3 +105,4 @@ export async function GET(request: Request) {
     );
   }
 }
+

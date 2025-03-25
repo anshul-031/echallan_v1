@@ -29,15 +29,6 @@ export async function GET(request: Request) {
     if (session.user.role === 'admin') {
       const vehicles = await prisma.vehicle.findMany({
         where: whereClause,
-        include: {
-          owner: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
       });
       return NextResponse.json(vehicles, { status: 200 });
     }

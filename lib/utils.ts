@@ -6,17 +6,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 
-
-
-
-export function getExpirationColor(date: string): string {
+export function getExpirationColor(date: string | null | undefined): string {
   // Get the current date and calculate one month from now
   const currentDate = new Date();
   const oneMonthFromNow = new Date(currentDate);
   oneMonthFromNow.setMonth(currentDate.getMonth() + 1);
 
   // Handle special cases
-  if (date === "30-11--0001") {
+  if (!date || date === "30-11--0001") {
     return "text-red-500";
   }
 
@@ -28,14 +25,16 @@ export function getExpirationColor(date: string): string {
     return "text-red-500";
   }
 
- 
-  const [day, month, year] = date.split("-").map(Number);
-
- 
-  const expiryDate = new Date(year, month - 1, day);
+  // Ensure date is a valid string and split produces 3 parts
+  const parts = date.split("-");
+  
+  const [day, month, year] = parts.map(Number);
 
   
-  // Compare the parsed date with the current date
+  
+
+  const expiryDate = new Date(year, month - 1, day);
+// Compare the parsed date with the current date
   if (expiryDate < currentDate) {
     return "text-red-500"; // Date is in the past (expired)
   } else if (expiryDate <= oneMonthFromNow) {

@@ -16,6 +16,8 @@ model User {
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   vehicles  Vehicle[]
+  // Add the reciprocal relation for Challans
+  challans  Challan[]
 
   @@map("users")
 }
@@ -37,21 +39,36 @@ model Vehicle {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
   owner          User?    @relation(fields: [ownerId], references: [id])
+  challans       Challan[] // Add the reciprocal relation for Challans
 
   @@map("vehicles")
 }
 
-model ChallanRecord {
-  id             String   @id @default(cuid())
-  rc_no          String
-  user_id        String
-  last_update    DateTime @default(now()) @updatedAt
-  challan_data   Json
-  created_at     DateTime @default(now())
+model Challan {
+  id                    String    @id @default(cuid())
+  rc_no                 String
+  user_id               String
+  vehicle_id            Int
+  challan_no            String    @unique
+  challan_status        String
+  sent_to_reg_court     Boolean   @default(false)
+  remark                String?
+  sent_to_virtual_court Boolean   @default(false)
+  amount_of_fine        Decimal   @db.Decimal(10, 2)
+  state_code            String
+  fine_imposed          Decimal   @db.Decimal(10, 2)
+  challan_date_time     DateTime
+  receipt_no            String?
+  last_update           DateTime  @default(now()) @updatedAt
+  created_at            DateTime  @default(now())
+
+  // Relations
+  user                  User      @relation(fields: [user_id], references: [id])
+  vehicle               Vehicle   @relation(fields: [vehicle_id], references: [id])
+
   @@index([rc_no])
   @@index([user_id])
+  @@index([challan_no])
+  @@index([vehicle_id])
 }
-
-
-
 

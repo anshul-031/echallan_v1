@@ -311,6 +311,26 @@ export default function Dashboard() {
       });
       if (!response.ok) throw new Error('Failed to create vehicle');
       const createdVehicle = await response.json();
+
+      // Create a challan instance for the new vehicle
+      try {
+        const challanResponse = await fetch('/api/challans', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vehicleId: createdVehicle.id }),
+        });
+
+        if (!challanResponse.ok) {
+          console.error('Failed to create challan:', challanResponse.status);
+          toast.error('Vehicle created successfully, but failed to create challan.');
+        } else {
+          toast.success('Vehicle and challan created successfully');
+        }
+      } catch (challanError) {
+        console.error('Challan create error:', challanError);
+        toast.error('Vehicle created successfully, but failed to create challan.');
+      }
+
       setVehicles((prev) => [...prev, createdVehicle]);
       setFilteredVehicles((prev) => [...prev, createdVehicle]);
       toast.success('Vehicle created successfully');

@@ -13,8 +13,19 @@ import {
   ArrowPathIcon,
   MagnifyingGlassIcon,
   FunnelIcon,
-  CloudArrowUpIcon
+  CloudArrowUpIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
+import { toast } from 'react-hot-toast';
+import { utils as xlsxUtils, writeFile } from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 
 const insightCards = [
   {
@@ -114,6 +125,7 @@ export default function InsightsPage() {
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Calculate pagination
   const filteredData = apiUsageData.filter(item => 
@@ -301,6 +313,90 @@ export default function InsightsPage() {
     );
   };
 
+  const handleExport = async (format: 'excel' | 'pdf' | 'csv' | 'json') => {
+    try {
+      setIsExporting(true);
+      
+      // Prepare the data for export - example usage data based on insights
+      const exportData = [
+        {
+          title: 'Total Distance',
+          value: '185,253 km',
+          change: '+12.5%',
+          period: selectedPeriod
+        },
+        {
+          title: 'Average Speed',
+          value: '42 km/h',
+          change: '-2.3%',
+          period: selectedPeriod
+        },
+        {
+          title: 'Active Hours',
+          value: '1,253 hrs',
+          change: '+8.7%',
+          period: selectedPeriod
+        },
+        {
+          title: 'Fuel Efficiency',
+          value: '7.8 km/l',
+          change: '+3.1%',
+          period: selectedPeriod
+        }
+      ];
+
+      if (format === 'excel') {
+        const worksheet = xlsxUtils.json_to_sheet(exportData);
+        const workbook = xlsxUtils.book_new();
+        xlsxUtils.book_append_sheet(workbook, worksheet, 'Insights Data');
+        writeFile(workbook, 'insights-data.xlsx');
+        toast.success('Data exported to Excel');
+      } else if (format === 'csv') {
+        const worksheet = xlsxUtils.json_to_sheet(exportData);
+        const csv = xlsxUtils.sheet_to_csv(worksheet);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'insights-data.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Data exported to CSV');
+      } else if (format === 'json') {
+        const json = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'insights-data.json');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Data exported to JSON');
+      } else if (format === 'pdf') {
+        const doc = new jsPDF();
+        autoTable(doc, {
+          head: [Object.keys(exportData[0])],
+          body: exportData.map((row) => Object.values(row)),
+          styles: { fontSize: 8 },
+          headStyles: { fillColor: [249, 250, 251], textColor: [0, 0, 0], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [249, 250, 251] },
+          margin: { top: 20 },
+        });
+        doc.save('insights-data.pdf');
+        toast.success('Data exported to PDF');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export data');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 lg:p-6 relative overflow-hidden">
       {/* Abstract Background Canvas */}
@@ -349,10 +445,32 @@ export default function InsightsPage() {
               <span>Filter</span>
             </button>
             
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
-              <CloudArrowUpIcon className="w-5 h-5" />
-              <span>Export</span>
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button 
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                  disabled={isExporting}
+                >
+                  <CloudArrowUpIcon className="w-5 h-5" />
+                  <span>Export</span>
+                  <ChevronDownIcon className="h-4 w-4 ml-1" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56">
+                <DropdownMenuItem onClick={() => handleExport('excel')}>
+                  Excel
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('csv')}>
+                  CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                  PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('json')}>
+                  JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

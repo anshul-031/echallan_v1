@@ -11,8 +11,21 @@ import {
   TruckIcon,
   BanknotesIcon,
   DocumentDuplicateIcon,
+  ChartBarIcon,
+  DocumentArrowDownIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import LiveChallanPanel from '../components/challan/LiveChallanPanel';
+import { toast } from 'react-hot-toast';
+import { utils as xlsxUtils, writeFile } from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '../components/ui/dropdown-menu';
 
 // import Mukul from '../components/Mukul';
 // import { getSession } from 'next-auth/react';
@@ -107,6 +120,10 @@ export default function ChallanDashboard() {
   const [showMobilePanel, setShowMobilePanel] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [challanToDelete, setChallanToDelete] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   
 
@@ -136,6 +153,93 @@ export default function ChallanDashboard() {
 
   
 
+  const handleDelete = (id: string) => {
+    setChallanToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+  
+  const confirmDelete = () => {
+    try {
+      // Here we would typically call an API endpoint to delete the challan
+      console.log(`Deleting challan with ID ${challanToDelete}`);
+      
+      // In a real app, this would be replaced with an actual API call
+      // For demo purposes, we're just showing feedback
+      toast.success('Challan deleted successfully');
+      setShowDeleteConfirm(false);
+      setChallanToDelete(null);
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete challan');
+    }
+  };
+
+  const handleExport = async (format: 'excel' | 'pdf' | 'csv' | 'json') => {
+    try {
+      setIsExporting(true);
+      
+      // Prepare the data for export
+      const exportData = challanData.map(challan => ({
+        vehicleNo: challan.vehicleNo,
+        challans: challan.challans,
+        amount: challan.amount,
+        online: challan.online,
+        offline: challan.offline,
+        lastUpdated: challan.lastUpdated
+      }));
+
+      if (format === 'excel') {
+        const worksheet = xlsxUtils.json_to_sheet(exportData);
+        const workbook = xlsxUtils.book_new();
+        xlsxUtils.book_append_sheet(workbook, worksheet, 'Challan Data');
+        writeFile(workbook, 'challan-data.xlsx');
+        toast.success('Data exported to Excel');
+      } else if (format === 'csv') {
+        const worksheet = xlsxUtils.json_to_sheet(exportData);
+        const csv = xlsxUtils.sheet_to_csv(worksheet);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'challan-data.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Data exported to CSV');
+      } else if (format === 'json') {
+        const json = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'challan-data.json');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Data exported to JSON');
+      } else if (format === 'pdf') {
+        const doc = new jsPDF();
+        autoTable(doc, {
+          head: [Object.keys(exportData[0])],
+          body: exportData.map((row) => Object.values(row)),
+          styles: { fontSize: 8 },
+          headStyles: { fillColor: [249, 250, 251], textColor: [0, 0, 0], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [249, 250, 251] },
+          margin: { top: 20 },
+        });
+        doc.save('challan-data.pdf');
+        toast.success('Data exported to PDF');
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export data');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 ">
       {/* Mobile Toggle Button */}
@@ -158,6 +262,56 @@ export default function ChallanDashboard() {
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
               <h1 className="text-2xl font-semibold text-gray-900">Challan Dashboard</h1>
               
+            </div>
+
+            {/* Search and Actions Row */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <div className="flex w-full justify-between">
+                    <div className="relative w-64">
+                      <input
+                        type="text"
+                        placeholder="Search for challan..."
+                        className="pl-10 pr-4 py-2 w-full rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+                      </div>
+                    </div>
+                    
+                    {/* Export Dropdown */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className="flex items-center gap-1 px-3 py-2 bg-blue-500 hover:bg-blue-700 rounded-md text-sm font-medium transition-colors text-white"
+                          disabled={isExporting}
+                        >
+                          <DocumentArrowDownIcon className="h-5 w-5" />
+                          <span>Export</span>
+                          <ChevronDownIcon className="h-4 w-4 ml-1" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56">
+                        <DropdownMenuItem onClick={() => handleExport('excel')}>
+                          Excel
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExport('csv')}>
+                          CSV
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                          PDF
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleExport('json')}>
+                          JSON
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* Enhanced Summary Cards */}
@@ -322,7 +476,10 @@ export default function ChallanDashboard() {
                             <td className="px-6 py-4 text-sm text-center">Paid</td>
                         <td className="px-6 py-4 text-sm text-center">Reciept</td>
                             <td className="px-6 py-4 text-center">
-                            <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-full">
+                            <button 
+                              onClick={() => handleDelete(String(row.id))} 
+                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-full"
+                            >
                               <TrashIcon className="w-5 h-5" />
                             </button>
                             </td>
@@ -405,6 +562,34 @@ export default function ChallanDashboard() {
           <LiveChallanPanel />
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-sm w-full p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">
+              Confirm Delete
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Are you sure you want to delete this challan? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

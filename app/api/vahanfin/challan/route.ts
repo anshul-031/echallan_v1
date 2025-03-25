@@ -35,6 +35,9 @@ type ApiResponse = {
   };
 };
 
+// Add export config for dynamic rendering
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     // Get the RC number from the URL params

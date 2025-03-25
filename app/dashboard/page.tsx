@@ -835,7 +835,7 @@ export default function Dashboard() {
                             row.fitness
                           )} whitespace-nowrap`}
                         >
-                          {row.fitness === 'LTT' ? 'LTT' : row.fitness}
+                          {row.fitness}
                         </td>
                       )}
                       {preferences.insuranceVisibility && (
@@ -844,7 +844,7 @@ export default function Dashboard() {
                             row.insurance
                           )} whitespace-nowrap`}
                         >
-                          {row.insurance === 'LTT' ? 'LTT' : row.insurance}
+                          {row.insurance}
                         </td>
                       )}
                       {preferences.pollutionVisibility && (
@@ -853,7 +853,7 @@ export default function Dashboard() {
                             row.pollution
                           )} whitespace-nowrap`}
                         >
-                          {row.pollution === 'LTT' ? 'LTT' : row.pollution}
+                          {row.pollution}
                         </td>
                       )}
                       {preferences.statePermitVisibility && (
@@ -862,7 +862,7 @@ export default function Dashboard() {
                             row.statePermit
                           )} whitespace-nowrap`}
                         >
-                          {row.statePermit === 'LTT' ? 'LTT' : row.statePermit}
+                          {row.statePermit}
                         </td>
                       )}
                       {preferences.nationalPermitVisibility && (
@@ -871,7 +871,7 @@ export default function Dashboard() {
                             row.nationalPermit
                           )} whitespace-nowrap`}
                         >
-                          {row.nationalPermit === 'LTT' ? 'LTT' : row.nationalPermit}
+                          {row.nationalPermit}
                         </td>
                       )}
                       <td className="hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">

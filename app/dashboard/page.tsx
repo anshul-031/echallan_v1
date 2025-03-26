@@ -1150,7 +1150,7 @@ export default function Dashboard() {
         </div>
       )}
       {/* Vehicle Details Popup */}
-      {/* {isDetailsPopupOpen && selectedVehicle && (
+      {isDetailsPopupOpen && selectedVehicle && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-all duration-300">
           <div className="bg-white rounded-lg p-6 max-w-md w-full md:w-[90vw] transition-all duration-300">
             <div className="flex justify-between items-center mb-4">
@@ -1175,23 +1175,23 @@ export default function Dashboard() {
             </div>
             <div className="mb-2 flex gap-2">
               <span className="text-gray-600 mb-2">Fitness:</span>
-              <span className={` font-medium mb-2 ${getExpirationColor(selectedVehicle.fitness)}`}>{selectedVehicle.fitness}</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.fitness)}`}>{selectedVehicle.fitness}</span>
             </div>
             <div className="mb-2 flex gap-2">
               <span className="text-gray-600 mb-2">Insurance:</span>
-              <span className={` font-medium mb-2 ${getExpirationColor(selectedVehicle.insurance)}`}>{selectedVehicle.insurance}</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.insurance)}`}>{selectedVehicle.insurance}</span>
             </div>
             <div className="mb-2 flex gap-2">
               <span className="text-gray-600 mb-2">Pollution:</span>
-              <span className={` font-medium mb-2 ${getExpirationColor(selectedVehicle.pollution)}`}>{selectedVehicle.pollution}</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.pollution)}`}>{selectedVehicle.pollution}</span>
             </div>
             <div className="mb-2 flex gap-2">
               <span className="text-gray-600 mb-2">Permit:</span>
-              <span className={` font-medium mb-2 ${getExpirationColor(selectedVehicle.statePermit)}`}>{selectedVehicle.statePermit}</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.statePermit)}`}>{selectedVehicle.statePermit}</span>
             </div>
             <div className="mb-2 flex gap-2">
               <span className="text-gray-600 mb-2">National Permit:</span>
-              <span className={` font-medium mb-2 ${getExpirationColor(selectedVehicle.nationalPermit)}`}>{selectedVehicle.nationalPermit}</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.nationalPermit)}`}>{selectedVehicle.nationalPermit}</span>
             </div>
             <div className="mb-2 flex gap-2">
               <span className="text-gray-600 mb-2">Last Updated:</span>
@@ -1200,95 +1200,6 @@ export default function Dashboard() {
             <button
               onClick={() => handleDelete(selectedVehicle.id)}
               className="flex items-center gap-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm font-medium transition-colors"
-            >
-              <TrashIcon className="h-5 w-5" />
-              <span>Delete Now</span>
-            </button>
-          </div>
-        </div>
-      )} */}
-      {isDetailsPopupOpen && selectedVehicle && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-all duration-300">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full md:w-[90vw] transition-all duration-300">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">Vehicle Details</h3>
-              <button
-                onClick={() => {
-                  setIsDetailsPopupOpen(false);
-                  setSelectedVehicle(null);
-                }}
-                className="p-1 rounded-full hover:bg-gray-100"
-              >
-                <XMarkIcon className="h-6 w-6" />
-              </button>
-            </div>
-            <div className="space-y-2">
-              {/* Always show VRN */}
-              <div className="flex gap-2">
-                <span className="text-gray-600">Vehicle No.:</span>
-                <span className="text-gray-800 font-medium">{selectedVehicle.vrn}</span>
-              </div>
-
-              {/* Conditionally show fields based on preferences */}
-              {preferences.roadTaxVisibility && (
-                <div className="flex gap-2">
-                  <span className="text-gray-600">Road Tax:</span>
-                  <span className={`font-medium ${getExpirationColor(selectedVehicle.roadTax)}`}>
-                    {selectedVehicle.roadTax}
-                  </span>
-                </div>
-              )}
-              {preferences.fitnessVisibility && (
-                <div className="flex gap-2">
-                  <span className="text-gray-600">Fitness:</span>
-                  <span className={`font-medium ${getExpirationColor(selectedVehicle.fitness)}`}>
-                    {selectedVehicle.fitness}
-                  </span>
-                </div>
-              )}
-              {preferences.insuranceVisibility && (
-                <div className="flex gap-2">
-                  <span className="text-gray-600">Insurance:</span>
-                  <span className={`font-medium ${getExpirationColor(selectedVehicle.insurance)}`}>
-                    {selectedVehicle.insurance}
-                  </span>
-                </div>
-              )}
-              {preferences.pollutionVisibility && (
-                <div className="flex gap-2">
-                  <span className="text-gray-600">Pollution:</span>
-                  <span className={`font-medium ${getExpirationColor(selectedVehicle.pollution)}`}>
-                    {selectedVehicle.pollution}
-                  </span>
-                </div>
-              )}
-              {preferences.statePermitVisibility && (
-                <div className="flex gap-2">
-                  <span className="text-gray-600">Permit:</span>
-                  <span className={`font-medium ${getExpirationColor(selectedVehicle.statePermit)}`}>
-                    {selectedVehicle.statePermit}
-                  </span>
-                </div>
-              )}
-              {preferences.nationalPermitVisibility && (
-                <div className="flex gap-2">
-                  <span className="text-gray-600">National Permit:</span>
-                  <span className={`font-medium ${getExpirationColor(selectedVehicle.nationalPermit)}`}>
-                    {selectedVehicle.nationalPermit}
-                  </span>
-                </div>
-              )}
-              {/* Always show Last Updated */}
-              <div className="flex gap-2">
-                <span className="text-gray-600">Last Updated:</span>
-                <span className="text-gray-800 font-medium">{selectedVehicle.lastUpdated}</span>
-              </div>
-            </div>
-
-            {/* Delete Button */}
-            <button
-              onClick={() => handleDelete(selectedVehicle.id)}
-              className="flex items-center gap-1 px-3 py-2 mt-4 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm font-medium transition-colors"
             >
               <TrashIcon className="h-5 w-5" />
               <span>Delete Now</span>

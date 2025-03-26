@@ -107,3 +107,66 @@
     padding-bottom: 0.75rem;
   }
 }
+
+/* Add dark mode styles */
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+  --text-color: #111827;
+  --bg-color: #ffffff;
+  --bg-color-secondary: #f3f4f6;
+  --border-color: #e5e7eb;
+}
+
+.dark-mode {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 0, 0, 0;
+  --background-end-rgb: 0, 0, 0;
+  --text-color: #f3f4f6;
+  --bg-color: #1f2937;
+  --bg-color-secondary: #111827;
+  --border-color: #374151;
+}
+
+body {
+  color: var(--text-color);
+  background-color: var(--bg-color-secondary);
+}
+
+.dark-mode body {
+  color: var(--text-color);
+  background-color: var(--bg-color-secondary);
+}
+
+.dark-mode .bg-white {
+  background-color: var(--bg-color) !important;
+}
+
+.dark-mode .text-gray-900 {
+  color: var(--text-color) !important;
+}
+
+.dark-mode .text-gray-700 {
+  color: #e5e7eb !important;
+}
+
+.dark-mode .text-gray-500 {
+  color: #9ca3af !important;
+}
+
+.dark-mode .border-gray-200 {
+  border-color: var(--border-color) !important;
+}
+
+.dark-mode .bg-gray-50 {
+  background-color: #111827 !important;
+}
+
+.dark-mode .hover\:bg-gray-100:hover {
+  background-color: #1f2937 !important;
+}
+
+.dark-mode .bg-gray-200 {
+  background-color: #374151 !important;
+}

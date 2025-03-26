@@ -14,9 +14,12 @@ import {
   SunIcon,
   CheckIcon,
   ExclamationTriangleIcon,
-  XMarkIcon
+  XMarkIcon,
+  ShieldCheckIcon,
+  ArrowLeftOnRectangleIcon
 } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
+import { getSettings, updateSettings, UserSettings, UserSettingsUpdate } from '@/lib/mockApi';
 
 type SettingsTab = 'app' | 'account' | 'security' | 'preferences';
 
@@ -53,23 +56,52 @@ export default function SettingsPage() {
   // Security settings
   const [passwordLastChanged, setPasswordLastChanged] = useState('2 months ago');
   const [sessionTimeout, setSessionTimeout] = useState(30);
+  const [activityAlertsEnabled, setActivityAlertsEnabled] = useState(true);
 
+  // Fetch settings on component mount
   useEffect(() => {
-    const fetchPreferences = async () => {
+    const fetchSettings = async () => {
       try {
-        const response = await fetch('/api/preferences');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        // Use mock API instead of actual fetch
+        setIsLoading(true);
+        const data = getSettings();
+        
+        if (!data) {
+          throw new Error('Failed to fetch settings');
         }
-        const data = await response.json();
-        setPreferences(data);
+        
+        // Update state with fetched data
+        if (data.settings) {
+          setDarkMode(data.settings.darkMode);
+          setLanguage(data.settings.language);
+          setNotifications(data.settings.notifications);
+          setSessionTimeout(data.settings.sessionTimeout);
+        }
+        if (data.preferences) {
+          setPreferences(data.preferences);
+        }
+        if (typeof data.twoFactorEnabled === 'boolean') {
+          setTwoFactorEnabled(data.twoFactorEnabled);
+        }
+        if (data.emailVerified !== undefined) {
+          setEmailVerified(data.emailVerified);
+        }
+        if (data.passwordLastChanged) {
+          setPasswordLastChanged(new Date(data.passwordLastChanged).toLocaleDateString());
+        }
+        if (typeof data.activityAlertsEnabled === 'boolean') {
+          setActivityAlertsEnabled(data.activityAlertsEnabled);
+        }
       } catch (error) {
-        console.error("Could not fetch preferences:", error);
-        setError("Failed to load preferences.");
+        console.error('Error fetching settings:', error);
+        setError('Failed to load settings');
+        toast.error('Failed to load settings');
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchPreferences();
+    fetchSettings();
   }, []);
 
   // Add password fields state
@@ -101,68 +133,122 @@ export default function SettingsPage() {
     };
 
     try {
-      const response = await fetch('/api/preferences', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedPreferences),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
+      // Use mock API instead of actual fetch
+      await updateSettings({ preferences: updatedPreferences });
+      
       setPreferences(updatedPreferences);
-      toast.success(`${key.charAt(0).toUpperCase() + key.slice(1)} visibility ${updatedPreferences[key] ? 'enabled' : 'disabled'}`);
+      toast.success(`${updatedPreferences[key] ? 'Enabled' : 'Disabled'} ${key.replace('Visibility', '')}`);
     } catch (err) {
       console.error("Could not update preferences:", err);
-      setError('Failed to update preferences. Please try again.');
-      toast.error('Failed to update settings');
+      setError('Failed to update preferences');
+      toast.error('Failed to update preferences');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleNotificationChange = (key: keyof typeof notifications) => {
-    setNotifications(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-    toast.success(`${key.charAt(0).toUpperCase() + key.slice(1)} notifications ${notifications[key] ? 'disabled' : 'enabled'}`);
+  const handleNotificationChange = async (key: keyof typeof notifications) => {
+    const updatedNotifications = {
+      ...notifications,
+      [key]: !notifications[key]
+    };
+
+    try {
+      // Use mock API instead of actual fetch
+      const update: UserSettingsUpdate = {
+        settings: {
+          notifications: {
+            [key]: !notifications[key]
+          }
+        }
+      };
+      
+      await updateSettings(update);
+      
+      setNotifications(updatedNotifications);
+      toast.success(`${key.charAt(0).toUpperCase() + key.slice(1)} notifications ${updatedNotifications[key] ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('Error updating notifications:', error);
+      toast.error('Failed to update notifications');
+    }
   };
 
-  const handleToggleTwoFactor = () => {
+  const handleToggleTwoFactor = async () => {
     setIsLoading(true);
     setError(null);
 
-    // Simulate API call with timeout
-    setTimeout(() => {
-      try {
-        setTwoFactorEnabled(!twoFactorEnabled);
-        setIsLoading(false);
-        toast.success(`Two-factor authentication ${twoFactorEnabled ? 'disabled' : 'enabled'}`);
-      } catch (err) {
-        setIsLoading(false);
-        setError('Failed to update two-factor authentication. Please try again.');
-        toast.error('Failed to update settings');
+    try {
+      // Use mock API instead of actual fetch
+      await updateSettings({
+        twoFactorEnabled: !twoFactorEnabled
+      });
+      
+      setTwoFactorEnabled(!twoFactorEnabled);
+      toast.success(`Two-factor authentication ${!twoFactorEnabled ? 'enabled' : 'disabled'}`);
+    } catch (err) {
+      setError('Failed to update two-factor authentication');
+      toast.error('Failed to update two-factor authentication');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleToggleDarkMode = async () => {
+    try {
+      // Use mock API instead of actual fetch
+      await updateSettings({
+        settings: {
+          darkMode: !darkMode
+        }
+      });
+      
+      setDarkMode(!darkMode);
+      toast.success(`${!darkMode ? 'Dark' : 'Light'} mode enabled`);
+      
+      // Apply dark mode to document
+      if (!darkMode) {
+        document.documentElement.classList.add('dark-mode');
+      } else {
+        document.documentElement.classList.remove('dark-mode');
       }
-    }, 800);
+    } catch (error) {
+      console.error('Error updating dark mode:', error);
+      toast.error('Failed to update dark mode');
+    }
   };
 
-  const handleToggleDarkMode = () => {
-    setDarkMode(!darkMode);
-    toast.success(`${darkMode ? 'Light' : 'Dark'} mode enabled`);
+  const handleLanguageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    try {
+      // Use mock API instead of actual fetch
+      await updateSettings({
+        settings: {
+          language: e.target.value
+        }
+      });
+      
+      setLanguage(e.target.value);
+      toast.success(`Language changed to ${e.target.value}`);
+    } catch (error) {
+      console.error('Error updating language:', error);
+      toast.error('Failed to update language');
+    }
   };
 
-  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setLanguage(e.target.value);
-    toast.success(`Language changed to ${e.target.value}`);
-  };
-
-  const handleSessionTimeoutChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSessionTimeout(Number(e.target.value));
-    toast.success(`Session timeout set to ${e.target.value} minutes`);
+  const handleSessionTimeoutChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    try {
+      // Use mock API instead of actual fetch
+      await updateSettings({
+        settings: {
+          sessionTimeout: Number(e.target.value)
+        }
+      });
+      
+      setSessionTimeout(Number(e.target.value));
+      toast.success(`Session timeout set to ${e.target.value} minutes`);
+    } catch (error) {
+      console.error('Error updating session timeout:', error);
+      toast.error('Failed to update session timeout');
+    }
   };
 
   const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -176,7 +262,7 @@ export default function SettingsPage() {
     if (passwordError) setPasswordError('');
   };
 
-  const handleSavePassword = () => {
+  const handleSavePassword = async () => {
     // Reset error
     setPasswordError('');
     setError(null);
@@ -202,29 +288,62 @@ export default function SettingsPage() {
       return;
     }
 
-    // Update password (in a real app, this would call an API)
     setIsLoading(true);
 
-    // Simulate API call with timeout
-    setTimeout(() => {
-      try {
-        setPasswordLastChanged('Just now');
-        setIsLoading(false);
+    try {
+      // Use mock API instead of actual fetch
+      const result = await updateSettings({
+        password: passwordFields.newPassword
+      });
+      
+      setPasswordLastChanged(new Date(result.passwordLastChanged).toLocaleDateString());
+      
+      // Clear password fields
+      setPasswordFields({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
 
-        // Clear password fields
-        setPasswordFields({
-          currentPassword: '',
-          newPassword: '',
-          confirmPassword: ''
-        });
+      toast.success('Password updated successfully');
+    } catch (err) {
+      setError('Failed to update password');
+      toast.error('Failed to update password');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        toast.success('Password updated successfully');
-      } catch (err) {
-        setIsLoading(false);
-        setError('Failed to update password. Please try again.');
-        toast.error('Failed to update password');
-      }
-    }, 800);
+  // Function to handle device revocation
+  const handleRevokeDevice = async (deviceId: string) => {
+    try {
+      // In a real app, you would call an API to revoke the device
+      toast.success('Device access has been revoked');
+    } catch (error) {
+      console.error('Error revoking device:', error);
+      toast.error('Failed to revoke device access');
+    }
+  };
+
+  // Function to handle user logout
+  const handleLogout = () => {
+    toast.success('You have been logged out successfully');
+    // In a real app, you would call an API to log the user out
+  };
+
+  // Function to toggle activity alerts
+  const handleToggleActivityAlerts = async () => {
+    try {
+      await updateSettings({
+        activityAlertsEnabled: !activityAlertsEnabled
+      });
+      
+      setActivityAlertsEnabled(!activityAlertsEnabled);
+      toast.success(`Activity alerts ${!activityAlertsEnabled ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('Error updating activity alerts:', error);
+      toast.error('Failed to update activity alerts');
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -761,9 +880,92 @@ export default function SettingsPage() {
                   </div>
 
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Security Preferences</h2>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Session Settings</h2>
+                    <div className="space-y-6">
+                      <div>
+                        <label className="block font-medium text-gray-900 mb-2">Session Timeout</label>
+                        <div className="flex items-center">
+                          <select
+                            value={sessionTimeout}
+                            onChange={handleSessionTimeoutChange}
+                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          >
+                            <option value={15}>15 minutes</option>
+                            <option value={30}>30 minutes</option>
+                            <option value={60}>1 hour</option>
+                            <option value={120}>2 hours</option>
+                          </select>
+                          <p className="ml-3 text-sm text-gray-500">
+                            You&apos;ll be logged out after this period of inactivity
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <button 
+                          onClick={handleLogout}
+                          className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
+                        >
+                          <ArrowLeftOnRectangleIcon className="w-5 h-5 mr-2" />
+                          Log Out of All Devices
+                        </button>
+                        <p className="mt-2 text-sm text-gray-500">
+                          This will log you out of all devices except this one
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Login History</h2>
+                    <div className="mt-4 space-y-3">
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">Jaipur, India</p>
+                            <p className="text-xs text-gray-500">Today, 09:23 AM</p>
+                          </div>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            Current Session
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-3 rounded-lg">
+                        <div className="flex justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">New Delhi, India</p>
+                            <p className="text-xs text-gray-500">Yesterday, 07:12 PM</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Security Features</h2>
 
                     <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div className="flex items-start">
+                          <ShieldCheckIcon className="w-5 h-5 text-gray-400 mr-3 mt-1" />
+                          <div>
+                            <p className="font-medium text-gray-900">Activity Alerts</p>
+                            <p className="text-sm text-gray-500">
+                              Get alerts about unusual account activity
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleToggleActivityAlerts}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${activityAlertsEnabled ? 'bg-blue-600' : 'bg-gray-200'}`}
+                        >
+                          <span
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${activityAlertsEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+                          />
+                        </button>
+                      </div>
+
                       <div className="p-4 border border-gray-200 rounded-lg">
                         <div className="flex items-start">
                           <DevicePhoneMobileIcon className="w-5 h-5 text-gray-400 mr-3 mt-1" />
@@ -786,151 +988,15 @@ export default function SettingsPage() {
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
                               <p className="font-medium text-gray-900">MacBook Pro</p>
-                              <button className="text-sm text-red-600 hover:text-red-800">
+                              <button 
+                                onClick={() => handleRevokeDevice('2')}
+                                className="text-sm text-red-600 hover:text-red-800"
+                              >
                                 Revoke Access
                               </button>
                             </div>
                             <p className="text-sm text-gray-500">Last active: 2 days ago</p>
                             <p className="text-sm text-gray-500">Location: New Delhi, India</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'security' && (
-                <div className="space-y-8">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Password Settings</h2>
-
-                    <div className="space-y-6">
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Password Last Changed</p>
-                        <p className="text-gray-900">{passwordLastChanged}</p>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div>
-                          <label htmlFor="current-password" className="block text-sm font-medium text-gray-700">
-                            Current Password
-                          </label>
-                          <input
-                            type="password"
-                            id="current-password"
-                            name="currentPassword"
-                            value={passwordFields.currentPassword}
-                            onChange={handlePasswordInputChange}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="new-password" className="block text-sm font-medium text-gray-700">
-                            New Password
-                          </label>
-                          <input
-                            type="password"
-                            id="new-password"
-                            name="newPassword"
-                            value={passwordFields.newPassword}
-                            onChange={handlePasswordInputChange}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
-                            Confirm New Password
-                          </label>
-                          <input
-                            type="password"
-                            id="confirm-password"
-                            name="confirmPassword"
-                            value={passwordFields.confirmPassword}
-                            onChange={handlePasswordInputChange}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        </div>
-
-                        {passwordError && (
-                          <p className="mt-2 text-sm text-red-600">{passwordError}</p>
-                        )}
-
-                        <button
-                          onClick={handleSavePassword}
-                          disabled={isLoading}
-                          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
-                        >
-                          {isLoading ? (
-                            <>
-                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              Updating...
-                            </>
-                          ) : 'Update Password'}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Security Preferences</h2>
-
-                    <div className="space-y-6">
-                      <div>
-                        <label className="block font-medium text-gray-900 mb-2">Session Timeout</label>
-                        <div className="flex items-center">
-                          <select
-                            value={sessionTimeout}
-                            onChange={handleSessionTimeoutChange}
-                            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          >
-                            <option value={15}>15 minutes</option>
-                            <option value={30}>30 minutes</option>
-                            <option value={60}>1 hour</option>
-                            <option value={120}>2 hours</option>
-                          </select>
-                          <p className="ml-3 text-sm text-gray-500">
-                            You&apos;ll be logged out after this period of inactivity
-                          </p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-medium text-gray-900">Login History</p>
-                            <p className="text-sm text-gray-500">View your recent login activity</p>
-                          </div>
-                          <button className="text-sm text-blue-600 hover:text-blue-800">
-                            View Full History
-                          </button>
-                        </div>
-
-                        <div className="mt-4 space-y-3">
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="flex justify-between">
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">Jaipur, India</p>
-                                <p className="text-xs text-gray-500">Today, 09:23 AM</p>
-                              </div>
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Current Session
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="bg-gray-50 p-3 rounded-lg">
-                            <div className="flex justify-between">
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">New Delhi, India</p>
-                                <p className="text-xs text-gray-500">Yesterday, 07:12 PM</p>
-                              </div>
-                            </div>
                           </div>
                         </div>
                       </div>

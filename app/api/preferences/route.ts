@@ -23,7 +23,7 @@ export async function GET() {
         email: userEmail as string,
       },
       include: {
-        preference: true,
+        preferences: true,
       },
     });
 
@@ -36,7 +36,7 @@ export async function GET() {
       });
     }
 
-    if (!user.preference) {
+    if (!user.preferences) {
       return NextResponse.json({
         roadTaxVisibility: true,
         fitnessVisibility: true,
@@ -47,7 +47,7 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json(user.preference);
+    return NextResponse.json(user.preferences);
   } catch (error: any) {
     console.error("Error fetching preferences:", error);
     return new NextResponse(JSON.stringify({ error: error.message }), {

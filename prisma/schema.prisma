@@ -15,9 +15,9 @@ model User {
   role       String      @default("user")
   created_at DateTime    @default(now())
   updated_at DateTime
-  Challan    Challan[]
-  Preference Preference?
-  Vehicle    Vehicle[]
+  challans    Challan[]
+  preferences Preference?
+  vehicles    Vehicle[]
 }
 
 

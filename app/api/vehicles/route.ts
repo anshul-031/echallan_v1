@@ -21,7 +21,7 @@ export async function GET(request: Request) {
         email: userEmail as string,
       },
       include: {
-        preference: true,
+        preferences: true,
       },
     });
 
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const preferences = user.preference || {
+    const preferences = user.preferences || {
       roadTaxVisibility: true,
       fitnessVisibility: true,
       insuranceVisibility: true,

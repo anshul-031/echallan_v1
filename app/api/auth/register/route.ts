@@ -34,6 +34,7 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         name,
+        updated_at: new Date(),
       },
     });
 
@@ -44,8 +45,9 @@ export async function POST(req: Request) {
       { message: "User created successfully", user: userWithoutPassword },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Registration error:", error);
+    console.error("Registration error message:", error.message);
     return NextResponse.json(
       { error: "Error creating user" },
       { status: 500 }

@@ -1,0 +1,546 @@
+{
+    "error": "false",
+    "code": "200",
+    "message": "Success",
+    "data": {
+        "Pending_data": null,
+        "Disposed_data": [
+            {
+                "challan_no": "TN175301240701133835",
+                "challan_date_time": "01-07-2024 13:38:35",
+                "challan_place": "F4M2+7RF, Andhra Pradesh Border Checkpoint, Gumpli, Tamil Nadu 601201, India",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "NA",
+                "fine_imposed": "1000",
+                "dl_no": null,
+                "driver_name": "MS M******E L*******S P*T L*D",
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "MS M******E L*******S P*T L*D",
+                "receipt_no": "TNRTE24110009977",
+                "received_amount": 1000,
+                "department": "Transport",
+                "state_code": "TN",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": "177",
+                        "name": "Any Person driving vehicle fail to produce permit, Driving License, Conductor license,RC, FC and IC (S.No.14)"
+                    },
+                    {
+                        "act": "177",
+                        "name": "AVT Form Not Produced"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "TN153887240517153227",
+                "challan_date_time": "17-05-2024 15:32:27",
+                "challan_place": "F4M2+7RF, Andhra Pradesh Border Checkpoint, Gumpli, Tamil Nadu 601201, India",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "NA",
+                "fine_imposed": "1000",
+                "dl_no": null,
+                "driver_name": "MS M******E L*******S P*T L*D",
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "MS M******E L*******S P*T L*D",
+                "receipt_no": "TNRTE24110009951",
+                "received_amount": 1000,
+                "department": "Transport",
+                "state_code": "TN",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": "177",
+                        "name": "Any Person driving vehicle fail to produce permit"
+                    },
+                    {
+                        "act": "177",
+                        "name": "Registration Mark not displayed in prescribed manner"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "MH122716240213153614",
+                "challan_date_time": "13-02-2024 15:36:14",
+                "challan_place": "NH 48, Dapchari, Maharashtra 401606, India",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "Mv detected carrying overloaded good which is overloaded by dlw 15330kg-gvw14052=overload1278kg",
+                "fine_imposed": "24000",
+                "dl_no": "**********218741",
+                "driver_name": "M****K",
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "M****K",
+                "receipt_no": "MHRTE24020007281",
+                "received_amount": 24000,
+                "department": "Transport",
+                "state_code": "MH",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": null,
+                        "name": "Overloading Extended, Owners responsibility"
+                    },
+                    {
+                        "act": "113/194(1)",
+                        "name": "Overloading Extended, Owners responsibility"
+                    },
+                    {
+                        "act": "113/194(1)",
+                        "name": "Overloading Extended, Owners responsibility"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "MH138527240202122802",
+                "challan_date_time": "02-02-2024 12:28:02",
+                "challan_place": "BCP HADAKHED",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "NA",
+                "fine_imposed": "1000",
+                "dl_no": "**********007977",
+                "driver_name": "M****H  K***R",
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "M****H  K***R",
+                "receipt_no": "MHRTE24110001576",
+                "received_amount": 1000,
+                "department": "Transport",
+                "state_code": "MH",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": "177",
+                        "name": "Reflectors not fitted"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "BR10552231018073836",
+                "challan_date_time": "18-10-2023 07:38:36",
+                "challan_place": "DOBHI C P",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "NA",
+                "fine_imposed": "2500",
+                "dl_no": "**********004169",
+                "driver_name": "M******L  K**N",
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "MS M******E L*******S P*T L*D",
+                "receipt_no": null,
+                "received_amount": 2500,
+                "department": "Transport",
+                "state_code": "BR",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": null,
+                        "name": "177,179(1)"
+                    },
+                    {
+                        "act": null,
+                        "name": "Overloading Offence"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "HR50188230907005607",
+                "challan_date_time": "07-09-2023 00:56:07",
+                "challan_place": "BHUTESWAR MANDIR",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "NA",
+                "fine_imposed": "500",
+                "dl_no": "**********004169",
+                "driver_name": "M******L  K**N",
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "M******L  K**N",
+                "receipt_no": null,
+                "received_amount": 500,
+                "department": "Traffic",
+                "state_code": "HR",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": "NA",
+                        "name": "43. Wrong Side Driving"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "BR523858230419124561",
+                "challan_date_time": "19-04-2023 12:44:00",
+                "challan_place": "CHECKPOST MOHANIA, KAIMUR, BIHAR.",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "NA",
+                "fine_imposed": "2500",
+                "dl_no": null,
+                "driver_name": null,
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "MS M******E L*******S P*T L*D",
+                "receipt_no": null,
+                "received_amount": 2500,
+                "department": "Transport",
+                "state_code": "BR",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": null,
+                        "name": "190(1)A,177(A)"
+                    },
+                    {
+                        "act": null,
+                        "name": "Overloading Offence"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "TN153435230407121029",
+                "challan_date_time": "07-04-2023 12:10:29",
+                "challan_place": "6HWP+2V5, Alamelumangapuram, Tamil Nadu 631206, India",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "NA",
+                "fine_imposed": "1000",
+                "dl_no": "**********001511",
+                "driver_name": "A***L  V*G",
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "MS M******E L*******S P*T L*D",
+                "receipt_no": "TNRTE24110009899",
+                "received_amount": 1000,
+                "department": "Transport",
+                "state_code": "TN",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": "177",
+                        "name": "Driver without uniform"
+                    },
+                    {
+                        "act": "177",
+                        "name": "Not production of GVR for Goods Vehicles"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "RJ68505230210164013",
+                "challan_date_time": "10-02-2023 16:40:13",
+                "challan_place": "QXVM+79Q Dara Ki Naal, MDR7, Amjhar, Rajasthan 325602, India",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "Yes",
+                "remark": "Oware Speed",
+                "fine_imposed": "0",
+                "dl_no": null,
+                "driver_name": "N**L",
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "N**L",
+                "receipt_no": "case no-438/2024 widrow",
+                "received_amount": 0,
+                "department": "Traffic",
+                "state_code": "RJ",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": "183(1)(ii)",
+                        "name": "Driving at excess speed (MMV, HMV)  183(1)(ii)       अतिरिक्त गति से ड्राइविंग (MMV, HMV) 183(1)(ii)"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": "RAMGANJMANDI",
+                "court_name": "MJM RMI",
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "KL148983230111152944",
+                "challan_date_time": "11-01-2023 15:29:44",
+                "challan_place": "Aaramkallu, G7WV+PJJ, Vellanikkara, Thrissur, Kerala 680654, India",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "Found the  vehicle drove along the extreme right track (speed track ) of the road. yes",
+                "fine_imposed": "500",
+                "dl_no": "**********006323",
+                "driver_name": "M****H K***R",
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "M****H K***R",
+                "receipt_no": null,
+                "received_amount": 500,
+                "department": "Transport",
+                "state_code": "KL",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": null,
+                        "name": "court fine"
+                    },
+                    {
+                        "act": "S177A",
+                        "name": "Not obeying lane traffic"
+                    }
+                ],
+                "amount_of_fine_imposed": "500.00",
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": "2023-04-10 00:00:00",
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "Yes"
+            },
+            {
+                "challan_no": "BR515420221104023521",
+                "challan_date_time": "04-11-2022 14:34:00",
+                "challan_place": "CHECKPOST MOHANIA, BIHAR, INDIA.",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "NA",
+                "fine_imposed": "2500",
+                "dl_no": null,
+                "driver_name": null,
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "MS M******E L*******S P*T L*D",
+                "receipt_no": null,
+                "received_amount": 2500,
+                "department": "Transport",
+                "state_code": "BR",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": null,
+                        "name": "177(A),190(1)A"
+                    },
+                    {
+                        "act": null,
+                        "name": "Overloading Offence"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "BR515420220714041495",
+                "challan_date_time": "14-07-2022 16:14:00",
+                "challan_place": "Checkpost Mohania ,Bihar",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "NA",
+                "fine_imposed": "2500",
+                "dl_no": null,
+                "driver_name": null,
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "MS M******E L*******S P*T L*D",
+                "receipt_no": null,
+                "received_amount": 2500,
+                "department": "Transport",
+                "state_code": "BR",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": null,
+                        "name": "190(1)A,177(A)"
+                    },
+                    {
+                        "act": null,
+                        "name": "Overloading Offence"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "MH107090220622123330",
+                "challan_date_time": "22-06-2022 12:33:30",
+                "challan_place": "MH SH 194, Pimpri Pancham, Maharashtra 425306, India",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "NA",
+                "fine_imposed": "1000",
+                "dl_no": "**********008466",
+                "driver_name": "H****N A***D",
+                "owner_name": "M*S M******E L*******S",
+                "name_of_violator": "M*S M******E L*******S",
+                "receipt_no": null,
+                "received_amount": 1000,
+                "department": "Transport",
+                "state_code": "MH",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": null,
+                        "name": "us50/177"
+                    },
+                    {
+                        "act": null,
+                        "name": "Custom offence 1"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "HR10045220411172654",
+                "challan_date_time": "11-04-2022 17:26:54",
+                "challan_place": "KMP TOLL 7B",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "No",
+                "remark": "DL",
+                "fine_imposed": "500",
+                "dl_no": "**********008466",
+                "driver_name": "H****N    A***D",
+                "owner_name": "MS M******E L*******S P*T L*D",
+                "name_of_violator": "H****N    A***D",
+                "receipt_no": "HRRTE22040024841",
+                "received_amount": 500,
+                "department": "Traffic",
+                "state_code": "HR",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": "NA",
+                        "name": "45. Lane change"
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": null,
+                "court_name": null,
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            },
+            {
+                "challan_no": "DL64288220330122611",
+                "challan_date_time": "30-03-2022 12:26:11",
+                "challan_place": "AKSHARDHAM OPPOSITE",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "Yes",
+                "remark": "lane change",
+                "fine_imposed": "1000",
+                "dl_no": "**********008466",
+                "driver_name": "H****N    A***D",
+                "owner_name": "M*S M******E L*******S P*T L*D",
+                "name_of_violator": "H****N    A***D",
+                "receipt_no": "4376727524239",
+                "received_amount": 1000,
+                "department": "Traffic",
+                "state_code": "DL",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": "184 MVA",
+                        "name": "Driving Dangerously"
+                    }
+                ],
+                "amount_of_fine_imposed": "1000.00",
+                "court_address": "COURT NO 207, KARKARDUMA COURTS, DELHI",
+                "court_name": "MS. SANYA SINGH,  JMFC -06",
+                "date_of_proceeding": "2022-03-31 00:00:00",
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "Yes"
+            },
+            {
+                "challan_no": "UP77475220118192123",
+                "challan_date_time": "18-01-2022 19:21:23",
+                "challan_place": "Dibiyapur Rd, Hashmat Nagar, Auraiya, Uttar Pradesh 206122, India",
+                "challan_status": "Disposed",
+                "sent_to_reg_court": "Yes",
+                "remark": "NA",
+                "fine_imposed": "1000",
+                "dl_no": null,
+                "driver_name": "S***I",
+                "owner_name": "M*S M******E L*******S P*T L*D",
+                "name_of_violator": "S***I",
+                "receipt_no": "0001122",
+                "received_amount": 1000,
+                "department": "Traffic",
+                "state_code": "UP",
+                "document_impounded": null,
+                "offence_details": [
+                    {
+                        "act": null,
+                        "name": "115/194 no entry me Parvesh"
+                    },
+                    {
+                        "act": null,
+                        "name": "Other Offence"
+                    },
+                    {
+                        "act": "MV act 1988 S 130 Rule15(7) S 177",
+                        "name": "Failure to present Driving License on demand"
+                    },
+                    {
+                        "act": "Section 194 B(1) of MVA 1988",
+                        "name": "Failure to use safety belt while driving or carries passenger not wearing safety belt."
+                    }
+                ],
+                "amount_of_fine_imposed": null,
+                "court_address": "auriaya",
+                "court_name": "cjm auraiya",
+                "date_of_proceeding": null,
+                "sent_to_court_on": null,
+                "sent_to_virtual_court": "No"
+            }
+        ]
+    }
+}

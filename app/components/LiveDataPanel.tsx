@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import { MagnifyingGlassIcon, PlusIcon, XMarkIcon, ArrowRightIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import { getSession } from 'next-auth/react';
@@ -43,6 +43,26 @@ export default function LiveDataPanel({ collapsed = false, vehicles, setVehicles
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+
+  const postChallanResponse = async (challanResponse: any) => {
+    try {
+      const response = await fetch('/api/challans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(challanResponse),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to post challan response:', response.status);
+      } else {
+        console.log('Challan response posted successfully');
+      }
+    } catch (error) {
+      console.error('Error posting challan response:', error);
+    }
+  };
 
   const handleFetchVehicleData = useCallback(async () => {
     setIsLoading(true);
@@ -112,6 +132,21 @@ export default function LiveDataPanel({ collapsed = false, vehicles, setVehicles
         toast.success("Vehicle added successfully.");
         const newVehicle = await response.json();
         setVehicles((prevVehicles) => [...prevVehicles, newVehicle]);
+
+        // Call /api/vahanfin/echallan
+        try {
+          const challanResponse = await fetch(`/api/vahanfin/echallan?rc_no=${vehicleDetails.rc_regn_no}`);
+          if (!challanResponse.ok) {
+            console.error("Failed to fetch challans:", challanResponse.status);
+          } else {
+            const challanData = await challanResponse.json();
+            console.log("Challan data:", challanData);
+            postChallanResponse({ vehicleId: newVehicle.id, data: challanData });
+          }
+        } catch (error) {
+          console.error("Error fetching challans:", error);
+        }
+
       } else {
         toast.error("Failed to add vehicle.");
       }

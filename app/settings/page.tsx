@@ -65,11 +65,11 @@ export default function SettingsPage() {
         // Use mock API instead of actual fetch
         setIsLoading(true);
         const data = getSettings();
-        
+
         if (!data) {
           throw new Error('Failed to fetch settings');
         }
-        
+
         // Update state with fetched data
         if (data.settings) {
           setDarkMode(data.settings.darkMode);
@@ -135,9 +135,10 @@ export default function SettingsPage() {
     try {
       // Use mock API instead of actual fetch
       await updateSettings({ preferences: updatedPreferences });
-      
+
       setPreferences(updatedPreferences);
       toast.success(`${updatedPreferences[key] ? 'Enabled' : 'Disabled'} ${key.replace('Visibility', '')}`);
+
     } catch (err) {
       console.error("Could not update preferences:", err);
       setError('Failed to update preferences');
@@ -162,9 +163,9 @@ export default function SettingsPage() {
           }
         }
       };
-      
+
       await updateSettings(update);
-      
+
       setNotifications(updatedNotifications);
       toast.success(`${key.charAt(0).toUpperCase() + key.slice(1)} notifications ${updatedNotifications[key] ? 'enabled' : 'disabled'}`);
     } catch (error) {
@@ -182,7 +183,7 @@ export default function SettingsPage() {
       await updateSettings({
         twoFactorEnabled: !twoFactorEnabled
       });
-      
+
       setTwoFactorEnabled(!twoFactorEnabled);
       toast.success(`Two-factor authentication ${!twoFactorEnabled ? 'enabled' : 'disabled'}`);
     } catch (err) {
@@ -201,10 +202,10 @@ export default function SettingsPage() {
           darkMode: !darkMode
         }
       });
-      
+
       setDarkMode(!darkMode);
       toast.success(`${!darkMode ? 'Dark' : 'Light'} mode enabled`);
-      
+
       // Apply dark mode to document
       if (!darkMode) {
         document.documentElement.classList.add('dark-mode');
@@ -225,7 +226,7 @@ export default function SettingsPage() {
           language: e.target.value
         }
       });
-      
+
       setLanguage(e.target.value);
       toast.success(`Language changed to ${e.target.value}`);
     } catch (error) {
@@ -242,7 +243,7 @@ export default function SettingsPage() {
           sessionTimeout: Number(e.target.value)
         }
       });
-      
+
       setSessionTimeout(Number(e.target.value));
       toast.success(`Session timeout set to ${e.target.value} minutes`);
     } catch (error) {
@@ -295,9 +296,9 @@ export default function SettingsPage() {
       const result = await updateSettings({
         password: passwordFields.newPassword
       });
-      
+
       setPasswordLastChanged(new Date(result.passwordLastChanged).toLocaleDateString());
-      
+
       // Clear password fields
       setPasswordFields({
         currentPassword: '',
@@ -337,7 +338,7 @@ export default function SettingsPage() {
       await updateSettings({
         activityAlertsEnabled: !activityAlertsEnabled
       });
-      
+
       setActivityAlertsEnabled(!activityAlertsEnabled);
       toast.success(`Activity alerts ${!activityAlertsEnabled ? 'enabled' : 'disabled'}`);
     } catch (error) {
@@ -900,9 +901,9 @@ export default function SettingsPage() {
                           </p>
                         </div>
                       </div>
-                      
+
                       <div>
-                        <button 
+                        <button
                           onClick={handleLogout}
                           className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
                         >
@@ -988,7 +989,7 @@ export default function SettingsPage() {
                           <div className="flex-1">
                             <div className="flex items-center justify-between">
                               <p className="font-medium text-gray-900">MacBook Pro</p>
-                              <button 
+                              <button
                                 onClick={() => handleRevokeDevice('2')}
                                 className="text-sm text-red-600 hover:text-red-800"
                               >

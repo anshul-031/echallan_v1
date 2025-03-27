@@ -23,7 +23,6 @@ import {
 import LiveDataPanel from '../components/LiveDataPanel';
 import { Vehicle } from '@/app/types/vehicle';
 import { getExpirationColor } from '@/lib/utils';
-import { isDocumentExpiring, isDocumentExpired } from '@/lib/documentUtils';
 import DocumentModal from '../components/DocumentModal';
 import {
   DropdownMenu,
@@ -49,50 +48,64 @@ const getSummaryCards = (vehicles: Vehicle[]) => [
   {
     title: 'EXPIRING DOCUMENTS',
     count: vehicles.filter((v) =>
-      [v.roadTax, v.fitness, v.insurance, v.pollution].some((date) =>
-        isDocumentExpiring(date)
-      )
+      [v.roadTax, v.fitness, v.insurance, v.pollution, v.statePermit, v.nationalPermit].some((date) => {
+        const color = getExpirationColor(date);
+        return color === "text-yellow-500";
+      })
     ).length.toString(),
     color: 'from-amber-500 to-amber-600',
     glowColor: 'amber',
     icon: ClockIcon,
     details: [
       {
-        label: 'Road Tax', value: vehicles.filter((v) => isDocumentExpiring(v.roadTax)).length.toString()
+        label: 'Road Tax', value: vehicles.filter((v) => getExpirationColor(v.roadTax) === "text-yellow-500").length.toString()
       },
       {
-        label: 'Insurance', value: vehicles.filter((v) => isDocumentExpiring(v.insurance)).length.toString()
+        label: 'Insurance', value: vehicles.filter((v) => getExpirationColor(v.insurance) === "text-yellow-500").length.toString()
       },
       {
-        label: 'Fitness', value: vehicles.filter((v) => isDocumentExpiring(v.fitness)).length.toString()
+        label: 'Fitness', value: vehicles.filter((v) => getExpirationColor(v.fitness) === "text-yellow-500").length.toString()
       },
       {
-        label: 'Pollution', value: vehicles.filter((v) => isDocumentExpiring(v.pollution)).length.toString()
+        label: 'Pollution', value: vehicles.filter((v) => getExpirationColor(v.pollution) === "text-yellow-500").length.toString()
+      },
+      {
+        label: 'State Permit', value: vehicles.filter((v) => getExpirationColor(v.statePermit) === "text-yellow-500").length.toString()
+      },
+      {
+        label: 'National Permit', value: vehicles.filter((v) => getExpirationColor(v.nationalPermit) === "text-yellow-500").length.toString()
       },
     ],
   },
   {
     title: 'EXPIRED DOCUMENTS',
     count: vehicles.filter((v) =>
-      [v.roadTax, v.fitness, v.insurance, v.pollution].some((date) =>
-        isDocumentExpired(date)
-      )
+      [v.roadTax, v.fitness, v.insurance, v.pollution, v.statePermit, v.nationalPermit].some((date) => {
+        const color = getExpirationColor(date);
+        return color === "text-red-500";
+      })
     ).length.toString(),
     color: 'from-red-500 to-red-600',
     glowColor: 'red',
     icon: DocumentChartBarIcon,
     details: [
       {
-        label: 'Insurance', value: vehicles.filter((v) => isDocumentExpired(v.insurance)).length.toString()
+        label: 'Insurance', value: vehicles.filter((v) => getExpirationColor(v.insurance) === "text-red-500").length.toString()
       },
       {
-        label: 'Road Tax', value: vehicles.filter((v) => isDocumentExpired(v.roadTax)).length.toString()
+        label: 'Road Tax', value: vehicles.filter((v) => getExpirationColor(v.roadTax) === "text-red-500").length.toString()
       },
       {
-        label: 'Fitness Certificate', value: vehicles.filter((v) => isDocumentExpired(v.fitness)).length.toString()
+        label: 'Fitness Certificate', value: vehicles.filter((v) => getExpirationColor(v.fitness) === "text-red-500").length.toString()
       },
       {
-        label: 'Pollution', value: vehicles.filter((v) => isDocumentExpired(v.pollution)).length.toString()
+        label: 'Pollution', value: vehicles.filter((v) => getExpirationColor(v.pollution) === "text-red-500").length.toString()
+      },
+      {
+        label: 'State Permit', value: vehicles.filter((v) => getExpirationColor(v.statePermit) === "text-red-500").length.toString()
+      },
+      {
+        label: 'National Permit', value: vehicles.filter((v) => getExpirationColor(v.nationalPermit) === "text-red-500").length.toString()
       },
     ],
   },
@@ -820,91 +833,48 @@ export default function Dashboard() {
                         </button>
                       </td>
                       {preferences.roadTaxVisibility && (
-                        <td
-                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                            row.roadTax
-                          )} whitespace-nowrap`}
-                        >
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.roadTax)} whitespace-nowrap`}>
                           {row.roadTax}
                         </td>
                       )}
                       {preferences.fitnessVisibility && (
-                        <td
-                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                            row.fitness
-                          )} whitespace-nowrap`}
-                        >
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.fitness)} whitespace-nowrap`}>
                           {row.fitness}
                         </td>
                       )}
                       {preferences.insuranceVisibility && (
-                        <td
-                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                            row.insurance
-                          )} whitespace-nowrap`}
-                        >
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.insurance)} whitespace-nowrap`}>
                           {row.insurance}
                         </td>
                       )}
                       {preferences.pollutionVisibility && (
-                        <td
-                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                            row.pollution
-                          )} whitespace-nowrap`}
-                        >
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.pollution)} whitespace-nowrap`}>
                           {row.pollution}
                         </td>
                       )}
                       {preferences.statePermitVisibility && (
-                        <td
-                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                            row.statePermit
-                          )} whitespace-nowrap`}
-                        >
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.statePermit)} whitespace-nowrap`}>
                           {row.statePermit}
                         </td>
                       )}
                       {preferences.nationalPermitVisibility && (
-                        <td
-                          className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(
-                            row.nationalPermit
-                          )} whitespace-nowrap`}
-                        >
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.nationalPermit)} whitespace-nowrap`}>
                           {row.nationalPermit}
                         </td>
                       )}
-                      <td className="hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">
-                        {row.lastUpdated}
-                      </td>
+                      <td className="hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">{row.lastUpdated}</td>
                       <td className=" md:table-cell px-4 py-4 text-center whitespace-nowrap">
-                        <button
-                          onClick={() => handleUpdate(row)}
-                          disabled={updatingRows[row.id]}
-                          className={`p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors ${updatingRows[row.id] ? 'bg-blue-50' : ''
-                            }`}
-                        >
-                          <ArrowPathIcon
-                            className={`w-5 h-5 ${updatingRows[row.id] ? 'animate-spin' : ''}`}
-                          />
+                        <button onClick={() => handleUpdate(row)} disabled={updatingRows[row.id]} className={`p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors ${updatingRows[row.id] ? 'bg-blue-50' : ''}`}>
+                          <ArrowPathIcon className={`w-5 h-5 ${updatingRows[row.id] ? 'animate-spin' : ''}`} />
                         </button>
                       </td>
                       <td className=" md:table-cell px-4 py-4 text-center whitespace-nowrap">
-                        <button
-                          onClick={() => {
-                            setSelectedVRN(row.vrn);
-                            setIsModalOpen(true);
-                          }}
-                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
-                        >
+                        <button onClick={() => { setSelectedVRN(row.vrn); setIsModalOpen(true); }} className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors">
                           <CloudArrowUpIcon className="w-5 h-5" />
                         </button>
                       </td>
                       <td className="hidden md:table-cell px-4 py-4 text-center whitespace-nowrap">
-                        <button
-                          onClick={() => handleDelete(row.id)}
-                          disabled={isDeletingVehicle}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
-                        >
+                        <button onClick={() => handleDelete(row.id)} disabled={isDeletingVehicle} className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50">
                           <TrashIcon className="w-5 h-5" />
                         </button>
                       </td>

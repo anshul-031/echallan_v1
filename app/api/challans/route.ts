@@ -94,6 +94,8 @@ export async function POST(request: Request) {
             state_code: challanItem.state_code,
             fine_imposed: new Decimal(challanItem.fine_imposed || 0),
             challan_date_time: parseDate(challanItem.challan_date_time),
+            sent_to_reg_court : challanItem.sent_to_reg_court,
+            sent_to_virtual_court : challanItem.sent_to_virtual_court,
           };
         });
 

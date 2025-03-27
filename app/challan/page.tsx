@@ -16,7 +16,7 @@ import {
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import LiveChallanPanel from '../components/challan/LiveChallanPanel';
-import { toast } from 'react-hot-toast';
+import { toast, Toaster } from 'react-hot-toast';
 import { utils as xlsxUtils, writeFile } from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu';
 // import { prisma } from '@/lib/prisma';
-import { ChallanDetails } from '../components/challan/ChallanDetails';
+import { ChallanDetailPopup } from '../components/ChallanDetailPopup';
 import axios from 'axios';
 // import { ChallanDetailPopup } from '../components/ChallanDetailPopup';
 
@@ -139,11 +139,14 @@ const processChallansToSummaries = (challans: ChallanType[]): VehicleSummary[] =
         existing.pendingChallans++;
       }
       // Fix online/offline challan counting
-      if (challan.sent_to_virtual_court === 'Yes') {
-        existing.onlineChallans++;
-      }
+      // if (challan.sent_to_virtual_court === 'Yes') {
+      //   existing.onlineChallans++;
+      // }
       if (challan.sent_to_reg_court === 'Yes') {
         existing.offlineChallans++;
+      }
+      else{
+        existing.onlineChallans++;
       }
       if (challan.challan_date_time > existing.lastUpdated) {
         existing.lastUpdated = challan.challan_date_time;
@@ -154,7 +157,7 @@ const processChallansToSummaries = (challans: ChallanType[]): VehicleSummary[] =
         totalChallans: 1,
         totalAmount: challan.challan_status === 'Pending' ? parseFloat(challan.fine_imposed) : 0,
         pendingChallans: challan.challan_status === 'Pending' ? 1 : 0,
-        onlineChallans: challan.sent_to_virtual_court === 'Yes' ? 1 : 0,
+        onlineChallans: challan.sent_to_reg_court === 'No' ? 1 : 0,
         offlineChallans: challan.sent_to_reg_court === 'Yes' ? 1 : 0,
         lastUpdated: challan.challan_date_time,
         status: challan.challan_status === 'Pending' ? 'Unpaid' : 'Paid'
@@ -195,13 +198,15 @@ export default function ChallanDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [vehicleSummaries, setVehicleSummaries] = useState<VehicleSummary[]>([]);
   const [selectedChallan, setSelectedChallan] = useState<ChallanType | null>(null);
+  const [updatingVehicles, setUpdatingVehicles] = useState<Set<string>>(new Set());
   console.log(vehicleSummaries)
   
   const updateChallanData = async (rc_no: string) => {
     try {
       setIsLoading(true);
-      const data = await fetchChallanData(rc_no);
-      
+      const response = await axios.get(`/api/vahanfin/echallan?rc_no=${rc_no}`);
+      const data = response.data;
+  
       if (!data?.data?.Pending_data && !data?.data?.Disposed_data) {
         throw new Error('Invalid data format received from API');
       }
@@ -244,24 +249,13 @@ export default function ChallanDashboard() {
       });
   
       // Update vehicle summaries
-      setVehicleSummaries(prevSummaries => {
-        const newSummaries = processChallansToSummaries([
-          ...prevSummaries.filter(s => s.rc_no !== rc_no),
-          ...allChallans
-        ]);
-        return newSummaries;
-      });
+      const updatedSummaries = processChallansToSummaries(allChallans);
+      setVehicleSummaries(updatedSummaries);
   
-      // Add these debug logs
-      console.log('API Response:', data);
-      console.log('Processed Challans:', allChallans);
-      console.log('Updated Summaries:', vehicleSummaries);
-  
-      toast.success('Challan data updated successfully');
+      toast.success(`Updated challans for vehicle ${rc_no}`);
     } catch (error) {
       console.error('Error updating challan data:', error);
-      setError('Failed to update challan data');
-      toast.error('Failed to update challan data');
+      toast.error(`Failed to update challans for vehicle ${rc_no}`);
     } finally {
       setIsLoading(false);
     }
@@ -579,7 +573,7 @@ export default function ChallanDashboard() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Online</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Offline</th>
                       
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pay</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Update</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stutus</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt</th>
@@ -590,7 +584,14 @@ export default function ChallanDashboard() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {vehicleSummaries.map((row, index) => (
-                      <tr key={row.rc_no} className="hover:bg-gray-50">
+                      <tr 
+                        key={row.rc_no} 
+                        className={`hover:bg-gray-50 transition-colors duration-200 ${
+                          !updatingVehicles.has(row.rc_no) && row.lastUpdated instanceof Date && row.lastUpdated.getTime() > Date.now() - 1000
+                            ? 'pop-animation bg-green-50'
+                            : ''
+                        }`}
+                      >
                         <td className="px-6 py-4 text-sm text-gray-500">{index + 1}</td>
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.rc_no}</td>
                         <td className="px-6 py-4 text-sm text-center text-gray-500">{row.totalChallans}</td>
@@ -598,7 +599,7 @@ export default function ChallanDashboard() {
                         <td className="px-6 py-4 text-sm text-gray-900">₹{row.totalAmount}</td>
                         <td className="px-6 py-4 text-sm text-center">{row.onlineChallans}</td>
                         <td className="px-6 py-4 text-sm text-center">{row.offlineChallans}</td>
-                        <td className="px-2 py-4 text-sm text-gray-500">
+                        <td className="px-2 py-4 text-sm text-center text-gray-500">
                           <button className="px-4 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
                           >
                             Pay
@@ -606,37 +607,41 @@ export default function ChallanDashboard() {
                         </td>
                         
                         <td className="px-6 py-4 text-center">
-                          
-                            <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full">
-                              <ArrowPathIcon className="w-5 h-5" />
-                            </button>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-center">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium
-                                ${row.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                {row.status}
-                              </span>
-                            </td>
+                          <button 
+                            onClick={() => updateChallanData(row.rc_no)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full"
+                            disabled={isLoading}
+                          >
+                            <ArrowPathIcon className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-center">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium
+                            ${row.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {row.status}
+                          </span>
+                        </td>
                         <td className="px-6 py-4 text-sm text-center">Reciept</td>
-                            <td className="px-6 py-4 text-center">
-                            <button 
-                              onClick={() => handleDelete(String(row.rc_no))} 
-                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-full"
-                            >
-                              <TrashIcon className="w-5 h-5" />
-                            </button>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                            <button 
-                              onClick={() => {
-                                const vehicleChallans = challans.filter(c => c.rc_no === row.rc_no);
+                        <td className="px-6 py-4 text-center">
+                          <button 
+                            onClick={() => handleDelete(String(row.rc_no))} 
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-full"
+                          >
+                            <TrashIcon className="w-5 h-5" />
+                          </button>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <button 
+                            onClick={() => {
+                              const vehicleChallans = challans.filter(c => c.rc_no === row.rc_no);
+                              if (vehicleChallans.length > 0) {
                                 setSelectedChallan(vehicleChallans[0]);
-                              }}
-                              className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full"
-                            >
-                              <EyeIcon className="w-5 h-5" />
-                            </button>
-                          
+                              }
+                            }}
+                            className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full"
+                          >
+                            <EyeIcon className="w-5 h-5" />
+                          </button>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">{row.lastUpdated.toLocaleString()}</td>
                       </tr>
@@ -694,20 +699,43 @@ export default function ChallanDashboard() {
         </div>
       )}
 
-      {selectedVehicle && (
+      {/* {selectedVehicle && (
         <ChallanDetails
           isOpen={!!selectedVehicle}
           onClose={() => setSelectedVehicle(null)}
           challans={challans.filter(challan => challan.rc_no === selectedVehicle)}
         />
-      )}
+      )} */}
 
-      {/* {selectedChallan && (
+      {selectedChallan && (
         <ChallanDetailPopup
           challan={selectedChallan}
           onClose={() => setSelectedChallan(null)}
         />
-      )} */}
+      )}
+      
+      <Toaster 
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+          success: {
+            duration: 3000,
+            style: {
+              background: '#059669',
+            },
+          },
+          error: {
+            duration: 3000,
+            style: {
+              background: '#DC2626',
+            },
+          },
+        }}
+      />
     </div>
   );
 }

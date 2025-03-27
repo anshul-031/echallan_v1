@@ -50,9 +50,9 @@ model Challan {
   vehicle_id            Int
   challan_no            String   @unique
   challan_status        String
-  sent_to_reg_court     Boolean  @default(false)
+  sent_to_reg_court     String
   remark                String?
-  sent_to_virtual_court Boolean  @default(false)
+  sent_to_virtual_court String
   amount_of_fine        Decimal  @db.Decimal(10, 2)
   state_code            String
   fine_imposed          Decimal  @db.Decimal(10, 2)

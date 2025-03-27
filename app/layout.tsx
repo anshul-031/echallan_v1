@@ -37,7 +37,6 @@ export default function RootLayout({
         }} />
       </head>
       <body>
-        <Toaster position="top-right" />
         <ClientLayout>{children}</ClientLayout>
       </body>
     </html>

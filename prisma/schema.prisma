@@ -17,6 +17,8 @@ model User {
   updated_at DateTime
   challans    Challan[]
   preferences Preference?
+  expiring_documents Int  @default(0)
+  expired_documents Int   @default(0)
   vehicles    Vehicle[]
 }
 

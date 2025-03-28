@@ -270,3 +270,6 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+// Mark this route as dynamic to avoid the "Dynamic Server Usage" error during build
+export const dynamic = 'force-dynamic';

@@ -234,4 +234,7 @@ export async function PATCH(request: Request) {
     console.error('Error updating user profile:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}
+
+// Mark this route as dynamic to avoid the "Dynamic Server Usage" error during build
+export const dynamic = 'force-dynamic'; 

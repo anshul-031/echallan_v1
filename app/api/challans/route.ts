@@ -109,8 +109,31 @@ export async function POST(request: Request) {
       }
     };
 
-    await processChallans(challanData?.data?.Disposed_data, "disposed");
-    await processChallans(challanData?.data?.Pending_data, "pending");
+    if (challanData?.data && typeof challanData.data === 'object' && Object.keys(challanData.data).length === 0) {
+      // Create an empty challan object
+      const emptyChallanInstance = [{
+        rc_no: vehicle.vrn,
+        user_id: userId,
+        vehicle_id: vehicleId,
+        challan_no: "",
+        challan_status: "",
+        amount_of_fine: new Decimal(0),
+        state_code: "",
+        fine_imposed: new Decimal(0),
+        challan_date_time: new Date().toISOString(),
+        sent_to_reg_court : "",
+        sent_to_virtual_court : "",
+      }];
+
+      console.log(`Creating default challan:`, emptyChallanInstance);
+      await prisma.challan.createMany({
+        data: emptyChallanInstance,
+        skipDuplicates: true,
+      });
+    } else {
+      await processChallans(challanData?.data?.Disposed_data, "disposed");
+      await processChallans(challanData?.data?.Pending_data, "pending");
+    }
 
     return new NextResponse(JSON.stringify({ message: "Challans created successfully" }), {
       status: 201,

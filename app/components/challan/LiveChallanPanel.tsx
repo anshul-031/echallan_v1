@@ -1,140 +1,11 @@
-
-// 'use client';
-
-// import React, { useState } from 'react';
-// import { 
-//   MagnifyingGlassIcon, 
-//   ArrowPathIcon, 
-//   EyeIcon 
-// } from '@heroicons/react/24/outline';
-// import PendingChallansModal from '../../components/PendingChallansModal';
-
-// export default function LiveChallanPanel() {
-//   const [searchQuery, setSearchQuery] = useState('');
-//   const [searchPendingResults, setSearchPendingResults] = useState<any[]>([]); 
-//   const [searchDisposedData, setSearchDisposedData] = useState<any[]>([]);
-//   const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
-//   const [isDisposedModalOpen, setIsDisposedModalOpen] = useState(false);
-//   const [isLoading, setIsLoading] = useState(false);
-
-//   const handleSearch = async (event: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent) => {
-//     if ('key' in event && event.key !== 'Enter') return;
-    
-//     setIsLoading(true);
-//     try {
-//       const response = await fetch(`/api/vahanfin/echallan?rc_no=${searchQuery}`);
-//       if (!response.ok) throw new Error('Failed to fetch vehicle data');
-//       const data = await response.json();
-//       console.log(data);
-//       setSearchPendingResults(data.data.Pending_data || []); 
-//       setSearchDisposedData(data.data.Disposed_data || []);
-//     } catch (error) {
-//       console.error('API call error:', error);
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="w-full xl:w-96 bg-white p-4 h-full border-l border-gray-200">
-//       <div className="bg-[#4c4e50] p-4">
-//         <div className="flex items-center justify-between mb-4">
-//           <h2 className="text-lg font-semibold text-white">Live Challan Updates</h2>
-//           <button 
-//             className="p-1.5 text-white hover:bg-blue-700 rounded-full transition-colors"
-//             onClick={() => {
-//               setSearchQuery('');
-//               setSearchPendingResults([]);
-//               setSearchDisposedData([]);
-//             }}
-//           >
-//             <ArrowPathIcon className="w-5 h-5" />
-//           </button>
-//         </div>
-
-//         <div className="relative">
-//           <input
-//             type="text"
-//             placeholder="Search by Vehicle RC Number"
-//             className="w-full pl-10 pr-4 py-2.5 border border-blue-400 bg-white/10 text-white placeholder-blue-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white"
-//             value={searchQuery}
-//             onChange={(e) => setSearchQuery(e.target.value)}
-//             onKeyPress={handleSearch}
-//           />
-//           <MagnifyingGlassIcon 
-//             className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white" 
-//             onClick={handleSearch as any}
-//           />
-//         </div>
-//       </div>
-
-//       {/* Summary Table */}
-//       <div className="p-4">
-//         <div className="grid grid-cols-2 gap-4">
-//           <div className="bg-red-50 rounded-lg p-4 shadow-sm">
-//             <div className="flex justify-between items-center mb-2">
-//               <span className="text-sm font-medium text-red-700">Pending Challans</span>
-//               <EyeIcon className="w-5 h-5 text-red-500" />
-//             </div>
-//             <div className="flex justify-between items-center">
-//               <span className="text-2xl font-bold text-red-800">
-//                 {searchPendingResults.length}
-//               </span>
-//               <button 
-//                 onClick={() => setIsPendingModalOpen(true)} 
-//                 className="text-red-600 hover:text-red-800 text-sm"
-//               >
-//                 View Details
-//               </button>
-//             </div>
-//           </div>
-
-//           <div className="bg-green-50 rounded-lg p-4 shadow-sm">
-//             <div className="flex justify-between items-center mb-2">
-//               <span className="text-sm font-medium text-green-700">Disposed Challans</span>
-//               <EyeIcon className="w-5 h-5 text-green-500" />
-//             </div>
-//             <div className="flex justify-between items-center">
-//               <span className="text-2xl font-bold text-green-800">
-//                 {searchDisposedData.length}
-//               </span>
-//               <button 
-//                 onClick={() => setIsDisposedModalOpen(true)} 
-//                 className="text-green-600 hover:text-green-800 text-sm"
-//               >
-//                 View Details
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Modals - Kept exactly the same as original implementation */}
-//       {isPendingModalOpen && (
-//         <PendingChallansModal
-//           isOpen={isPendingModalOpen}
-//           onClose={() => setIsPendingModalOpen(false)}
-//           pendingChallans={searchPendingResults}
-//         />
-//       )}
-//       {isDisposedModalOpen && (
-//         <PendingChallansModal
-//           isOpen={isDisposedModalOpen}
-//           onClose={() => setIsDisposedModalOpen(false)}
-//           pendingChallans={searchDisposedData}
-//         />
-//       )}
-//     </div>
-//   );
-// }
-
 'use client';
 
 import React, { useState } from 'react';
 import { 
   MagnifyingGlassIcon, 
   ArrowPathIcon, 
-  EyeIcon 
+  EyeIcon,
+  ExclamationCircleIcon
 } from '@heroicons/react/24/outline';
 import PendingChallansModal from '../../components/PendingChallansModal';
 
@@ -145,22 +16,45 @@ export default function LiveChallanPanel() {
   const [isPendingModalOpen, setIsPendingModalOpen] = useState(false);
   const [isDisposedModalOpen, setIsDisposedModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async (event: React.KeyboardEvent<HTMLInputElement> | React.MouseEvent) => {
     if ('key' in event && event.key !== 'Enter') return;
     
     setIsLoading(true);
+    setError(null); // Clear previous errors
+    
+    if (!searchQuery.trim()) {
+      setError('Please enter a vehicle RC number');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch(`/api/vahanfin/echallan?rc_no=${searchQuery}`);
-      if (!response.ok) throw new Error('Failed to fetch vehicle data');
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch vehicle data');
+      }
+
+      if (!data.data) {
+        throw new Error('No data found for this vehicle');
+      }
+
       console.log(data);
       setSearchPendingResults(data.data.Pending_data || []); 
       setSearchDisposedData(data.data.Disposed_data || []);
+
+      // Clear error if successful
+      setError(null);
+
     } catch (error) {
       console.error('API call error:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred while fetching data');
+      setSearchPendingResults([]);
+      setSearchDisposedData([]);
     } finally {
-      // Simulate a minimum loading time for smoother user experience
       setTimeout(() => {
         setIsLoading(false);
       }, 500);
@@ -203,6 +97,7 @@ export default function LiveChallanPanel() {
               setSearchQuery('');
               setSearchPendingResults([]);
               setSearchDisposedData([]);
+              setError(null);
             }}
           >
             <ArrowPathIcon className="w-5 h-5" />
@@ -213,17 +108,39 @@ export default function LiveChallanPanel() {
           <input
             type="text"
             placeholder="Search by Vehicle RC Number"
-            className="w-full pl-10 pr-4 py-2.5 border border-blue-400 bg-white/10 text-white placeholder-blue-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-white"
+            className={`w-full pl-10 pr-4 py-2.5 border ${
+              error ? 'border-red-400' : 'border-blue-400'
+            } bg-white/10 text-white placeholder-blue-200 rounded-lg text-sm focus:outline-none focus:ring-2 ${
+              error ? 'focus:ring-red-400' : 'focus:ring-white'
+            }`}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyPress={handleSearch}
             disabled={isLoading}
           />
           <MagnifyingGlassIcon 
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white" 
+            className={`absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 ${
+              error ? 'text-red-400' : 'text-white'
+            }`}
             onClick={!isLoading ? handleSearch as any : undefined}
           />
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mt-2 flex items-center gap-2 text-red-400 text-sm">
+            <ExclamationCircleIcon className="w-5 h-5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {/* No Results Message */}
+        {!isLoading && searchQuery && !error && 
+         searchPendingResults.length === 0 && searchDisposedData.length === 0 && (
+          <div className="mt-2 text-blue-200 text-sm text-center">
+            No challans found for this vehicle
+          </div>
+        )}
       </div>
 
       {/* Summary Table */}
@@ -232,7 +149,7 @@ export default function LiveChallanPanel() {
           <div className="bg-red-50 rounded-lg p-4 shadow-sm">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-red-700">Pending Challans</span>
-              <EyeIcon className="w-5 h-5 text-red-500" />
+              
             </div>
             <div className="flex justify-between items-center">
               <span className="text-2xl font-bold text-red-800">
@@ -251,7 +168,7 @@ export default function LiveChallanPanel() {
           <div className="bg-green-50 rounded-lg p-4 shadow-sm">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-green-700">Disposed Challans</span>
-              <EyeIcon className="w-5 h-5 text-green-500" />
+              
             </div>
             <div className="flex justify-between items-center">
               <span className="text-2xl font-bold text-green-800">

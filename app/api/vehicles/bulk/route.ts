@@ -106,3 +106,6 @@ export async function POST(request: Request) {
     }, { status: 500 });
   }
 }
+
+// Mark this route as dynamic to avoid the "Dynamic Server Usage" error during build
+export const dynamic = 'force-dynamic';

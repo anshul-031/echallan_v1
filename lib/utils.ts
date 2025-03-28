@@ -35,82 +35,55 @@ type VehicleStats = {
 };
 
 
-export function getExpirationColor(date: string): string {
-  if (!date) return "";
+export function getExpirationColor(dateString: string): string {
+  // Handle empty/undefined values
+  if (!dateString || dateString.trim() === '') return 'text-gray-500';
+  
+  try {
+    // Handle special cases first
+    if (dateString === "30-11--0001") {
+      return "text-red-500";
+    }
 
-  // Get the current date and calculate one month from now
-  const currentDate = new Date();
-  const oneMonthFromNow = new Date(currentDate);
-  oneMonthFromNow.setMonth(currentDate.getMonth() + 1);
+    if (dateString === "LTT") {
+      return "text-blue-500";
+    }
 
-  // Handle special cases
-  if (date === "30-11--0001" || date === "Not Available") {
-    return "text-red-500";
-  }
-
-  if (date === "LTT") {
-    return "text-blue-500";
-  }
-
-  // Map month abbreviations to numbers (0-based for Date)
-  const monthMap: { [key: string]: number } = {
-    jan: 0,
-    feb: 1,
-    mar: 2,
-    apr: 3,
-    may: 4,
-    jun: 5,
-    jul: 6,
-    aug: 7,
-    sep: 8,
-    oct: 9,
-    nov: 10,
-    dec: 11,
-  };
-
-  // Split the date string
-  const parts = date.split("-");
-  if (parts.length !== 3) return "text-red-500"; // Invalid format
-
-  let day: number, month: number, year: number;
-
-  // Check if the month is numeric or an abbreviation
-  if (isNaN(Number(parts[1]))) {
-    // Format: "DD-MMM-YYYY" (e.g., "01-Jan-2025")
-    day = Number(parts[0]);
-    month = monthMap[parts[1].toLowerCase()];
-    year = Number(parts[2]);
-  } else {
-    // Format: "DD-MM-YYYY" (e.g., "01-01-2025")
-    [day, month, year] = parts.map(Number);
-    month -= 1; // Adjust for 0-based month in Date
-  }
-
-  // Validate parsed values
-  if (isNaN(day) || month === undefined || isNaN(year)) {
-    return "text-red-500"; // Invalid date components
-  }
-
-  const expiryDate = new Date(year, month, day);
-
-  // Debugging for specific case
-  if (date === "15-Jan-2025") {
-    console.log("expiryDate", expiryDate); // Should log valid Date object
-    console.log("currentDate", currentDate);
-  }
-
-  // Check if expiryDate is invalid
-  if (isNaN(expiryDate.getTime())) {
-    return "text-red-500"; // Invalid Date
-  }
-
-  // Compare the parsed date with the current date
-  if (expiryDate < currentDate) {
-    return "text-red-500"; // Date is in the past (expired)
-  } else if (expiryDate <= oneMonthFromNow) {
-    return "text-yellow-500"; // Date is within the next month (expiring soon)
-  } else {
-    return "text-green-500"; // Date is more than one month in the future (valid)
+    if (dateString === "Not Available") {
+      return "text-red-500";
+    }
+    
+    // Parse the date string (expected format: DD-MM-YYYY)
+    const parts = dateString.split('-');
+    if (parts.length !== 3) return 'text-gray-500';
+    
+    // Create date object (day-month-year)
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+    const year = parseInt(parts[2], 10);
+    
+    const date = new Date(year, month, day);
+    
+    if (isNaN(date.getTime())) {
+      return 'text-gray-500'; // Invalid date
+    }
+    
+    // Get the current date and calculate one month from now
+    const currentDate = new Date();
+    const oneMonthFromNow = new Date(currentDate);
+    oneMonthFromNow.setMonth(currentDate.getMonth() + 1);
+    
+    // Compare the parsed date with the current date
+    if (date < currentDate) {
+      return "text-red-500"; // Date is in the past (expired)
+    } else if (date <= oneMonthFromNow) {
+      return "text-yellow-500"; // Date is within the next month (expiring soon)
+    } else {
+      return "text-green-500"; // Date is more than one month in the future (valid)
+    }
+  } catch (error) {
+    console.error('Error parsing date:', error);
+    return 'text-gray-500'; // Default fallback
   }
 }
 

@@ -17,15 +17,14 @@ model User {
   updated_at DateTime
   challans    Challan[]
   preferences Preference?
-  expiring_documents Int  @default(0)
-  expired_documents Int   @default(0)
+  vehicle_stats       UserVehicleStats?  
   vehicles    Vehicle[]
 }
 
 
 model Vehicle {
   id             Int       @id @default(autoincrement())
-  vrn            String    @unique
+  vrn            String    
   roadTax        String
   fitness        String
   insurance      String
@@ -43,6 +42,31 @@ model Vehicle {
   owner          User?    @relation(fields: [ownerId], references: [id])
 
   @@map("vehicles")
+}
+
+model UserVehicleStats {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique  // Foreign key to User
+  total_vehicles         Int      @default(0)  // Total number of vehicles owned
+  expiring_count         Int      @default(0)  // Total expiring documents
+  expired_count          Int      @default(0)  // Total expired documents
+  expiring_roadTax       Int      @default(0)  // Count of expiring roadTax
+  expiring_fitness       Int      @default(0)  // Count of expiring fitness
+  expiring_insurance     Int      @default(0)  // Count of expiring insurance
+  expiring_pollution     Int      @default(0)  // Count of expiring pollution
+  expiring_statePermit   Int      @default(0)  // Count of expiring statePermit
+  expiring_nationalPermit Int     @default(0)  // Count of expiring nationalPermit
+  expired_roadTax        Int      @default(0)  // Count of expired roadTax
+  expired_fitness        Int      @default(0)  // Count of expired fitness
+  expired_insurance      Int      @default(0)  // Count of expired insurance
+  expired_pollution      Int      @default(0)  // Count of expired pollution
+  expired_statePermit    Int      @default(0)  // Count of expired statePermit
+  expired_nationalPermit Int      @default(0)  // Count of expired nationalPermit
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id])
+
+  @@map("user_vehicle_stats")
 }
 
 model Challan {
@@ -63,7 +87,7 @@ model Challan {
   last_update           DateTime @default(now()) @updatedAt
   created_at            DateTime @default(now())
   user                  User    @relation(fields: [user_id], references: [id])
-  vehicle               Vehicle  @relation(fields: [vehicle_id], references: [id])
+  vehicle               Vehicle  @relation(fields: [vehicle_id], references: [id] , onDelete: Cascade) 
 
   @@index([rc_no])
   @@index([user_id])

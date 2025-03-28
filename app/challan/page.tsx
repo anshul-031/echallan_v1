@@ -109,6 +109,7 @@ interface ChallanType {
   amount_of_fine: number;
   state_code: string;
   challan_date_time: Date;
+  last_update: Date;
   receipt_no?: string;
   remark?: string;
 }
@@ -148,8 +149,8 @@ const processChallansToSummaries = (challans: ChallanType[]): VehicleSummary[] =
       else{
         existing.onlineChallans++;
       }
-      if (challan.challan_date_time > existing.lastUpdated) {
-        existing.lastUpdated = challan.challan_date_time;
+      if (challan.last_update > existing.lastUpdated) {
+        existing.lastUpdated = challan.last_update;
       }
     } else {
       summariesMap.set(challan.rc_no, {
@@ -159,7 +160,7 @@ const processChallansToSummaries = (challans: ChallanType[]): VehicleSummary[] =
         pendingChallans: challan.challan_status === 'Pending' ? 1 : 0,
         onlineChallans: challan.sent_to_reg_court === 'No' ? 1 : 0,
         offlineChallans: challan.sent_to_reg_court === 'Yes' ? 1 : 0,
-        lastUpdated: challan.challan_date_time,
+        lastUpdated: new Date(challan.last_update),
         status: challan.challan_status === 'Pending' ? 'Unpaid' : 'Paid'
       });
     }
@@ -199,11 +200,19 @@ export default function ChallanDashboard() {
   const [vehicleSummaries, setVehicleSummaries] = useState<VehicleSummary[]>([]);
   const [selectedChallan, setSelectedChallan] = useState<ChallanType | null>(null);
   const [updatingVehicles, setUpdatingVehicles] = useState<Set<string>>(new Set());
+  const [selectedChallans, setSelectedChallans] = useState<ChallanType[]>([]);
   console.log(vehicleSummaries)
   
   const updateChallanData = async (rc_no: string) => {
+    if (updatingVehicles.has(rc_no)) return;
+  
     try {
-      setIsLoading(true);
+      setUpdatingVehicles(prev => new Set(prev).add(rc_no));
+      
+      toast.loading(`Updating challans for vehicle ${rc_no}...`, {
+        id: `update-${rc_no}`,
+      });
+  
       const response = await axios.get(`/api/vahanfin/echallan?rc_no=${rc_no}`);
       const data = response.data;
   
@@ -211,7 +220,7 @@ export default function ChallanDashboard() {
         throw new Error('Invalid data format received from API');
       }
   
-      const allChallans = [
+      const newChallans = [
         ...(data.data.Pending_data || []).map((challan: any) => ({
           rc_no,
           challan_no: challan.challan_no,
@@ -223,7 +232,8 @@ export default function ChallanDashboard() {
           state_code: challan.state_code,
           challan_date_time: new Date(challan.challan_date_time),
           remark: challan.remark,
-          receipt_no: challan.receipt_no
+          receipt_no: challan.receipt_no,
+          last_update: new Date() 
         })),
         ...(data.data.Disposed_data || []).map((challan: any) => ({
           rc_no,
@@ -236,28 +246,49 @@ export default function ChallanDashboard() {
           state_code: challan.state_code,
           challan_date_time: new Date(challan.challan_date_time),
           remark: challan.remark,
-          receipt_no: challan.receipt_no
+          receipt_no: challan.receipt_no,
+          last_update: new Date() 
         }))
       ];
   
       // Update challans state
       setChallans(prevChallans => {
-        // Remove existing challans for this rc_no
-        const filteredChallans = prevChallans.filter(c => c.rc_no !== rc_no);
-        // Add new challans
-        return [...filteredChallans, ...allChallans];
+        const otherChallans = prevChallans.filter(c => c.rc_no !== rc_no);
+        return [...otherChallans, ...newChallans];
       });
   
-      // Update vehicle summaries
-      const updatedSummaries = processChallansToSummaries(allChallans);
-      setVehicleSummaries(updatedSummaries);
+      // Create new summary for the updated vehicle
+      const updatedVehicleSummary = processChallansToSummaries(newChallans)[0];
+      
+      // Update vehicle summaries while maintaining order
+      setVehicleSummaries(prevSummaries => {
+        return prevSummaries.map(summary => 
+          summary.rc_no === rc_no 
+            ? {
+                ...updatedVehicleSummary,
+                lastUpdated: new Date() // Set current time as last update
+              }
+            : summary
+        );
+      });
   
-      toast.success(`Updated challans for vehicle ${rc_no}`);
+      toast.success(`Successfully updated ${newChallans.length} challans for vehicle ${rc_no}`, {
+        id: `update-${rc_no}`,
+        duration: 3000,
+      });
+  
     } catch (error) {
       console.error('Error updating challan data:', error);
-      toast.error(`Failed to update challans for vehicle ${rc_no}`);
+      toast.error(`Failed to update challans for vehicle ${rc_no}`, {
+        id: `update-${rc_no}`,
+        duration: 3000,
+      });
     } finally {
-      setIsLoading(false);
+      setUpdatingVehicles(prev => {
+        const next = new Set(prev);
+        next.delete(rc_no);
+        return next;
+      });
     }
   };
 
@@ -325,21 +356,25 @@ export default function ChallanDashboard() {
       setIsExporting(true);
       
       const exportData = challans.map(challan => ({
-        vehicleNo: challan.rc_no,
-        challanNo: challan.challan_no,
-        status: challan.challan_status,
-        amount: challan.fine_imposed,
-        dateTime: challan.challan_date_time.toLocaleString(),
-        state: challan.state_code,
-        online: challan.sent_to_virtual_court ? 'Yes' : 'No',
-        offline: challan.sent_to_reg_court ? 'Yes' : 'No'
+        RC_Number: challan.rc_no,
+        Challan_Number: challan.challan_no,
+        Status: challan.challan_status,
+        Fine_Amount: challan.fine_imposed,
+        Amount_of_Fine: challan.amount_of_fine,
+        State: challan.state_code,
+        Date_Time: new Date(challan.challan_date_time).toLocaleString('en-IN'),
+        Virtual_Court: challan.sent_to_virtual_court,
+        Regular_Court: challan.sent_to_reg_court,
+        Receipt_Number: challan.receipt_no || 'N/A',
+        Remarks: challan.remark || 'N/A',
+        Last_Updated: new Date(challan.last_update).toLocaleString('en-IN')
       }));
 
       if (format === 'excel') {
         const worksheet = xlsxUtils.json_to_sheet(exportData);
         const workbook = xlsxUtils.book_new();
         xlsxUtils.book_append_sheet(workbook, worksheet, 'Challan Data');
-        writeFile(workbook, 'challan-data.xlsx');
+        writeFile(workbook, 'detailed-challan-data.xlsx');
         toast.success('Data exported to Excel');
       } else if (format === 'csv') {
         const worksheet = xlsxUtils.json_to_sheet(exportData);
@@ -348,36 +383,55 @@ export default function ChallanDashboard() {
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', 'challan-data.csv');
+        link.setAttribute('download', 'detailed-challan-data.csv');
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         toast.success('Data exported to CSV');
+      } else if (format === 'pdf') {
+        const doc = new jsPDF('l', 'mm', 'a4'); // landscape mode for better fit
+        autoTable(doc, {
+          head: [Object.keys(exportData[0]).map(key => key.replace(/_/g, ' '))],
+          body: exportData.map(row => Object.values(row)),
+          styles: { fontSize: 7 }, // smaller font size to fit all columns
+          headStyles: { 
+            fillColor: [249, 250, 251], 
+            textColor: [0, 0, 0], 
+            fontStyle: 'bold' 
+          },
+          alternateRowStyles: { fillColor: [249, 250, 251] },
+          margin: { top: 20 },
+          columnStyles: {
+            // Adjust column widths as needed
+            RC_Number: { cellWidth: 25 },
+            Challan_Number: { cellWidth: 25 },
+            Status: { cellWidth: 20 },
+            Fine_Amount: { cellWidth: 20 },
+            Amount_of_Fine: { cellWidth: 20 },
+            State: { cellWidth: 15 },
+            Date_Time: { cellWidth: 30 },
+            Virtual_Court: { cellWidth: 20 },
+            Regular_Court: { cellWidth: 20 },
+            Receipt_Number: { cellWidth: 25 },
+            Remarks: { cellWidth: 30 },
+            Last_Updated: { cellWidth: 30 }
+          }
+        });
+        doc.save('detailed-challan-data.pdf');
+        toast.success('Data exported to PDF');
       } else if (format === 'json') {
         const json = JSON.stringify(exportData, null, 2);
         const blob = new Blob([json], { type: 'application/json;charset=utf-8;' });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', 'challan-data.json');
+        link.setAttribute('download', 'detailed-challan-data.json');
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         toast.success('Data exported to JSON');
-      } else if (format === 'pdf') {
-        const doc = new jsPDF();
-        autoTable(doc, {
-          head: [Object.keys(exportData[0])],
-          body: exportData.map((row) => Object.values(row)),
-          styles: { fontSize: 8 },
-          headStyles: { fillColor: [249, 250, 251], textColor: [0, 0, 0], fontStyle: 'bold' },
-          alternateRowStyles: { fillColor: [249, 250, 251] },
-          margin: { top: 20 },
-        });
-        doc.save('challan-data.pdf');
-        toast.success('Data exported to PDF');
       }
     } catch (error) {
       console.error('Export error:', error);
@@ -576,9 +630,9 @@ export default function ChallanDashboard() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Update</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stutus</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delete</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delete</th> */}
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">View</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Updated</th>
                     </tr>
                   </thead>
@@ -617,11 +671,11 @@ export default function ChallanDashboard() {
                         </td>
                         <td className="px-6 py-4 text-sm text-center">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium
-                            ${row.status === 'Paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {row.status}
+                            ${row.pendingChallans < 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                           {row.pendingChallans>=1 ? 'Unpaid' : 'Paid'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-center">Reciept</td>
+                        {/* <td className="px-6 py-4 text-sm text-center">Reciept</td>
                         <td className="px-6 py-4 text-center">
                           <button 
                             onClick={() => handleDelete(String(row.rc_no))} 
@@ -629,21 +683,25 @@ export default function ChallanDashboard() {
                           >
                             <TrashIcon className="w-5 h-5" />
                           </button>
-                        </td>
+                        </td> */}
                         <td className="px-6 py-4 text-center">
                           <button 
                             onClick={() => {
                               const vehicleChallans = challans.filter(c => c.rc_no === row.rc_no);
-                              if (vehicleChallans.length > 0) {
-                                setSelectedChallan(vehicleChallans[0]);
-                              }
+                              setSelectedChallans(vehicleChallans);
                             }}
                             className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full"
                           >
                             <EyeIcon className="w-5 h-5" />
                           </button>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">{row.lastUpdated.toLocaleString()}</td>
+                        <td className="px-6 py-4 text-sm text-gray-500">
+                            {new Date(row.lastUpdated).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            })}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -707,10 +765,10 @@ export default function ChallanDashboard() {
         />
       )} */}
 
-      {selectedChallan && (
+      {selectedChallans.length > 0 && (
         <ChallanDetailPopup
-          challan={selectedChallan}
-          onClose={() => setSelectedChallan(null)}
+          challans={selectedChallans}
+          onClose={() => setSelectedChallans([])}
         />
       )}
       

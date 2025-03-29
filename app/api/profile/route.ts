@@ -80,6 +80,7 @@ type ProfileData = {
   email: string;
   name: string | null;
   role: string;
+credits: number; // Add this field
   expiring_documents: number;
   expired_documents: number;
   joinDate: string;
@@ -110,6 +111,7 @@ export async function GET() {
           email: true,
           name: true,
           role: true,
+credits: true, // Add this field
           created_at: true,
           updated_at: true,
         },
@@ -122,6 +124,7 @@ export async function GET() {
           email: session.user.email,
           name: session.user.name || '',
           role: session.user.role || 'user',
+credits: 0, // Add this field
           joinDate: 'Unknown',
           expiring_documents: 0,
           expired_documents: 0,
@@ -138,6 +141,7 @@ export async function GET() {
         email: user.email,
         name: user.name,
         role: user.role,
+credits: user.credits, // Add this field
         expiring_documents: expiring_count,
         expired_documents: expired_count,
         joinDate: user.created_at?.toLocaleDateString('en-IN', {
@@ -156,6 +160,7 @@ export async function GET() {
         email: session.user.email,
         name: session.user.name || '',
         role: session.user.role || 'user',
+credits: 0, // Add this field
         joinDate: 'Unknown',
         expiring_documents: 0,
         expired_documents: 0,
@@ -220,6 +225,7 @@ export async function PATCH(request: Request) {
       email: updatedUser.email,
       name: updatedUser.name,
       role: updatedUser.role,
+credits: 0, // Add this field
       expiring_documents: expiring_count,
       expired_documents: expired_count,
       joinDate: updatedUser.created_at.toLocaleDateString('en-IN', {

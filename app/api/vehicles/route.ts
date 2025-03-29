@@ -78,9 +78,47 @@ export async function GET(request: Request) {
         return getExpirationColor(date) === "text-red-500";
       });
     }
+    const emptyVehicleStates = {
+      total_vehicles: 0,
+      expiring_count: 0,
+      expired_count: 0,
+      expiring_roadTax: 0,
+      expiring_fitness: 0,
+      expiring_insurance: 0,
+      expiring_pollution: 0,
+      expiring_statePermit: 0,
+      expiring_nationalPermit: 0,
+      expired_roadTax: 0,
+      expired_fitness: 0,
+      expired_insurance: 0,
+      expired_pollution: 0,
+      expired_statePermit: 0,
+      expired_nationalPermit: 0,
+      expiring_3m_count: 0,
+      expiring_3m_roadTax: 0,
+      expiring_3m_fitness: 0,
+      expiring_3m_insurance: 0,
+      expiring_3m_pollution: 0,
+      expiring_3m_statePermit: 0,
+      expiring_3m_nationalPermit: 0,
+      expiring_6m_count: 0,
+      expiring_6m_roadTax: 0,
+      expiring_6m_fitness: 0,
+      expiring_6m_insurance: 0,
+      expiring_6m_pollution: 0,
+      expiring_6m_statePermit: 0,
+      expiring_6m_nationalPermit: 0,
+      expiring_1y_count: 0,
+      expiring_1y_roadTax: 0,
+      expiring_1y_fitness: 0,
+      expiring_1y_insurance: 0,
+      expiring_1y_pollution: 0,
+      expiring_1y_statePermit: 0,
+      expiring_1y_nationalPermit: 0,
+    };
 
     // Compute vehicle stats
-    const vehicleStats = user.vehicle_stats || {}
+    const vehicleStats = user.vehicle_stats ? user.vehicle_stats : emptyVehicleStates;
 
     return NextResponse.json({
       vehicles: filteredVehicles,
@@ -270,6 +308,3 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
- 
- 

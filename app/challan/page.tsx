@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { 
-   
-  ArrowPathIcon, 
-  TrashIcon, 
+import {
+
+  ArrowPathIcon,
+  TrashIcon,
   EyeIcon,
   Bars3Icon,
   XMarkIcon,
@@ -16,11 +16,11 @@ import {
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import LiveChallanPanel from '../components/challan/LiveChallanPanel';
-import { toast, Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { utils as xlsxUtils, writeFile } from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -33,6 +33,7 @@ import axios from 'axios';
 
 // import Mukul from '../components/Mukul';
 // import { getSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 const summaryData = [
   {
@@ -86,7 +87,7 @@ const summaryData = [
     shadowColor: 'shadow-emerald-500/20',
     trend: '+15%',
     isPositive: true,
-    Status:['Unpaid','Paid'],
+    Status: ['Unpaid', 'Paid'],
     details: [
       { label: 'Collected', value: '₹1,98,255', trend: '+22%' },
       { label: 'Pending', value: '₹59,000', trend: '-8%' }
@@ -128,10 +129,10 @@ interface VehicleSummary {
 // Add this function after the existing interface declarations
 const processChallansToSummaries = (challans: ChallanType[]): VehicleSummary[] => {
   const summariesMap = new Map<string, VehicleSummary>();
-  
+
   challans.forEach(challan => {
     const existing = summariesMap.get(challan.rc_no);
-    
+
     if (existing) {
       existing.totalChallans++;
       // Only add amount and count pending challans
@@ -146,7 +147,7 @@ const processChallansToSummaries = (challans: ChallanType[]): VehicleSummary[] =
       if (challan.sent_to_reg_court === 'Yes') {
         existing.offlineChallans++;
       }
-      else{
+      else {
         existing.onlineChallans++;
       }
       if (challan.last_update > existing.lastUpdated) {
@@ -165,7 +166,7 @@ const processChallansToSummaries = (challans: ChallanType[]): VehicleSummary[] =
       });
     }
   });
-  
+
   return Array.from(summariesMap.values());
 };
 
@@ -186,6 +187,8 @@ interface VehicleRow {
 }
 
 export default function ChallanDashboard() {
+  const router = useRouter();
+
   const [challans, setChallans] = useState<ChallanType[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -202,24 +205,24 @@ export default function ChallanDashboard() {
   const [updatingVehicles, setUpdatingVehicles] = useState<Set<string>>(new Set());
   const [selectedChallans, setSelectedChallans] = useState<ChallanType[]>([]);
   console.log(vehicleSummaries)
-  
+
   const updateChallanData = async (rc_no: string) => {
     if (updatingVehicles.has(rc_no)) return;
-  
+
     try {
       setUpdatingVehicles(prev => new Set(prev).add(rc_no));
-      
+
       toast.loading(`Updating challans for vehicle ${rc_no}...`, {
         id: `update-${rc_no}`,
       });
-  
+
       const response = await axios.get(`/api/vahanfin/echallan?rc_no=${rc_no}`);
       const data = response.data;
-  
+
       if (!data?.data?.Pending_data && !data?.data?.Disposed_data) {
         throw new Error('Invalid data format received from API');
       }
-  
+
       const newChallans = [
         ...(data.data.Pending_data || []).map((challan: any) => ({
           rc_no,
@@ -233,7 +236,7 @@ export default function ChallanDashboard() {
           challan_date_time: new Date(challan.challan_date_time),
           remark: challan.remark,
           receipt_no: challan.receipt_no,
-          last_update: new Date() 
+          last_update: new Date()
         })),
         ...(data.data.Disposed_data || []).map((challan: any) => ({
           rc_no,
@@ -247,36 +250,36 @@ export default function ChallanDashboard() {
           challan_date_time: new Date(challan.challan_date_time),
           remark: challan.remark,
           receipt_no: challan.receipt_no,
-          last_update: new Date() 
+          last_update: new Date()
         }))
       ];
-  
+
       // Update challans state
       setChallans(prevChallans => {
         const otherChallans = prevChallans.filter(c => c.rc_no !== rc_no);
         return [...otherChallans, ...newChallans];
       });
-  
+
       // Create new summary for the updated vehicle
       const updatedVehicleSummary = processChallansToSummaries(newChallans)[0];
-      
+
       // Update vehicle summaries while maintaining order
       setVehicleSummaries(prevSummaries => {
-        return prevSummaries.map(summary => 
-          summary.rc_no === rc_no 
+        return prevSummaries.map(summary =>
+          summary.rc_no === rc_no
             ? {
-                ...updatedVehicleSummary,
-                lastUpdated: new Date() // Set current time as last update
-              }
+              ...updatedVehicleSummary,
+              lastUpdated: new Date() // Set current time as last update
+            }
             : summary
         );
       });
-  
+
       toast.success(`Successfully updated ${newChallans.length} challans for vehicle ${rc_no}`, {
         id: `update-${rc_no}`,
         duration: 3000,
       });
-  
+
     } catch (error) {
       console.error('Error updating challan data:', error);
       toast.error(`Failed to update challans for vehicle ${rc_no}`, {
@@ -296,7 +299,7 @@ export default function ChallanDashboard() {
     try {
       setIsLoading(true);
       await axios.delete(`/api/challans/${rc_no}`);
-      
+
       setChallans(prevChallans => prevChallans.filter(challan => challan.rc_no !== rc_no));
       toast.success('Challans deleted successfully');
     } catch (error) {
@@ -315,7 +318,7 @@ export default function ChallanDashboard() {
     const max = Math.max(...data);
     const min = Math.min(...data);
     const range = max - min;
-    
+
     return (
       <div className="flex items-end h-12 gap-1">
         {data.map((value, i) => {
@@ -337,11 +340,11 @@ export default function ChallanDashboard() {
     setChallanToDelete(id);
     setShowDeleteConfirm(true);
   };
-  
+
   const confirmDelete = () => {
     try {
       console.log(`Deleting challan with ID ${challanToDelete}`);
-      
+
       toast.success('Challan deleted successfully');
       setShowDeleteConfirm(false);
       setChallanToDelete(null);
@@ -354,7 +357,7 @@ export default function ChallanDashboard() {
   const handleExport = async (format: 'excel' | 'pdf' | 'csv' | 'json') => {
     try {
       setIsExporting(true);
-      
+
       const exportData = challans.map(challan => ({
         RC_Number: challan.rc_no,
         Challan_Number: challan.challan_no,
@@ -395,10 +398,10 @@ export default function ChallanDashboard() {
           head: [Object.keys(exportData[0]).map(key => key.replace(/_/g, ' '))],
           body: exportData.map(row => Object.values(row)),
           styles: { fontSize: 7 }, // smaller font size to fit all columns
-          headStyles: { 
-            fillColor: [249, 250, 251], 
-            textColor: [0, 0, 0], 
-            fontStyle: 'bold' 
+          headStyles: {
+            fillColor: [249, 250, 251],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold'
           },
           alternateRowStyles: { fillColor: [249, 250, 251] },
           margin: { top: 20 },
@@ -448,7 +451,7 @@ export default function ChallanDashboard() {
         const response = await axios.get('/api/challans');
         const fetchedChallans = response.data;
         setChallans(fetchedChallans);
-        
+
         // Process challans into summaries
         const summaries = processChallansToSummaries(fetchedChallans);
         setVehicleSummaries(summaries);
@@ -481,7 +484,7 @@ export default function ChallanDashboard() {
           <div className="max-w-[calc(100vw-2rem)] lg:max-w-[calc(100vw-26rem)] mx-auto">
             <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
               <h1 className="text-2xl font-semibold text-gray-900">Challan Dashboard</h1>
-              
+
             </div>
 
             <div className="flex items-center justify-between mb-4">
@@ -489,9 +492,9 @@ export default function ChallanDashboard() {
                 <div className="relative">
                   <div className="flex w-full justify-between">
                     <div className="relative w-64">
-                      
+
                     </div>
-                    
+
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
@@ -530,7 +533,7 @@ export default function ChallanDashboard() {
                   className={`relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer transform hover:scale-[1.02] hover:-translate-y-1`}
                 >
                   <div className={`absolute inset-0 ${item.gradient} animate-gradient`} />
-                  
+
                   <div className={`relative bg-white/80 backdrop-blur-sm border ${item.borderGradient} p-6 h-full transition-all duration-300`}>
                     <div className="flex items-start justify-between">
                       <div>
@@ -546,8 +549,8 @@ export default function ChallanDashboard() {
                           {item.title === 'Total Amount' ? `₹${vehicleSummaries.reduce((total, data) => total + data.totalAmount, 0)}` : ''}
                         </p>
                       </div>
-                      
-                     
+
+
                     </div>
 
                   </div>
@@ -576,8 +579,8 @@ export default function ChallanDashboard() {
                         </button>
                       </td>
                       <td className="px-3 py-4 text-center">
-                        <button 
-                          onClick={() => setExpandedId(index)} 
+                        <button
+                          onClick={() => setExpandedId(index)}
                           className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-full"
                         >
                           <EyeIcon className="w-5 h-5" />
@@ -601,12 +604,12 @@ export default function ChallanDashboard() {
                         <p><strong>Challans:</strong> {item.totalChallans}</p>
                         <p><strong>Amount:</strong> ₹{item.totalAmount}</p>
                         <p><strong>Online:</strong> {item.onlineChallans}</p>
-                        <p><strong>Offline:</strong> {item.offlineChallans}</p>
+                        <p><strong>Court:</strong> {item.offlineChallans}</p>
                         <p><strong>Last Updated:</strong> {item.lastUpdated.toLocaleString()}</p>
                       </div>
                     ))}
-                  <button 
-                    onClick={() => setExpandedId(null)} 
+                  <button
+                    onClick={() => setExpandedId(null)}
                     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded"
                   >
                     Close
@@ -626,7 +629,7 @@ export default function ChallanDashboard() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Online</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Offline</th>
-                      
+
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Update</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stutus</th>
@@ -638,30 +641,32 @@ export default function ChallanDashboard() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {vehicleSummaries.map((row, index) => (
-                      <tr 
-                        key={row.rc_no} 
-                        className={`hover:bg-gray-50 transition-colors duration-200 ${
-                          !updatingVehicles.has(row.rc_no) && row.lastUpdated instanceof Date && row.lastUpdated.getTime() > Date.now() - 1000
-                            ? 'pop-animation bg-green-50'
-                            : ''
-                        }`}
+                      <tr
+                        key={row.rc_no}
+                        className={`hover:bg-gray-50 transition-colors duration-200 ${!updatingVehicles.has(row.rc_no) && row.lastUpdated instanceof Date && row.lastUpdated.getTime() > Date.now() - 1000
+                          ? 'pop-animation bg-green-50'
+                          : ''
+                          }`}
                       >
                         <td className="px-6 py-4 text-sm text-gray-500">{index + 1}</td>
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">{row.rc_no}</td>
                         <td className="px-6 py-4 text-sm text-center text-gray-500">{row.totalChallans}</td>
-                        
+
                         <td className="px-6 py-4 text-sm text-gray-900">₹{row.totalAmount}</td>
                         <td className="px-6 py-4 text-sm text-center">{row.onlineChallans}</td>
                         <td className="px-6 py-4 text-sm text-center">{row.offlineChallans}</td>
                         <td className="px-2 py-4 text-sm text-center text-gray-500">
-                          <button className="px-4 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+                          <button
+                            onClick={() => router.push(`/challanpay?rc_no=${row.rc_no}`)}
+                            className="px-4 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+                            disabled={row.pendingChallans < 1} // Disable if no pending challans
                           >
                             Pay
                           </button>
                         </td>
-                        
+
                         <td className="px-6 py-4 text-center">
-                          <button 
+                          <button
                             onClick={() => updateChallanData(row.rc_no)}
                             className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full"
                             disabled={isLoading}
@@ -672,7 +677,7 @@ export default function ChallanDashboard() {
                         <td className="px-6 py-4 text-sm text-center">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium
                             ${row.pendingChallans < 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                           {row.pendingChallans>=1 ? 'Unpaid' : 'Paid'}
+                            {row.pendingChallans >= 1 ? 'Unpaid' : 'Paid'}
                           </span>
                         </td>
                         {/* <td className="px-6 py-4 text-sm text-center">Reciept</td>
@@ -685,7 +690,7 @@ export default function ChallanDashboard() {
                           </button>
                         </td> */}
                         <td className="px-6 py-4 text-center">
-                          <button 
+                          <button
                             onClick={() => {
                               const vehicleChallans = challans.filter(c => c.rc_no === row.rc_no);
                               setSelectedChallans(vehicleChallans);
@@ -696,11 +701,11 @@ export default function ChallanDashboard() {
                           </button>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">
-                            {new Date(row.lastUpdated).toLocaleDateString('en-IN', {
+                          {new Date(row.lastUpdated).toLocaleDateString('en-IN', {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
-                            })}
+                          })}
                         </td>
                       </tr>
                     ))}
@@ -771,29 +776,7 @@ export default function ChallanDashboard() {
           onClose={() => setSelectedChallans([])}
         />
       )}
-      
-      <Toaster 
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#363636',
-            color: '#fff',
-          },
-          success: {
-            duration: 3000,
-            style: {
-              background: '#059669',
-            },
-          },
-          error: {
-            duration: 3000,
-            style: {
-              background: '#DC2626',
-            },
-          },
-        }}
-      />
+
     </div>
   );
 }

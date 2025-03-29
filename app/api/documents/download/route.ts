@@ -3,7 +3,7 @@ import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { r2Client, BUCKET_NAME } from '@/lib/cloudflare';
 
 // Add export config for dynamic rendering
-export const dynamic = 'force-dynamic';
+ 
 
 export async function GET(req: Request) {
   try {

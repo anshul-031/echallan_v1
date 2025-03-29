@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { listDocuments } from '@/lib/cloudflare'; // Assuming you have a function to list documents in Cloudflare
 
 // Add export config for dynamic rendering
-export const dynamic = 'force-dynamic';
+ 
 
 export async function GET(req: NextRequest) {
   try {

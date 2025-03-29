@@ -3,8 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import prisma from '@/lib/prisma';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
-// Mark this route as dynamic to avoid the "Dynamic Server Usage" error during build
-export const dynamic = 'force-dynamic';
+ 
+ 
 
 export async function GET() {
   try {

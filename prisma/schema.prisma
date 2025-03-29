@@ -12,12 +12,14 @@ model User {
   email      String      @unique
   password   String
   name       String?
+  credits    Int         @default(0)
   role       String      @default("user")
   created_at DateTime    @default(now())
   updated_at DateTime
   challans    Challan[]
   preferences Preference?
-  vehicle_stats       UserVehicleStats?  
+  vehicle_stats       UserVehicleStats? 
+  precedingChallan  PrecedingChallan[]
   vehicles    Vehicle[]
 }
 
@@ -36,6 +38,7 @@ model Vehicle {
   ownerId        String?
   registeredAt   String
   documents      Int
+  precedingChallan  PrecedingChallan[]
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
   challans       Challan[]
@@ -88,6 +91,7 @@ model Challan {
   created_at            DateTime @default(now())
   user                  User    @relation(fields: [user_id], references: [id])
   vehicle               Vehicle  @relation(fields: [vehicle_id], references: [id] , onDelete: Cascade) 
+  precedingChallan      PrecedingChallan?
 
   @@index([rc_no])
   @@index([user_id])
@@ -111,3 +115,25 @@ model Preference {
   @@map("preferences")
 }
 
+model PrecedingChallan {
+  id                  String   @id @default(uuid())
+  challan_id            String  @unique
+  rc_no                 String
+  user_id               String
+  challan_no            String   @unique
+  challan_status        String
+  sent_to_reg_court     String
+  sent_to_virtual_court String
+  amount_of_fine        Decimal  @db.Decimal(10, 2)
+  fine_imposed          Decimal  @db.Decimal(10, 2)
+  receipt_no            String?
+  payment_at            DateTime @default(now())
+  vehicle_id            Int
+  user                  User     @relation(fields: [user_id], references: [id])
+  vehicle               Vehicle  @relation(fields: [vehicle_id], references: [id])
+  challan               Challan  @relation(fields: [challan_id], references: [id])
+
+  @@index([rc_no])
+  @@index([challan_id])
+  @@index([user_id])
+}

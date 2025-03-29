@@ -8,23 +8,24 @@ datasource db {
 }
 
 model User {
-  id         String      @id @default(uuid())
-  email      String      @unique
-  password   String
-  name       String?
-  role       String      @default("user")
-  created_at DateTime    @default(now())
-  updated_at DateTime
-  challans    Challan[]
-  preferences Preference?
-  vehicle_stats       UserVehicleStats?  
-  vehicles    Vehicle[]
+  id                  String             @id @default(uuid())
+  email               String             @unique
+  password            String
+  name                String?
+  credits             Int                @default(0)
+  role                String             @default("user")
+  created_at          DateTime           @default(now())
+  updated_at          DateTime           @updatedAt
+  challans            Challan[]
+  preferences         Preference?
+  vehicle_stats       UserVehicleStats?
+  precedingChallan    PrecedingChallan[]
+  vehicles            Vehicle[]
 }
 
-
 model Vehicle {
-  id             Int       @id @default(autoincrement())
-  vrn            String    
+  id             Int                @id @default(autoincrement())
+  vrn            String
   roadTax        String
   fitness        String
   insurance      String
@@ -36,32 +37,58 @@ model Vehicle {
   ownerId        String?
   registeredAt   String
   documents      Int
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+  precedingChallan PrecedingChallan[]
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
   challans       Challan[]
-  owner          User?    @relation(fields: [ownerId], references: [id])
+  owner          User?             @relation(fields: [ownerId], references: [id])
 
   @@map("vehicles")
 }
 
 model UserVehicleStats {
   id                     String   @id @default(uuid())
-  userId                 String   @unique  // Foreign key to User
-  total_vehicles         Int      @default(0)  // Total number of vehicles owned
-  expiring_count         Int      @default(0)  // Total expiring documents
-  expired_count          Int      @default(0)  // Total expired documents
-  expiring_roadTax       Int      @default(0)  // Count of expiring roadTax
-  expiring_fitness       Int      @default(0)  // Count of expiring fitness
-  expiring_insurance     Int      @default(0)  // Count of expiring insurance
-  expiring_pollution     Int      @default(0)  // Count of expiring pollution
-  expiring_statePermit   Int      @default(0)  // Count of expiring statePermit
-  expiring_nationalPermit Int     @default(0)  // Count of expiring nationalPermit
-  expired_roadTax        Int      @default(0)  // Count of expired roadTax
-  expired_fitness        Int      @default(0)  // Count of expired fitness
-  expired_insurance      Int      @default(0)  // Count of expired insurance
-  expired_pollution      Int      @default(0)  // Count of expired pollution
-  expired_statePermit    Int      @default(0)  // Count of expired statePermit
-  expired_nationalPermit Int      @default(0)  // Count of expired nationalPermit
+  userId                 String   @unique
+  total_vehicles         Int      @default(0)
+  // Existing counts (expiring within 1 month, expired)
+  expiring_count         Int      @default(0)  // Documents expiring within 1 month
+  expired_count          Int      @default(0)  // Documents already expired
+  expiring_roadTax       Int      @default(0)
+  expiring_fitness       Int      @default(0)
+  expiring_insurance     Int      @default(0)
+  expiring_pollution     Int      @default(0)
+  expiring_statePermit   Int      @default(0)
+  expiring_nationalPermit Int     @default(0)
+  expired_roadTax        Int      @default(0)
+  expired_fitness        Int      @default(0)
+  expired_insurance      Int      @default(0)
+  expired_pollution      Int      @default(0)
+  expired_statePermit    Int      @default(0)
+  expired_nationalPermit Int      @default(0)
+  // New counts for 3 months
+  expiring_3m_count      Int      @default(0)  // Documents expiring within 1-3 months
+  expiring_3m_roadTax    Int      @default(0)
+  expiring_3m_fitness    Int      @default(0)
+  expiring_3m_insurance  Int      @default(0)
+  expiring_3m_pollution  Int      @default(0)
+  expiring_3m_statePermit Int     @default(0)
+  expiring_3m_nationalPermit Int  @default(0)
+  // New counts for 6 months
+  expiring_6m_count      Int      @default(0)  // Documents expiring within 3-6 months
+  expiring_6m_roadTax    Int      @default(0)
+  expiring_6m_fitness    Int      @default(0)
+  expiring_6m_insurance  Int      @default(0)
+  expiring_6m_pollution  Int      @default(0)
+  expiring_6m_statePermit Int     @default(0)
+  expiring_6m_nationalPermit Int  @default(0)
+  // New counts for 1 year
+  expiring_1y_count      Int      @default(0)  // Documents expiring within 6-12 months
+  expiring_1y_roadTax    Int      @default(0)
+  expiring_1y_fitness    Int      @default(0)
+  expiring_1y_insurance  Int      @default(0)
+  expiring_1y_pollution  Int      @default(0)
+  expiring_1y_statePermit Int     @default(0)
+  expiring_1y_nationalPermit Int  @default(0)
   created_at             DateTime @default(now())
   updated_at             DateTime @updatedAt
   user                   User     @relation(fields: [userId], references: [id])
@@ -70,24 +97,26 @@ model UserVehicleStats {
 }
 
 model Challan {
-  id                    String   @id @default(cuid())
+  id                    String           @id @default(cuid())
   rc_no                 String
   user_id               String
   vehicle_id            Int
-  challan_no            String   @unique
+  challan_no            String           @unique
   challan_status        String
   sent_to_reg_court     String
   remark                String?
   sent_to_virtual_court String
-  amount_of_fine        Decimal  @db.Decimal(10, 2)
+  amount_of_fine        Decimal          @db.Decimal(10, 2)
   state_code            String
-  fine_imposed          Decimal  @db.Decimal(10, 2)
+  fine_imposed          Decimal          @db.Decimal(10, 2)
   challan_date_time     DateTime
   receipt_no            String?
-  last_update           DateTime @default(now()) @updatedAt
-  created_at            DateTime @default(now())
-  user                  User    @relation(fields: [user_id], references: [id])
-  vehicle               Vehicle  @relation(fields: [vehicle_id], references: [id] , onDelete: Cascade) 
+  last_update           DateTime         @default(now()) @updatedAt
+  created_at            DateTime         @default(now())
+  user                  User            @relation(fields: [user_id], references: [id])
+  vehicle               Vehicle         @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+
+  precedingChallan      PrecedingChallan?
 
   @@index([rc_no])
   @@index([user_id])
@@ -111,3 +140,26 @@ model Preference {
   @@map("preferences")
 }
 
+model PrecedingChallan {
+  id                  String   @id @default(uuid())
+  challan_id          String   @unique
+  rc_no               String
+  user_id             String
+  challan_no          String   @unique
+  challan_status      String
+  sent_to_reg_court   String
+  sent_to_virtual_court String
+  amount_of_fine      Decimal  @db.Decimal(10, 2)
+  fine_imposed        Decimal  @db.Decimal(10, 2)
+  receipt_no          String?
+  payment_at          DateTime @default(now())
+  vehicle_id          Int
+  user                User     @relation(fields: [user_id], references: [id])
+  vehicle             Vehicle  @relation(fields: [vehicle_id], references: [id])
+  challan             Challan  @relation(fields: [challan_id], references: [id])
+
+
+  @@index([rc_no])
+  @@index([challan_id])
+  @@index([user_id])
+}

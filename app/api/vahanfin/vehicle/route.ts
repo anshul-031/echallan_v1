@@ -3,6 +3,9 @@ import https from 'https';
 
 const API_KEY = 'abcd123';
 
+// Mark this route as dynamic to avoid the "Dynamic Server Usage" error during build
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const rc_no = searchParams.get('rc_no');

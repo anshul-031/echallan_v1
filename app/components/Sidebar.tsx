@@ -24,6 +24,7 @@ import {
   DocumentTextIcon,
   BookOpenIcon
 } from '@heroicons/react/24/outline';
+import { useSession } from 'next-auth/react';
 
 const navigation = [
   { name: 'Fleet Dashboard', href: '/dashboard', icon: HomeIcon, color: '#2D9CDB' },
@@ -38,6 +39,7 @@ const navigation = [
 ];
 
 export default function Sidebar() {
+  const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -205,8 +207,8 @@ export default function Sidebar() {
             </div>
             <div className={`flex-1 text-left transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 absolute' : 'opacity-100 w-auto relative'
               }`}>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">John Doe</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Administrator</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{session?.user?.name || 'User'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{session?.user?.role || 'User'}</p>
             </div>
           </button>
 

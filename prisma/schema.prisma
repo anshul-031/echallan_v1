@@ -115,6 +115,7 @@ model Challan {
   created_at            DateTime         @default(now())
   user                  User            @relation(fields: [user_id], references: [id])
   vehicle               Vehicle         @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+
   precedingChallan      PrecedingChallan?
 
   @@index([rc_no])
@@ -156,6 +157,7 @@ model PrecedingChallan {
   user                User     @relation(fields: [user_id], references: [id])
   vehicle             Vehicle  @relation(fields: [vehicle_id], references: [id])
   challan             Challan  @relation(fields: [challan_id], references: [id])
+
 
   @@index([rc_no])
   @@index([challan_id])

@@ -118,6 +118,7 @@ export function getExpirationColor(date: string): string {
 
 
 
+
 export function getExpirationTimeframe(date: string): {
   timeframe: 'expired' | 'expiring_1m' | 'expiring_3m' | 'expiring_6m' | 'expiring_1y' | 'valid';
 } {
@@ -198,6 +199,7 @@ export function getExpirationTimeframe(date: string): {
     return { timeframe: 'valid' }; // Expires after 1 year
   }
 }
+
 
 
 

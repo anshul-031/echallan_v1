@@ -231,8 +231,6 @@ if (process.env.NODE_ENV !== 'production') {
   globalThis.prisma = prisma;
 }
 
-
-
 async function updateVehicleStats(ownerId: string, prismaClient: ReturnType<typeof getPrismaClient>) {
   try {
     console.log('Updating stats for ownerId:', ownerId);
@@ -259,16 +257,14 @@ async function updateVehicleStats(ownerId: string, prismaClient: ReturnType<type
 
     vehicles.forEach((vehicle) => {
       fields.forEach((field) => {
-        const date = vehicle[field] as string;
-        
-        // For compatibility with existing code, use the color-based approach 
+        const date = vehicle[field] as string; // Type assertion based on Vehicle type
         const color = getExpirationColor(date);
         if (color === 'text-yellow-500') {
           stats.expiring[field]++;
-          stats.expiring.count++;
+          stats.expiring.count++; // Increment for each expiring field
         } else if (color === 'text-red-500') {
           stats.expired[field]++;
-          stats.expired.count++;
+          stats.expired.count++; // Increment for each expired field
         }
         
         // Use the new timeframe approach for additional stats

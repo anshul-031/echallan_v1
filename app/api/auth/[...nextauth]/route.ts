@@ -1,5 +1,5 @@
-// Mark this route as dynamic to avoid the "Dynamic Server Usage" error during build
-export const dynamic = 'force-dynamic';
+ 
+ 
 
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";

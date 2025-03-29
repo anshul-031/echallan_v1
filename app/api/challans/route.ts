@@ -4,7 +4,7 @@ import { authOptions } from '../auth/[...nextauth]/route';
 import prisma from '@/lib/prisma';
 import { Decimal } from '@prisma/client/runtime/library';
 
-export const dynamic = 'force-dynamic';
+ 
 
 export async function GET() {
   const session = await getServerSession(authOptions);

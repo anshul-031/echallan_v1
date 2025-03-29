@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import prisma from '@/lib/prisma';
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { computeVehicleStats, getExpirationColor } from '@/lib/utils';
+import {  getExpirationColor } from '@/lib/utils';
 
 export async function GET(request: Request) {
   try {
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
     }
 
     // Compute vehicle stats
-    const vehicleStats = computeVehicleStats(allVehicles);
+    const vehicleStats = user.vehicle_stats || {}
 
     return NextResponse.json({
       vehicles: filteredVehicles,
@@ -271,5 +271,5 @@ export async function DELETE(request: Request) {
   }
 }
 
-// Mark this route as dynamic to avoid the "Dynamic Server Usage" error during build
-export const dynamic = 'force-dynamic';
+ 
+ 

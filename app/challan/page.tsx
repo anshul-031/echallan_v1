@@ -33,6 +33,7 @@ import axios from 'axios';
 
 // import Mukul from '../components/Mukul';
 // import { getSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 const summaryData = [
   {
@@ -186,6 +187,8 @@ interface VehicleRow {
 }
 
 export default function ChallanDashboard() {
+  const router = useRouter();
+  
   const [challans, setChallans] = useState<ChallanType[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -601,7 +604,7 @@ export default function ChallanDashboard() {
                         <p><strong>Challans:</strong> {item.totalChallans}</p>
                         <p><strong>Amount:</strong> ₹{item.totalAmount}</p>
                         <p><strong>Online:</strong> {item.onlineChallans}</p>
-                        <p><strong>Offline:</strong> {item.offlineChallans}</p>
+                        <p><strong>Court:</strong> {item.offlineChallans}</p>
                         <p><strong>Last Updated:</strong> {item.lastUpdated.toLocaleString()}</p>
                       </div>
                     ))}
@@ -654,7 +657,10 @@ export default function ChallanDashboard() {
                         <td className="px-6 py-4 text-sm text-center">{row.onlineChallans}</td>
                         <td className="px-6 py-4 text-sm text-center">{row.offlineChallans}</td>
                         <td className="px-2 py-4 text-sm text-center text-gray-500">
-                          <button className="px-4 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+                          <button 
+                            onClick={() => router.push(`/challanpay?rc_no=${row.rc_no}`)}
+                            className="px-4 py-1 rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50"
+                            disabled={row.pendingChallans < 1} // Disable if no pending challans
                           >
                             Pay
                           </button>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, Fragment } from 'react';
@@ -51,6 +52,7 @@ export default function ChallanPayment() {
       try {
         setIsLoading(true);
         
+
         // Fetch pending challans from database
         const challansResponse = await axios.get(`/api/challans/vechicalnumberwisechallan?rc_no=${rc_no}`);
         if (challansResponse.data) {
@@ -58,6 +60,7 @@ export default function ChallanPayment() {
           setChallans(pendingChallans.map((challan: any) => ({
             ...challan,
             id: challan.id, // Use the database ID
+
             challan_date_time: new Date(challan.challan_date_time)
           })));
         }

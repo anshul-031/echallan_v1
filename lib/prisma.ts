@@ -158,7 +158,7 @@
 
 
 import { PrismaClient } from '@prisma/client';
-import { getExpirationColor } from '@/lib/utils';
+import { getExpirationColor, getExpirationTimeframe } from '@/lib/utils';
 
 // Define VehicleStat type
 type VehicleStat = {
@@ -231,7 +231,8 @@ if (process.env.NODE_ENV !== 'production') {
   globalThis.prisma = prisma;
 }
 
-// Update vehicle stats function
+
+
 async function updateVehicleStats(ownerId: string, prismaClient: ReturnType<typeof getPrismaClient>) {
   try {
     console.log('Updating stats for ownerId:', ownerId);
@@ -247,21 +248,40 @@ async function updateVehicleStats(ownerId: string, prismaClient: ReturnType<type
       'nationalPermit',
     ];
 
-    const stats: { expiring: VehicleStat; expired: VehicleStat } = {
+    // Initialize stats for all timeframes
+    const stats = {
       expiring: { count: 0, roadTax: 0, fitness: 0, insurance: 0, pollution: 0, statePermit: 0, nationalPermit: 0 },
       expired: { count: 0, roadTax: 0, fitness: 0, insurance: 0, pollution: 0, statePermit: 0, nationalPermit: 0 },
+      expiring_3m: { count: 0, roadTax: 0, fitness: 0, insurance: 0, pollution: 0, statePermit: 0, nationalPermit: 0 },
+      expiring_6m: { count: 0, roadTax: 0, fitness: 0, insurance: 0, pollution: 0, statePermit: 0, nationalPermit: 0 },
+      expiring_1y: { count: 0, roadTax: 0, fitness: 0, insurance: 0, pollution: 0, statePermit: 0, nationalPermit: 0 }
     };
 
     vehicles.forEach((vehicle) => {
       fields.forEach((field) => {
-        const date = vehicle[field] as string; // Type assertion based on Vehicle type
+        const date = vehicle[field] as string;
+        
+        // For compatibility with existing code, use the color-based approach 
         const color = getExpirationColor(date);
         if (color === 'text-yellow-500') {
           stats.expiring[field]++;
-          stats.expiring.count++; // Increment for each expiring field
+          stats.expiring.count++;
         } else if (color === 'text-red-500') {
           stats.expired[field]++;
-          stats.expired.count++; // Increment for each expired field
+          stats.expired.count++;
+        }
+        
+        // Use the new timeframe approach for additional stats
+        const { timeframe } = getExpirationTimeframe(date);
+        if (timeframe === 'expiring_3m') {
+          stats.expiring_3m[field]++;
+          stats.expiring_3m.count++;
+        } else if (timeframe === 'expiring_6m') {
+          stats.expiring_6m[field]++;
+          stats.expiring_6m.count++;
+        } else if (timeframe === 'expiring_1y') {
+          stats.expiring_1y[field]++;
+          stats.expiring_1y.count++;
         }
       });
     });
@@ -272,6 +292,7 @@ async function updateVehicleStats(ownerId: string, prismaClient: ReturnType<type
       where: { userId: ownerId },
       update: {
         total_vehicles: vehicles.length,
+        // Original stats
         expiring_count: stats.expiring.count,
         expired_count: stats.expired.count,
         expiring_roadTax: stats.expiring.roadTax,
@@ -286,10 +307,38 @@ async function updateVehicleStats(ownerId: string, prismaClient: ReturnType<type
         expired_pollution: stats.expired.pollution,
         expired_statePermit: stats.expired.statePermit,
         expired_nationalPermit: stats.expired.nationalPermit,
+        
+        // New stats for 3 months (1-3 months)
+        expiring_3m_count: stats.expiring_3m.count,
+        expiring_3m_roadTax: stats.expiring_3m.roadTax,
+        expiring_3m_fitness: stats.expiring_3m.fitness,
+        expiring_3m_insurance: stats.expiring_3m.insurance,
+        expiring_3m_pollution: stats.expiring_3m.pollution,
+        expiring_3m_statePermit: stats.expiring_3m.statePermit,
+        expiring_3m_nationalPermit: stats.expiring_3m.nationalPermit,
+        
+        // New stats for 6 months (3-6 months)
+        expiring_6m_count: stats.expiring_6m.count,
+        expiring_6m_roadTax: stats.expiring_6m.roadTax,
+        expiring_6m_fitness: stats.expiring_6m.fitness,
+        expiring_6m_insurance: stats.expiring_6m.insurance,
+        expiring_6m_pollution: stats.expiring_6m.pollution,
+        expiring_6m_statePermit: stats.expiring_6m.statePermit,
+        expiring_6m_nationalPermit: stats.expiring_6m.nationalPermit,
+        
+        // New stats for 1 year (6-12 months)
+        expiring_1y_count: stats.expiring_1y.count,
+        expiring_1y_roadTax: stats.expiring_1y.roadTax,
+        expiring_1y_fitness: stats.expiring_1y.fitness,
+        expiring_1y_insurance: stats.expiring_1y.insurance,
+        expiring_1y_pollution: stats.expiring_1y.pollution,
+        expiring_1y_statePermit: stats.expiring_1y.statePermit,
+        expiring_1y_nationalPermit: stats.expiring_1y.nationalPermit,
       },
       create: {
         userId: ownerId,
         total_vehicles: vehicles.length,
+        // Original stats
         expiring_count: stats.expiring.count,
         expired_count: stats.expired.count,
         expiring_roadTax: stats.expiring.roadTax,
@@ -304,6 +353,33 @@ async function updateVehicleStats(ownerId: string, prismaClient: ReturnType<type
         expired_pollution: stats.expired.pollution,
         expired_statePermit: stats.expired.statePermit,
         expired_nationalPermit: stats.expired.nationalPermit,
+        
+        // New stats for 3 months (1-3 months)
+        expiring_3m_count: stats.expiring_3m.count,
+        expiring_3m_roadTax: stats.expiring_3m.roadTax,
+        expiring_3m_fitness: stats.expiring_3m.fitness,
+        expiring_3m_insurance: stats.expiring_3m.insurance,
+        expiring_3m_pollution: stats.expiring_3m.pollution,
+        expiring_3m_statePermit: stats.expiring_3m.statePermit,
+        expiring_3m_nationalPermit: stats.expiring_3m.nationalPermit,
+        
+        // New stats for 6 months (3-6 months)
+        expiring_6m_count: stats.expiring_6m.count,
+        expiring_6m_roadTax: stats.expiring_6m.roadTax,
+        expiring_6m_fitness: stats.expiring_6m.fitness,
+        expiring_6m_insurance: stats.expiring_6m.insurance,
+        expiring_6m_pollution: stats.expiring_6m.pollution,
+        expiring_6m_statePermit: stats.expiring_6m.statePermit,
+        expiring_6m_nationalPermit: stats.expiring_6m.nationalPermit,
+        
+        // New stats for 1 year (6-12 months)
+        expiring_1y_count: stats.expiring_1y.count,
+        expiring_1y_roadTax: stats.expiring_1y.roadTax,
+        expiring_1y_fitness: stats.expiring_1y.fitness,
+        expiring_1y_insurance: stats.expiring_1y.insurance,
+        expiring_1y_pollution: stats.expiring_1y.pollution,
+        expiring_1y_statePermit: stats.expiring_1y.statePermit,
+        expiring_1y_nationalPermit: stats.expiring_1y.nationalPermit,
       },
     });
 

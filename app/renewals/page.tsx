@@ -1,144 +1,112 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { 
-  MagnifyingGlassIcon, 
-  ArrowPathIcon, 
-  CloudArrowUpIcon,
+import { useState, useCallback, useEffect } from 'react';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { toast } from 'react-hot-toast';
+import {
+  MagnifyingGlassIcon,
+  ArrowPathIcon,
   TrashIcon,
-  EyeIcon,
+  DocumentArrowDownIcon,
+  CloudArrowUpIcon,
   ClockIcon,
-  ArrowRightIcon,
-  CalendarIcon,
-  ShieldCheckIcon,
-  DocumentCheckIcon,
-  BellAlertIcon,
   XMarkIcon,
-  CheckCircleIcon,
-  ExclamationCircleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  FunnelIcon,
-  ArrowsUpDownIcon,
   UserIcon,
-  TableCellsIcon,
-  Squares2X2Icon
 } from '@heroicons/react/24/outline';
-import { useSession } from 'next-auth/react';
-import { toast } from 'react-hot-toast';
+import { Vehicle } from '@/app/types/vehicle';
+import { getExpirationColor } from '@/lib/utils';
+import DocumentModal from '../components/DocumentModal';
+import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
 
-// Interface for vehicle data
-interface Vehicle {
-  id: number;
-  vrn: string;
-  roadTax: string;
-  fitness: string;
-  insurance: string;
-  pollution: string;
-  statePermit: string;
-  nationalPermit: string;
-  lastUpdated: string;
-  status: string;
-  registeredAt: string;
-  documents: number;
-  ownerId?: string;
-  owner?: {
-    id: string;
-    name: string | null;
-    email: string;
-  };
-}
+// Interface for vehicle stats (updated for renewals)
+type VehicleStats = {
+  expiring_count: number;
+  expiring_roadTax: number;
+  expiring_fitness: number;
+  expiring_insurance: number;
+  expiring_pollution: number;
+  expiring_statePermit: number;
+  expiring_nationalPermit: number;
+  expiring_3m_count: number;
+  expiring_3m_roadTax: number;
+  expiring_3m_fitness: number;
+  expiring_3m_insurance: number;
+  expiring_3m_pollution: number;
+  expiring_3m_statePermit: number;
+  expiring_3m_nationalPermit: number;
+  expiring_6m_count: number;
+  expiring_6m_roadTax: number;
+  expiring_6m_fitness: number;
+  expiring_6m_insurance: number;
+  expiring_6m_pollution: number;
+  expiring_6m_statePermit: number;
+  expiring_6m_nationalPermit: number;
+  expiring_1y_count: number;
+  expiring_1y_roadTax: number;
+  expiring_1y_fitness: number;
+  expiring_1y_insurance: number;
+  expiring_1y_pollution: number;
+  expiring_1y_statePermit: number;
+  expiring_1y_nationalPermit: number;
+};
 
-// Interface for renewal document
-interface Document {
-  type: string;
-  status: string;
-  expiry: string;
-  lastUpdated: string;
-}
-
-// Interface for summary card data
+// Interface for summary card
 interface SummaryCard {
   title: string;
-  count: number;
-  icon: any;
+  count: string;
   color: string;
-  hoverColor: string;
-  shadowColor: string;
-  textGradient: string;
-  iconGradient: string;
-  borderColor: string;
-  vehicles: Vehicle[];
+  glowColor: string;
+  icon: React.ComponentType<{ className?: string }>;
+  timeframe: string; // To identify the timeframe for filtering
 }
 
-// Add interface for document with vehicle information
-interface VehicleDocument {
-  vehicleId: number;
-  vrn: string;
-  owner: string;
-  docType: string;
-  expiry: string;
-  status: string;
-}
-
-// Sample data (will be replaced with API data)
-const initialSummaryCards = [
-  {
-    title: 'Next 30 Days',
-    count: 0,
-    icon: BellAlertIcon,
-    color: 'from-rose-500 to-pink-600',
-    hoverColor: 'hover:from-rose-600 hover:to-pink-700',
-    shadowColor: 'shadow-rose-500/20',
-    textGradient: 'bg-gradient-to-r from-rose-500 to-pink-600',
-    iconGradient: 'bg-gradient-to-br from-rose-500/10 to-pink-600/10',
-    borderColor: 'border-rose-100',
-    vehicles: []
-  },
-  {
-    title: 'Next 3 months',
-    count: 0,
-    icon: CalendarIcon,
-    color: 'from-amber-500 to-orange-600',
-    hoverColor: 'hover:from-amber-600 hover:to-orange-700',
-    shadowColor: 'shadow-amber-500/20',
-    textGradient: 'bg-gradient-to-r from-amber-500 to-orange-600',
-    iconGradient: 'bg-gradient-to-br from-amber-500/10 to-orange-600/10',
-    borderColor: 'border-amber-100',
-    vehicles: []
-  },
-  {
-    title: 'Next 6 months',
-    count: 0,
-    icon: ShieldCheckIcon,
-    color: 'from-blue-500 to-indigo-600',
-    hoverColor: 'hover:from-blue-600 hover:to-indigo-700',
-    shadowColor: 'shadow-blue-500/20',
-    textGradient: 'bg-gradient-to-r from-blue-500 to-indigo-600',
-    iconGradient: 'bg-gradient-to-br from-blue-500/10 to-indigo-600/10',
-    borderColor: 'border-blue-100',
-    vehicles: []
-  },
-  {
-    title: 'Next 12 months',
-    count: 0,
-    icon: DocumentCheckIcon,
-    color: 'from-emerald-500 to-teal-600',
-    hoverColor: 'hover:from-emerald-600 hover:to-teal-700',
-    shadowColor: 'shadow-emerald-500/20',
-    textGradient: 'bg-gradient-to-r from-emerald-500 to-teal-600',
-    iconGradient: 'bg-gradient-to-br from-emerald-500/10 to-teal-600/10',
-    borderColor: 'border-emerald-100',
-    vehicles: []
-  }
-];
+// Function to get summary cards for renewals
+const getSummaryCards = (
+  vehicleStats: VehicleStats,
+  setSelectedTimeframe: (value: string) => void
+): SummaryCard[] => [
+    {
+      title: 'NEXT 30 DAYS',
+      count: vehicleStats.expiring_count.toString(),
+      color: 'from-red-500 to-red-600',
+      glowColor: 'red',
+      icon: ClockIcon,
+      timeframe: '30Days',
+    },
+    {
+      title: 'NEXT 3 MONTHS',
+      count: vehicleStats.expiring_3m_count.toString(),
+      color: 'from-orange-500 to-orange-600',
+      glowColor: 'orange',
+      icon: ClockIcon,
+      timeframe: '3Months',
+    },
+    {
+      title: 'NEXT 6 MONTHS',
+      count: vehicleStats.expiring_6m_count.toString(),
+      color: 'from-yellow-500 to-yellow-600',
+      glowColor: 'yellow',
+      icon: ClockIcon,
+      timeframe: '6Months',
+    },
+    {
+      title: 'NEXT 12 MONTHS',
+      count: vehicleStats.expiring_1y_count.toString(),
+      color: 'from-green-500 to-green-600',
+      glowColor: 'green',
+      icon: ClockIcon,
+      timeframe: '12Months',
+    },
+  ];
 
 // Date utility functions
 const parseDate = (dateStr: string): Date => {
   if (!dateStr || dateStr === 'Not available') return new Date(8640000000000000); // Far future date
-  
+
   try {
-    // Handle DD-MM-YYYY format (common in the application)
     const dashRegex = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
     const dashMatch = dateStr.match(dashRegex);
     if (dashMatch) {
@@ -146,13 +114,11 @@ const parseDate = (dateStr: string): Date => {
       const month = parseInt(dashMatch[2]) - 1; // JS months are 0-indexed
       const year = parseInt(dashMatch[3]);
       const date = new Date(year, month, day);
-      // Check if valid date (handles cases like 31-02-2023)
       if (!isNaN(date.getTime()) && date.getDate() === day) {
         return date;
       }
     }
-    
-    // Handle DD/MM/YYYY format
+
     const slashRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
     const slashMatch = dateStr.match(slashRegex);
     if (slashMatch) {
@@ -165,7 +131,6 @@ const parseDate = (dateStr: string): Date => {
       }
     }
 
-    // Try standard date parsing as fallback
     const parsed = new Date(dateStr);
     if (!isNaN(parsed.getTime())) {
       return parsed;
@@ -173,521 +138,599 @@ const parseDate = (dateStr: string): Date => {
   } catch (error) {
     console.error("Error parsing date:", error);
   }
-  
-  // Return far future date as fallback
+
   return new Date(8640000000000000);
 };
 
 const getDaysDifference = (dateStr: string): number => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const expiryDate = parseDate(dateStr);
   expiryDate.setHours(0, 0, 0, 0);
-  
+
   const diffTime = expiryDate.getTime() - today.getTime();
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 };
 
-// Function to check if date is in a time range
+// Function to check if a date is in a specific range
 const isDateInRange = (dateStr: string, days: number): boolean => {
   if (!dateStr || dateStr === 'Not available') return false;
   const diff = getDaysDifference(dateStr);
   return diff >= 0 && diff <= days;
 };
 
-// Function to get the earliest expiry date for a vehicle
-const getEarliestExpiryDate = (vehicle: Vehicle): string => {
-  const dates = [
-    vehicle.roadTax,
-    vehicle.fitness,
-    vehicle.insurance,
-    vehicle.pollution,
-    vehicle.statePermit !== 'Not available' ? vehicle.statePermit : '',
-    vehicle.nationalPermit !== 'Not available' ? vehicle.nationalPermit : ''
-  ].filter(date => date && date !== 'Not available');
-  
-  if (dates.length === 0) return '';
-  
-  return dates.reduce((earliest, current) => {
-    if (!earliest) return current;
-    return getDaysDifference(current) < getDaysDifference(earliest) ? current : earliest;
-  }, '');
+// Function to get expiring documents for a vehicle in a specific timeframe
+const getExpiringDocuments = (vehicle: Vehicle, days: number): string[] => {
+  const documents: { [key: string]: string } = {
+    'Road Tax': vehicle.roadTax,
+    'Fitness': vehicle.fitness,
+    'Insurance': vehicle.insurance,
+    'Pollution': vehicle.pollution,
+    'Permit': vehicle.statePermit,
+    'National Permit': vehicle.nationalPermit,
+  };
+
+  return Object.keys(documents).filter((doc) => isDateInRange(documents[doc], days));
 };
 
-// Calculate if vehicle has any document expiring in given range
-const isVehicleExpiringInRange = (vehicle: Vehicle, days: number): boolean => {
-  return [
-    vehicle.roadTax,
-    vehicle.fitness,
-    vehicle.insurance,
-    vehicle.pollution,
-    vehicle.statePermit,
-    vehicle.nationalPermit
-  ].some(date => isDateInRange(date, days));
+// Reused from dashboard for PDF export
+type ExportData = {
+  vrn: string;
+  documentsExpiring: string;
 };
 
-// Get all documents for a vehicle with their expiry status
-const getVehicleDocuments = (vehicle: Vehicle): Document[] => {
-  return [
-    { type: 'Road Tax', status: isDateInRange(vehicle.roadTax, 30) ? 'Expiring Soon' : 'Valid', expiry: vehicle.roadTax, lastUpdated: vehicle.lastUpdated },
-    { type: 'Fitness', status: isDateInRange(vehicle.fitness, 30) ? 'Expiring Soon' : 'Valid', expiry: vehicle.fitness, lastUpdated: vehicle.lastUpdated },
-    { type: 'Insurance', status: isDateInRange(vehicle.insurance, 30) ? 'Expiring Soon' : 'Valid', expiry: vehicle.insurance, lastUpdated: vehicle.lastUpdated },
-    { type: 'Pollution', status: isDateInRange(vehicle.pollution, 30) ? 'Expiring Soon' : 'Valid', expiry: vehicle.pollution, lastUpdated: vehicle.lastUpdated },
-    { type: 'State Permit', status: vehicle.statePermit === 'Not available' ? 'Not Available' : (isDateInRange(vehicle.statePermit, 30) ? 'Expiring Soon' : 'Valid'), expiry: vehicle.statePermit, lastUpdated: vehicle.lastUpdated },
-    { type: 'National Permit', status: vehicle.nationalPermit === 'Not available' ? 'Not Available' : (isDateInRange(vehicle.nationalPermit, 30) ? 'Expiring Soon' : 'Valid'), expiry: vehicle.nationalPermit, lastUpdated: vehicle.lastUpdated }
-  ];
+const prepareExportData = (vehicles: Vehicle[], days: number): ExportData[] => {
+  return vehicles.map((vehicle) => {
+    const expiringDocs = getExpiringDocuments(vehicle, days);
+    return {
+      vrn: vehicle.vrn,
+      documentsExpiring: expiringDocs.join(', '),
+    };
+  });
 };
 
 export default function RenewalsPage() {
-  const { data: session } = useSession();
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortField, setSortField] = useState<keyof Vehicle | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [summaryCards, setSummaryCards] = useState<SummaryCard[]>(initialSummaryCards);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
-  const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
-  const [viewingVehicles, setViewingVehicles] = useState<Vehicle[]>([]);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [assignIdSelected, setAssignIdSelected] = useState<number | null>(null);
-  const [documentsList, setDocumentsList] = useState<VehicleDocument[]>([]);
-  
-  // Function to update summary cards with vehicle data
-  const updateSummaryCards = useCallback((vehiclesData: Vehicle[]) => {
-    // Process data for summary cards
-    const next30Days = vehiclesData.filter((v: Vehicle) => isVehicleExpiringInRange(v, 30));
-    const next3Months = vehiclesData.filter((v: Vehicle) => isVehicleExpiringInRange(v, 90));
-    const next6Months = vehiclesData.filter((v: Vehicle) => isVehicleExpiringInRange(v, 180));
-    const next12Months = vehiclesData.filter((v: Vehicle) => isVehicleExpiringInRange(v, 365));
-    
-    setSummaryCards([
-      {...initialSummaryCards[0], count: next30Days.length, vehicles: next30Days},
-      {...initialSummaryCards[1], count: next3Months.length, vehicles: next3Months},
-      {...initialSummaryCards[2], count: next6Months.length, vehicles: next6Months},
-      {...initialSummaryCards[3], count: next12Months.length, vehicles: next12Months}
-    ]);
-  }, []);
-  
-  // Handle manual refresh of data
-  const handleRefresh = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Fetch data from the user vehicles API
-      const response = await fetch('/api/vehicles/user', {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Error ${response.status}: Failed to fetch vehicles`);
-      }
-      
-      const data = await response.json();
-      
-      setVehicles(data);
-      setFilteredVehicles(data);
-      
-      // Update the summary cards with the new data
-      updateSummaryCards(data);
-      
-      toast.success('Vehicle data refreshed successfully');
-    } catch (err: any) {
-      console.error('Error refreshing vehicles:', err);
-      setError('Failed to refresh vehicle data. Please try again.');
-      toast.error('Failed to refresh vehicle data');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [updateSummaryCards]);
-  
-  // Fetch vehicles data from API
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedVRN, setSelectedVRN] = useState<string>('');
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [vehicleToDelete, setVehicleToDelete] = useState<number | null>(null);
+  const [isDeletingVehicle, setIsDeletingVehicle] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedAssignVehicle, setSelectedAssignVehicle] = useState<Vehicle | null>(null);
+  const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [updatingRows, setUpdatingRows] = useState<{ [key: number]: boolean }>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [vehicleStats, setVehicleStats] = useState<VehicleStats>({
+    expiring_count: 0,
+    expiring_roadTax: 0,
+    expiring_fitness: 0,
+    expiring_insurance: 0,
+    expiring_pollution: 0,
+    expiring_statePermit: 0,
+    expiring_nationalPermit: 0,
+    expiring_3m_count: 0,
+    expiring_3m_roadTax: 0,
+    expiring_3m_fitness: 0,
+    expiring_3m_insurance: 0,
+    expiring_3m_pollution: 0,
+    expiring_3m_statePermit: 0,
+    expiring_3m_nationalPermit: 0,
+    expiring_6m_count: 0,
+    expiring_6m_roadTax: 0,
+    expiring_6m_fitness: 0,
+    expiring_6m_insurance: 0,
+    expiring_6m_pollution: 0,
+    expiring_6m_statePermit: 0,
+    expiring_6m_nationalPermit: 0,
+    expiring_1y_count: 0,
+    expiring_1y_roadTax: 0,
+    expiring_1y_fitness: 0,
+    expiring_1y_insurance: 0,
+    expiring_1y_pollution: 0,
+    expiring_1y_statePermit: 0,
+    expiring_1y_nationalPermit: 0,
+  });
+  const [preferences, setPreferences] = useState({
+    roadTaxVisibility: true,
+    fitnessVisibility: true,
+    insuranceVisibility: true,
+    pollutionVisibility: true,
+    statePermitVisibility: true,
+    nationalPermitVisibility: true,
+  });
+  const [selectedTimeframe, setSelectedTimeframe] = useState<string | null>(null);
+  const [filteredVehiclesForTimeframe, setFilteredVehiclesForTimeframe] = useState<Vehicle[]>([]);
+
+  // Fetch vehicles and stats from /api/vehicles
   useEffect(() => {
-    const fetchVehicles = async (retryCount = 0) => {
-      if (!session?.user) return;
-      
+    const fetchVehicles = async () => {
       try {
         setIsLoading(true);
-        
-        // Fetch data from the user vehicles API
-        const response = await fetch('/api/vehicles/user', {
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error || `Error ${response.status}: Failed to fetch vehicles`);
-        }
-        
+        const response = await fetch('/api/vehicles', { credentials: 'include' });
+        if (!response.ok) throw new Error('Failed to fetch vehicles');
         const data = await response.json();
-        console.log('Fetched vehicles:', data);
-        
-        setVehicles(data);
-        setFilteredVehicles(data);
-        
-        // Update the summary cards with the new data
-        updateSummaryCards(data);
-        
-      } catch (err: any) {
-        console.error('Error fetching vehicles:', err);
-        
-        if (retryCount < 3) {
-          const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
-          console.log(`Retrying in ${delay}ms (attempt ${retryCount + 1}/3)`);
-          
-          setTimeout(() => {
-            fetchVehicles(retryCount + 1);
-          }, delay);
-        } else {
-          setError('Failed to load vehicles. Please try again.');
-        }
+        setVehicles(data.vehicles);
+        setVehicleStats(data.vehicleStats);
+        setFilteredVehicles(data.vehicles);
+      } catch (error) {
+        console.error('Fetch error:', error);
+        toast.error('Failed to load vehicles');
       } finally {
-        if (retryCount === 0) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
-    
-    fetchVehicles();
-  }, [session, updateSummaryCards]);
-  
-  // Fetch vehicles from API on component mount
-  useEffect(() => {
-    handleRefresh();
-  }, [handleRefresh]);
-  
-  // Handle view details click on a period card
-  const handleViewDetails = (period: string) => {
-    const periodMap = {
-      'Next 30 Days': 0,
-      'Next 3 months': 1,
-      'Next 6 months': 2,
-      'Next 12 months': 3
+
+    const fetchPreferences = async () => {
+      try {
+        const response = await fetch('/api/preferences');
+        if (!response.ok) throw new Error('Failed to fetch preferences');
+        const data = await response.json();
+        setPreferences(data);
+      } catch (error) {
+        console.error('Fetch preferences error:', error);
+        toast.error('Failed to load preferences');
+      }
     };
-    
-    const index = periodMap[period as keyof typeof periodMap];
-    if (index !== undefined) {
-      setSelectedPeriod(period);
-      setViewingVehicles(summaryCards[index].vehicles);
-    }
-  };
-  
-  // Handle sorting
-  const handleSort = (field: string) => {
-    const newOrder = field === sortField && sortDirection === 'asc' ? 'desc' : 'asc';
-    setSortField(field as keyof Vehicle);
-    setSortDirection(newOrder);
-    
-    // Apply sorting if we're viewing specific period's vehicles
-    if (selectedPeriod) {
-      const sorted = [...viewingVehicles].sort((a, b) => {
-        let aValue = a[field as keyof Vehicle] || '';
-        let bValue = b[field as keyof Vehicle] || '';
-        
-        if (field === 'vrn') {
-          const aStr = String(aValue || '');
-          const bStr = String(bValue || '');
-          return sortDirection === 'asc' 
-            ? aStr.localeCompare(bStr) 
-            : bStr.localeCompare(aStr);
-        }
-        
-        // For date fields, convert to Date objects for comparison
-        if (['roadTax', 'fitness', 'insurance', 'pollution', 'statePermit', 'nationalPermit'].includes(field)) {
-          const dateA = parseDate(aValue as string);
-          const dateB = parseDate(bValue as string);
-          return sortDirection === 'asc' 
-            ? dateA.getTime() - dateB.getTime() 
-            : dateB.getTime() - dateA.getTime();
-        }
-        
-        return 0;
-      });
-      
-      setViewingVehicles(sorted);
-    }
-  };
-  
-  // Handle assign to user
-  const handleAssign = (id: number) => {
-    setAssignIdSelected(id);
-    setShowAssignModal(true);
-  };
-  
-  // Get sort icon based on current sort state
-  const getSortIcon = (field: string) => {
-    if (field !== sortField) {
-      return <ArrowsUpDownIcon className="h-4 w-4 text-gray-400" />;
-    }
-    return sortDirection === 'asc' ? 
-      <ChevronRightIcon className="h-4 w-4 transform rotate-90 text-blue-500" /> : 
-      <ChevronRightIcon className="h-4 w-4 transform -rotate-90 text-blue-500" />;
-  };
-  
-  // Component for renewal card with vehicle details
-  const RenewalCard = ({ data }: { data: Vehicle }) => {
-    const documents = getVehicleDocuments(data);
-    const expiringDocs = documents.filter(doc => doc.status === 'Expiring Soon');
-    
-    return (
-      <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 hover:shadow-lg transition-shadow">
-        <div className="p-5 border-b border-gray-100">
-          <div className="flex justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">{data.vrn}</h3>
-              <p className="text-sm text-gray-500">
-                Registered at {data.registeredAt}
-              </p>
-            </div>
-            <div className="text-right">
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                expiringDocs.length > 0 ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'
-              }`}>
-                {expiringDocs.length > 0 ? `${expiringDocs.length} Expiring Soon` : 'All Valid'}
-              </span>
-              <p className="text-xs text-gray-500 mt-1">Last updated: {data.lastUpdated}</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="p-5">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Document Status</h4>
-          <div className="space-y-2">
-            {documents.map((doc, index) => (
-              <div key={index} className="flex justify-between text-sm">
-                <span className="text-gray-600">{doc.type}</span>
-                <div className="flex items-center">
-                  <span 
-                    className={`font-medium ${
-                      doc.status === 'Expiring Soon' ? 'text-amber-600' : 
-                      doc.status === 'Not Available' ? 'text-gray-400' : 'text-green-600'
-                    }`}
-                  >
-                    {doc.expiry === 'Not available' ? 'N/A' : doc.expiry}
-                  </span>
-                  <span 
-                    className={`ml-2 inline-block h-2 w-2 rounded-full ${
-                      doc.status === 'Expiring Soon' ? 'bg-amber-500' : 
-                      doc.status === 'Not Available' ? 'bg-gray-300' : 'bg-green-500'
-                    }`}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        <div className="px-5 py-3 bg-gray-50 flex justify-between">
-          <button
-            className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center"
-            onClick={() => handleAssign(data.id)}
-          >
-            <UserIcon className="h-3.5 w-3.5 mr-1" />
-            Assign
-          </button>
-          <button className="text-xs text-gray-600 hover:text-gray-800 font-medium flex items-center">
-            <EyeIcon className="h-3.5 w-3.5 mr-1" />
-            Details
-          </button>
-        </div>
-      </div>
-    );
-  };
 
-  // Render summary cards
-  const renderSummaryCards = () => {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-        {summaryCards.map((card, index) => (
-          <div 
-            key={index}
-            className={`bg-white border ${card.borderColor} rounded-xl overflow-hidden shadow hover:shadow-md transition-shadow duration-300`}
-          >
-            <div className="p-5">
-              <div className="flex justify-between items-start mb-4">
-                <div className={`p-3 rounded-lg ${card.iconGradient}`}>
-                  <card.icon className={`h-6 w-6 ${card.textGradient} bg-clip-text text-transparent`} />
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-500">{card.title}</p>
-                  <h3 className={`text-2xl font-bold ${card.textGradient} bg-clip-text text-transparent`}>
-                    {card.count}
-                  </h3>
-                </div>
-              </div>
-              
-              <button
-                onClick={() => handleViewDetails(card.title)}
-                className={`w-full py-2 px-3 text-sm rounded-lg bg-gradient-to-r ${card.color} ${card.hoverColor} text-white font-medium flex items-center justify-center shadow-sm ${card.shadowColor} transition-all duration-300`}
-              >
-                View Details
-                <ArrowRightIcon className="h-4 w-4 ml-1.5" />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
+    fetchVehicles();
+    fetchPreferences();
+  }, []);
 
-  // Back to summary view
-  const handleBackToSummary = () => {
-    setSelectedPeriod(null);
-  };
-
-  // Create a flattened list of all documents for table view
+  // Filter vehicles when a timeframe is selected
   useEffect(() => {
-    if (viewingVehicles.length > 0) {
-      const docs: VehicleDocument[] = [];
-      
-      viewingVehicles.forEach(vehicle => {
-        const documents = getVehicleDocuments(vehicle);
-        documents.forEach(doc => {
-          if (doc.expiry !== 'Not available') {
-            docs.push({
-              vehicleId: vehicle.id,
-              vrn: vehicle.vrn,
-              owner: vehicle.owner?.name || 'Unknown',
-              docType: doc.type,
-              expiry: doc.expiry,
-              status: doc.status
-            });
-          }
-        });
-      });
-      
-      // Sort by expiry date
-      docs.sort((a, b) => {
-        return getDaysDifference(a.expiry) - getDaysDifference(b.expiry);
-      });
-      
-      setDocumentsList(docs);
-    }
-  }, [viewingVehicles]);
-  
-  // Pagination calculations for table view
-  const indexOfLastDoc = currentPage * rowsPerPage;
-  const indexOfFirstDoc = indexOfLastDoc - rowsPerPage;
-  const currentDocs = documentsList.filter(doc => doc.vrn.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                              doc.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                              doc.docType.toLowerCase().includes(searchQuery.toLowerCase()))
-                                    .slice(indexOfFirstDoc, indexOfLastDoc);
-  const totalPages = Math.ceil(documentsList.filter(doc => doc.vrn.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                                   doc.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                                   doc.docType.toLowerCase().includes(searchQuery.toLowerCase()))
-                                         .length / rowsPerPage);
+    if (selectedTimeframe) {
+      let days: number;
+      switch (selectedTimeframe) {
+        case '30Days':
+          days = 30;
+          break;
+        case '3Months':
+          days = 90;
+          break;
+        case '6Months':
+          days = 180;
+          break;
+        case '12Months':
+          days = 365;
+          break;
+        default:
+          days = 0;
+      }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Expiring Soon':
-        return 'text-amber-600';
-      case 'Expired':
-        return 'text-red-600';
-      case 'Not Available':
-        return 'text-gray-400';
-      default:
-        return 'text-green-600';
+      const filtered = vehicles.filter((vehicle) =>
+        [
+          vehicle.roadTax,
+          vehicle.fitness,
+          vehicle.insurance,
+          vehicle.pollution,
+          vehicle.statePermit,
+          vehicle.nationalPermit,
+        ].some((date) => isDateInRange(date, days))
+      );
+      setFilteredVehiclesForTimeframe(filtered);
+    }
+  }, [selectedTimeframe, vehicles]);
+
+  // Handle search
+  const handleSearch = useCallback(async () => {
+    const trimmedQuery = searchQuery.trim();
+    if (!trimmedQuery) {
+      setSearchError('Please enter a VRN to search');
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError(null);
+    setCurrentPage(1);
+
+    try {
+      const params = new URLSearchParams({ vrn: trimmedQuery });
+      const response = await fetch(`/api/vehicles?${params.toString()}`, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch vehicles');
+      const data = await response.json();
+
+      if (data.vehicles.length === 0) {
+        setFilteredVehicles([]);
+        setSearchError('No results found');
+      } else {
+        setFilteredVehicles(data.vehicles);
+      }
+    } catch (error: any) {
+      console.error('Search error:', error);
+      setSearchError('Failed to perform search');
+      setFilteredVehicles([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchQuery]);
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setFilteredVehicles(vehicles);
+    setSearchError(null);
+    setCurrentPage(1);
+  };
+
+  // Handle update
+  const handleUpdate = async (row: Vehicle) => {
+    try {
+      setUpdatingRows((prev) => ({ ...prev, [row.id]: true }));
+      const vahanResponse = await fetch(`/api/vahanfin/vehicle?rc_no=${row.vrn}`);
+      if (!vahanResponse.ok) throw new Error(`Failed to fetch vehicle data from Vahan API: ${vahanResponse.status}`);
+      const vahanData = await vahanResponse.json();
+
+      if (!vahanData?.data) throw new Error("No vehicle data found from Vahan API");
+
+      const updatedVehicleData = {
+        ...row,
+        roadTax: vahanData.data.rc_tax_upto,
+        fitness: vahanData.data.rc_fit_upto,
+        insurance: vahanData.data.rc_insurance_upto,
+        pollution: vahanData.data.rc_pucc_upto,
+        statePermit: vahanData.data.rc_permit_valid_upto || "Not Available",
+        nationalPermit: vahanData.data.rc_permit_valid_upto,
+        lastUpdated: new Date().toISOString().slice(0, 10),
+        status: vahanData.data.rc_status === "NOC ISSUED" ? "Inactive" : "Active",
+      };
+
+      const response = await fetch(`/api/vehicles?id=${row.id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedVehicleData),
+      });
+
+      if (!response.ok) throw new Error('Failed to update vehicle in database');
+      const updatedVehicle = await response.json();
+
+      setVehicles((prev) => prev.map((v) => (v.id === row.id ? updatedVehicle : v)));
+      setFilteredVehicles((prev) => prev.map((v) => (v.id === row.id ? updatedVehicle : v)));
+      toast.success('Vehicle updated successfully');
+    } catch (error: any) {
+      console.error('Update error:', error);
+      toast.error(`Failed to update vehicle: ${error.message}`);
+    } finally {
+      setUpdatingRows((prev) => ({ ...prev, [row.id]: false }));
     }
   };
-  
-  // Render table view
-  const renderTableView = () => {
-    return (
-      <div className="overflow-x-auto table-container">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">VRN</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Owner</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Document Type</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Expiry Date</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Status</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {currentDocs.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                  No documents found matching your search criteria
-                </td>
-              </tr>
-            ) : (
-              currentDocs.map((doc, index) => (
-                <tr key={`${doc.vehicleId}-${doc.docType}`} className="hover:bg-gray-50">
-                  <td className="px-4 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
-                    {doc.vrn}
-                  </td>
-                  <td className="px-4 py-4 text-sm text-gray-600 whitespace-nowrap">
-                    {doc.owner}
-                  </td>
-                  <td className="px-4 py-4 text-sm text-gray-600 whitespace-nowrap">
-                    {doc.docType}
-                  </td>
-                  <td className={`px-4 py-4 text-sm font-medium ${getStatusColor(doc.status)} whitespace-nowrap`}>
-                    {doc.expiry}
-                  </td>
-                  <td className="px-4 py-4 text-sm whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      doc.status === 'Expiring Soon' ? 'bg-amber-100 text-amber-800' : 
-                      doc.status === 'Expired' ? 'bg-red-100 text-red-800' :
-                      doc.status === 'Not Available' ? 'bg-gray-100 text-gray-800' : 'bg-green-100 text-green-800'
-                    }`}>
-                      {doc.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4 text-center whitespace-nowrap">
-                    <button
-                      onClick={() => {
-                        const vehicle = viewingVehicles.find(v => v.id === doc.vehicleId);
-                        if (vehicle) {
-                          handleAssign(vehicle.id);
-                        }
-                      }}
-                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-                    >
-                      <UserIcon className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))
+
+  // Handle delete
+  const handleDelete = (id: number) => {
+    setVehicleToDelete(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!vehicleToDelete) return;
+    try {
+      setIsDeletingVehicle(true);
+      const response = await fetch(`/api/vehicles?id=${vehicleToDelete}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete vehicle');
+      setVehicles((prev) => prev.filter((v) => v.id !== vehicleToDelete));
+      setFilteredVehicles((prev) => prev.filter((v) => v.id !== vehicleToDelete));
+      toast.success('Vehicle deleted successfully');
+      setIsDetailsPopupOpen(false);
+      setSelectedVehicle(null);
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete vehicle');
+    } finally {
+      setIsDeletingVehicle(false);
+      setIsDeleteModalOpen(false);
+      setVehicleToDelete(null);
+    }
+  };
+
+  // Handle assign
+  const handleAssign = (vehicle: Vehicle) => {
+    setSelectedAssignVehicle(vehicle);
+    setIsAssignModalOpen(true);
+  };
+
+  // Handle PDF download for expiring documents (adapted from dashboard)
+  const handleDownloadPDF = async (docType: string, timeframe: string) => {
+    if (!filteredVehiclesForTimeframe.length) return;
+
+    try {
+      let days: number;
+      let timeframeLabel: string;
+      switch (timeframe) {
+        case '30Days':
+          days = 30;
+          timeframeLabel = 'Monthly';
+          break;
+        case '3Months':
+          days = 90;
+          timeframeLabel = '3Months';
+          break;
+        case '6Months':
+          days = 180;
+          timeframeLabel = '6Months';
+          break;
+        case '12Months':
+          days = 365;
+          timeframeLabel = '12Months';
+          break;
+        default:
+          days = 0;
+          timeframeLabel = '';
+      }
+
+      const vehiclesWithExpiringDoc = filteredVehiclesForTimeframe.filter((vehicle) => {
+        const expiringDocs = getExpiringDocuments(vehicle, days);
+        return expiringDocs.includes(docType);
+      });
+
+      const exportData = prepareExportData(vehiclesWithExpiringDoc, days);
+
+      const doc = new jsPDF();
+
+      // Add title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      const title = `List of vehicles no for expiring ${docType} document`;
+      doc.text(title, doc.internal.pageSize.width / 2, 15, { align: 'center' });
+
+      // Add table
+      autoTable(doc, {
+        head: [['Vehicle Registration Number']],
+        body: exportData.map((vehicle) => [vehicle.vrn]),
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [249, 250, 251], textColor: [0, 0, 0], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [249, 250, 251] },
+        margin: { top: 30 },
+      });
+
+      const docTypeAbbr = docType === 'Road Tax' ? 'RT' : docType === 'Fitness' ? 'FIT' : docType === 'Insurance' ? 'INS' : docType === 'Pollution' ? 'PUC' : docType === 'Permit' ? 'SP' : 'NP';
+      doc.save(`${docTypeAbbr}_${timeframeLabel}_expire.pdf`);
+      toast.success(`Downloaded PDF for ${docType} expiring in ${timeframeLabel}`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export data');
+    }
+  };
+
+  const totalPages = Math.ceil(filteredVehicles.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = startIndex + rowsPerPage;
+  const currentVehicles = filteredVehicles.slice(startIndex, endIndex);
+
+  return (
+    <div className="flex flex-col min-h-screen overflow-y-auto">
+      <div className="flex-1 flex flex-col p-3 lg:p-6 space-y-4">
+        <h1 className="text-xl lg:text-2xl font-semibold text-gray-900">Renewals Dashboard</h1>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {getSummaryCards(vehicleStats, setSelectedTimeframe).map((card, index) => (
+            <div
+              key={card.title}
+              className="relative overflow-hidden rounded-lg transition-all duration-500 cursor-pointer"
+              onMouseEnter={() => setHoveredCard(index)}
+              onMouseLeave={() => setHoveredCard(null)}
+            >
+              <div
+                className={`absolute inset-0 bg-gradient-to-r ${card.color} opacity-0 transition-opacity duration-300 blur-xl ${hoveredCard === index ? 'opacity-20' : ''}`}
+              />
+              <div
+                className={`relative bg-gradient-to-r ${card.color} p-2 lg:p-4 h-full transition-all duration-500 ${hoveredCard === index ? 'shadow-md lg:shadow-lg shadow-' + card.glowColor + '-500/50' : ''}`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="w-full">
+                    <div className="flex items-center space-x-1 lg:space-x-2">
+                      <card.icon className="w-4 h-4 lg:w-5 lg:h-5 text-white/80" />
+                      <p className="text-white/80 text-xs lg:text-sm font-medium">{card.title}</p>
+                    </div>
+                    <p className="text-white text-xl lg:text-2xl font-bold mt-1">{card.count}</p>
+                    <div className="flex justify-end mt-4">
+                      <button
+                        onClick={() => setSelectedTimeframe(card.timeframe)}
+                        className="bg-white/20 hover:bg-white/30 text-white text-xs px-3 py-1.5 rounded-md transition-all duration-200"
+                      >
+                        Show Details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Table Controls */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 p-4">
+          <div className="relative w-full md:w-64 lg:w-96">
+            <input
+              type="text"
+              placeholder="Search by VRN..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-4 pr-4 py-2 bg-white border border-blue-700 rounded-lg text-black focus:outline-none focus:border-blue-500"
+            />
+            <button
+              onClick={handleSearch}
+              className="absolute right-2 top-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded"
+            >
+              <MagnifyingGlassIcon className="h-5 w-5 bg-none" />
+            </button>
+            {searchQuery && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-12 top-2.5"
+              >
+                <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-white" />
+              </button>
             )}
-          </tbody>
-        </table>
-        
-        {/* Pagination */}
-        {documentsList.length > 0 && (
+          </div>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden relative overflow-x-auto min-w-full">
+          {(isLoading || isSearching) && (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex items-center justify-center">
+              <div className="flex items-center space-x-2 bg-white p-3 rounded-lg shadow-sm">
+                <svg className="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span className="text-gray-500">Fetching results...</span>
+              </div>
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200" style={{ minWidth: '100%' }}>
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">S.no</th>
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">VRN</th>
+                  <th className="md:hidden px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Details</th>
+                  {preferences.roadTaxVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Road Tax</th>
+                  )}
+                  {preferences.fitnessVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Fitness</th>
+                  )}
+                  {preferences.insuranceVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Insurance</th>
+                  )}
+                  {preferences.pollutionVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Pollution</th>
+                  )}
+                  {preferences.statePermitVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Permit</th>
+                  )}
+                  {preferences.nationalPermitVisibility && (
+                    <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">National Permit</th>
+                  )}
+                  <th className="px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Assign</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-left text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Last Updated</th>
+                  <th className="md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Update</th>
+                  <th className="md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Upload</th>
+                  <th className="hidden md:table-cell px-2 lg:px-4 py-2 lg:py-3 text-center text-[10px] lg:text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">Delete</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {searchError && (
+                  <tr>
+                    <td colSpan={12} className="px-4 py-8 text-center text-gray-500">{searchError}</td>
+                  </tr>
+                )}
+                {!isLoading && filteredVehicles.length === 0 && !searchError && (
+                  <tr>
+                    <td colSpan={12} className="px-4 py-8 text-center text-gray-500">No vehicles found</td>
+                  </tr>
+                )}
+                {!isLoading &&
+                  currentVehicles.map((row, index) => (
+                    <tr key={row.id} className="hover:bg-gray-50 py-6">
+                      <td className="px-2 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">
+                        {startIndex + index + 1}
+                      </td>
+                      <td className="px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm font-medium text-gray-900 whitespace-nowrap">
+                        {row.vrn}
+                      </td>
+                      <td className="md:hidden text-center min-w-[100px] whitespace-nowrap">
+                        <button
+                          onClick={() => {
+                            setIsDetailsPopupOpen(true);
+                            setSelectedVehicle(row);
+                          }}
+                          className="bg-blue-500 text-white px-2 py-1 rounded text-xs whitespace-nowrap inline-block min-w-[90px]"
+                        >
+                          Show Details
+                        </button>
+                      </td>
+                      {preferences.roadTaxVisibility && (
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.roadTax)} whitespace-nowrap`}>
+                          {row.roadTax}
+                        </td>
+                      )}
+                      {preferences.fitnessVisibility && (
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.fitness)} whitespace-nowrap`}>
+                          {row.fitness}
+                        </td>
+                      )}
+                      {preferences.insuranceVisibility && (
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.insurance)} whitespace-nowrap`}>
+                          {row.insurance}
+                        </td>
+                      )}
+                      {preferences.pollutionVisibility && (
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.pollution)} whitespace-nowrap`}>
+                          {row.pollution}
+                        </td>
+                      )}
+                      {preferences.statePermitVisibility && (
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.statePermit)} whitespace-nowrap`}>
+                          {row.statePermit}
+                        </td>
+                      )}
+                      {preferences.nationalPermitVisibility && (
+                        <td className={`hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm ${getExpirationColor(row.nationalPermit)} whitespace-nowrap`}>
+                          {row.nationalPermit}
+                        </td>
+                      )}
+                      <td className="px-1 lg:px-4 py-2 lg:py-4 text-center whitespace-nowrap">
+                        <button
+                          onClick={() => handleAssign(row)}
+                          className="p-1.5 text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                        >
+                          <UserIcon className="w-5 h-5" />
+                        </button>
+                      </td>
+                      <td className="hidden md:table-cell px-1 lg:px-4 py-2 lg:py-4 text-xs lg:text-sm text-gray-500 whitespace-nowrap">{row.lastUpdated}</td>
+                      <td className="md:table-cell px-4 py-4 text-center whitespace-nowrap">
+                        <button
+                          onClick={() => handleUpdate(row)}
+                          disabled={updatingRows[row.id]}
+                          className={`p-1.5 text-blue-600 hover:bg-blue-50 rounded-full transition-colors ${updatingRows[row.id] ? 'bg-blue-50' : ''}`}
+                        >
+                          <ArrowPathIcon className={`w-5 h-5 ${updatingRows[row.id] ? 'animate-spin' : ''}`} />
+                        </button>
+                      </td>
+                      <td className="md:table-cell px-4 py-4 text-center whitespace-nowrap">
+                        <button
+                          onClick={() => { setSelectedVRN(row.vrn); setIsModalOpen(true); }}
+                          className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
+                        >
+                          <CloudArrowUpIcon className="w-5 h-5" />
+                        </button>
+                      </td>
+                      <td className="hidden md:table-cell px-4 py-4 text-center whitespace-nowrap">
+                        <button
+                          onClick={() => handleDelete(row.id)}
+                          disabled={isDeletingVehicle}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-full transition-colors disabled:opacity-50"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
           <div className="px-4 py-3 bg-white border-t border-gray-200 sm:px-6 flex items-center justify-between">
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <p className="text-sm text-gray-700">
-                Showing <span className="font-medium">{indexOfFirstDoc + 1}</span> to{' '}
-                <span className="font-medium">
-                  {Math.min(indexOfLastDoc, documentsList.filter(doc => 
-                    doc.vrn.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                    doc.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    doc.docType.toLowerCase().includes(searchQuery.toLowerCase()))
-                                         .length)}
-                </span> of{' '}
-                <span className="font-medium">
-                  {documentsList.filter(doc => 
-                    doc.vrn.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                    doc.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    doc.docType.toLowerCase().includes(searchQuery.toLowerCase()))
-                                         .length}
-                </span> results
+                Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                <span className="font-medium">{Math.min(endIndex, filteredVehicles.length)}</span> of{' '}
+                <span className="font-medium">{filteredVehicles.length}</span> results
               </p>
               <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
                 <button
@@ -721,14 +764,14 @@ export default function RenewalsPage() {
                 })}
                 <button
                   onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages || totalPages === 0}
+                  disabled={currentPage === totalPages}
                   className="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                 >
                   <ChevronRightIcon className="h-5 w-5" />
                 </button>
                 <button
                   onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages || totalPages === 0}
+                  disabled={currentPage === totalPages}
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                 >
                   <ChevronRightIcon className="h-5 w-5 mr-1" />
@@ -736,221 +779,190 @@ export default function RenewalsPage() {
                 </button>
               </nav>
             </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // After refreshing data, update the selected period view
-  useEffect(() => {
-    if (selectedPeriod) {
-      const periodMap: {[key: string]: number} = {
-        'Next 30 Days': 0,
-        'Next 3 months': 1,
-        'Next 6 months': 2,
-        'Next 12 months': 3
-      };
-      const index = periodMap[selectedPeriod];
-      if (index !== undefined && summaryCards[index]) {
-        setViewingVehicles(summaryCards[index].vehicles);
-      }
-    }
-  }, [summaryCards, selectedPeriod]);
-
-  return (
-    <div className="px-6 py-5 max-w-7xl mx-auto">
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Renewals Dashboard</h1>
-          <p className="text-gray-600 mt-1">Monitor and manage all your upcoming vehicle document renewals</p>
-        </div>
-        <button 
-          onClick={handleRefresh} 
-          disabled={isLoading}
-          className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          <ArrowPathIcon className={`-ml-0.5 mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
-      </div>
-      
-      {/* Summary section or Detail view */}
-      {!selectedPeriod ? (
-        <>
-          {/* Summary Cards */}
-          {isLoading ? (
-            <div className="flex justify-center items-center min-h-[200px]">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-            </div>
-          ) : error ? (
-            <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6">
-              {error}
-            </div>
-          ) : (
-            renderSummaryCards()
-          )}
-          
-          {/* Recent Expiring Vehicles */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mt-6">
-            <div className="px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">Vehicles Expiring Soon</h2>
-              <p className="text-sm text-gray-500 mt-1">Vehicles with documents expiring in the next 30 days</p>
-            </div>
-            
-            {isLoading ? (
-              <div className="flex justify-center items-center min-h-[200px]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-              </div>
-            ) : summaryCards[0].vehicles.length === 0 ? (
-              <div className="p-6 text-center text-gray-500">
-                No vehicles with documents expiring in the next 30 days.
-              </div>
-            ) : (
-              <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {summaryCards[0].vehicles.slice(0, 6).map((vehicle) => (
-                  <RenewalCard key={vehicle.id} data={vehicle} />
-                ))}
-              </div>
-            )}
-            
-            {summaryCards[0].vehicles.length > 6 && (
-              <div className="px-6 py-4 bg-gray-50 text-center">
-                <button 
-                  onClick={() => handleViewDetails('Next 30 Days')}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                >
-                  View all {summaryCards[0].vehicles.length} vehicles
-                </button>
-              </div>
-            )}
-          </div>
-        </>
-      ) : (
-        // Detailed period view
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-            <div>
-              <button 
-                onClick={handleBackToSummary}
-                className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium mb-2"
-              >
-                <ChevronLeftIcon className="h-4 w-4 mr-1" />
-                Back to Summary
-              </button>
-              <h2 className="text-lg font-semibold text-gray-900">{selectedPeriod} Renewals</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                {viewingVehicles.length} vehicles with documents expiring in this period
-              </p>
-            </div>
-            
-            <div className="flex space-x-3">
+            <div className="flex items-center sm:hidden">
               <button
-                onClick={handleRefresh}
-                disabled={isLoading}
-                className="inline-flex items-center px-3 py-2 text-sm leading-4 font-medium border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
               >
-                <ArrowPathIcon className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Refresh
+                Previous
               </button>
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search vehicles..."
-                  className="px-3 py-2 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400 absolute left-3 top-2.5" />
-              </div>
-              
-              <div className="flex border border-gray-300 rounded-lg">
-                <button 
-                  className={`p-2 transition-colors ${viewMode === 'cards' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
-                  onClick={() => setViewMode('cards')}
-                  title="Card View"
-                >
-                  <Squares2X2Icon className="h-4 w-4" />
-                </button>
-                <button 
-                  className={`p-2 transition-colors ${viewMode === 'table' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:text-gray-900'}`}
-                  onClick={() => setViewMode('table')}
-                  title="Table View"
-                >
-                  <TableCellsIcon className="h-4 w-4" />
-                </button>
-              </div>
-              
-              <button className="p-2 text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg">
-                <FunnelIcon className="h-4 w-4" />
+              <span className="mx-4 text-sm text-gray-700">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+              >
+                Next
               </button>
             </div>
           </div>
-          
-          {isLoading ? (
-            <div className="flex justify-center items-center min-h-[200px]">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+
+      {/* Popup for Expiring Documents */}
+      {selectedTimeframe && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">
+                {selectedTimeframe === '30Days' ? 'Next 30 Days' : selectedTimeframe === '3Months' ? 'Next 3 Months' : selectedTimeframe === '6Months' ? 'Next 6 Months' : 'Next 12 Months'} Expiring Documents
+              </h3>
+              <button
+                onClick={() => setSelectedTimeframe(null)}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
             </div>
-          ) : (
-            <div className="px-6 py-4">
-              {viewMode === 'cards' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {viewingVehicles
-                    .filter(v => v.vrn.toLowerCase().includes(searchQuery.toLowerCase()))
-                    .map((vehicle) => (
-                      <RenewalCard key={vehicle.id} data={vehicle} />
-                    ))}
-                </div>
-              ) : (
-                renderTableView()
-              )}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NAME</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">EXPIRING</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DOWNLOAD</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {[
+                    { label: 'Road Tax', value: selectedTimeframe === '30Days' ? vehicleStats.expiring_roadTax : selectedTimeframe === '3Months' ? vehicleStats.expiring_3m_roadTax : selectedTimeframe === '6Months' ? vehicleStats.expiring_6m_roadTax : vehicleStats.expiring_1y_roadTax },
+                    { label: 'Fitness', value: selectedTimeframe === '30Days' ? vehicleStats.expiring_fitness : selectedTimeframe === '3Months' ? vehicleStats.expiring_3m_fitness : selectedTimeframe === '6Months' ? vehicleStats.expiring_6m_fitness : vehicleStats.expiring_1y_fitness },
+                    { label: 'Insurance', value: selectedTimeframe === '30Days' ? vehicleStats.expiring_insurance : selectedTimeframe === '3Months' ? vehicleStats.expiring_3m_insurance : selectedTimeframe === '6Months' ? vehicleStats.expiring_6m_insurance : vehicleStats.expiring_1y_insurance },
+                    { label: 'Permit', value: selectedTimeframe === '30Days' ? vehicleStats.expiring_statePermit : selectedTimeframe === '3Months' ? vehicleStats.expiring_3m_statePermit : selectedTimeframe === '6Months' ? vehicleStats.expiring_6m_statePermit : vehicleStats.expiring_1y_statePermit },
+                    { label: 'PUC', value: selectedTimeframe === '30Days' ? vehicleStats.expiring_pollution : selectedTimeframe === '3Months' ? vehicleStats.expiring_3m_pollution : selectedTimeframe === '6Months' ? vehicleStats.expiring_6m_pollution : vehicleStats.expiring_1y_pollution },
+                  ].map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="px-4 py-3 text-sm text-gray-900">{item.label}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900">{item.value}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <button
+                          onClick={() => handleDownloadPDF(item.label, selectedTimeframe)}
+                          className="bg-blue-500 text-white px-3 py-1 rounded text-xs hover:bg-blue-600"
+                          disabled={item.value === 0}
+                        >
+                          PDF
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
+          </div>
         </div>
       )}
-      
-      {/* Assign Modal */}
-      {showAssignModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+
+      <DocumentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} vrn={selectedVRN} />
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setVehicleToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeletingVehicle}
+      />
+
+      {/* Vehicle Details Popup */}
+      {isDetailsPopupOpen && selectedVehicle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 transition-all duration-300">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full md:w-[90vw] transition-all duration-300">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Assign Vehicle</h3>
-              <button 
-                onClick={() => setShowAssignModal(false)}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Assign to User
-              </label>
-              <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">Select a user</option>
-                <option value="user1">John Doe</option>
-                <option value="user2">Jane Smith</option>
-                <option value="user3">Robert Johnson</option>
-              </select>
-            </div>
-            
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowAssignModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg"
-              >
-                Cancel
-              </button>
+              <h3 className="text-xl font-semibold">Vehicle Details</h3>
               <button
                 onClick={() => {
-                  // Assign implementation would go here
-                  setShowAssignModal(false);
+                  setIsDetailsPopupOpen(false);
+                  setSelectedVehicle(null);
                 }}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
+                className="p-1 rounded-full hover:bg-gray-100"
               >
-                Assign
+                <XMarkIcon className="h-6 w-6" />
               </button>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Vehicle No.:</span>
+              <span className="text-gray-800 font-medium mb-2">{selectedVehicle.vrn}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Road Tax:</span>
+              <span className={`font-medium mb-2 ${getExpirationColor(selectedVehicle.roadTax)}`}>{selectedVehicle.roadTax}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Fitness:</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.fitness)}`}>{selectedVehicle.fitness}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Insurance:</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.insurance)}`}>{selectedVehicle.insurance}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Pollution:</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.pollution)}`}>{selectedVehicle.pollution}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Permit:</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.statePermit)}`}>{selectedVehicle.statePermit}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">National Permit:</span>
+              <span className={`text-gray-800 font-medium mb-2 ${getExpirationColor(selectedVehicle.nationalPermit)}`}>{selectedVehicle.nationalPermit}</span>
+            </div>
+            <div className="mb-2 flex gap-2">
+              <span className="text-gray-600 mb-2">Last Updated:</span>
+              <span className="text-gray-800 font-medium mb-2">{selectedVehicle.lastUpdated}</span>
+            </div>
+            <button
+              onClick={() => handleDelete(selectedVehicle.id)}
+              className="flex items-center gap-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm font-medium transition-colors"
+            >
+              <TrashIcon className="h-5 w-5" />
+              <span>Delete Now</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Price Table Modal */}
+      {isAssignModalOpen && selectedAssignVehicle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold">Price</h3>
+              <button
+                onClick={() => {
+                  setIsAssignModalOpen(false);
+                  setSelectedAssignVehicle(null);
+                }}
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <XMarkIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S.no</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Services</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Govt Fees</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service Charge</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GST</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                      No data to show
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

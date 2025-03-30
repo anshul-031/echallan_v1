@@ -11,7 +11,7 @@ import {
   TruckIcon,
   BanknotesIcon,
   DocumentDuplicateIcon,
-  ChartBarIcon,
+  
   DocumentArrowDownIcon,
   ChevronDownIcon
 } from '@heroicons/react/24/outline';
@@ -206,16 +206,58 @@ export default function ChallanDashboard() {
   const [selectedChallans, setSelectedChallans] = useState<ChallanType[]>([]);
   console.log(vehicleSummaries)
 
+  // Add these types and states at the beginning of the component
+  type SortField = 'rc_no' | 'totalChallans' | 'totalAmount' | 'onlineChallans' | 'offlineChallans' | 'lastUpdated';
+  type SortDirection = 'asc' | 'desc';
+
+  // Add inside the ChallanDashboard component
+  const [sortField, setSortField] = useState<SortField>('rc_no');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  // Add this sorting handler function
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(current => current === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Add this sorting function
+  const getSortedData = () => {
+    return [...vehicleSummaries].sort((a, b) => {
+      const multiplier = sortDirection === 'asc' ? 1 : -1;
+      
+      switch (sortField) {
+        case 'rc_no':
+          return multiplier * a.rc_no.localeCompare(b.rc_no);
+        case 'totalChallans':
+          return multiplier * (a.totalChallans - b.totalChallans);
+        case 'totalAmount':
+          return multiplier * (a.totalAmount - b.totalAmount);
+        case 'onlineChallans':
+          return multiplier * (a.onlineChallans - b.onlineChallans);
+        case 'offlineChallans':
+          return multiplier * (a.offlineChallans - b.offlineChallans);
+        case 'lastUpdated':
+          return multiplier * (a.lastUpdated.getTime() - b.lastUpdated.getTime());
+        default:
+          return 0;
+      }
+    });
+  };
+
   const updateChallanData = async (rc_no: string) => {
     if (updatingVehicles.has(rc_no)) return;
 
     try {
       setUpdatingVehicles(prev => new Set(prev).add(rc_no));
-
       toast.loading(`Updating challans for vehicle ${rc_no}...`, {
         id: `update-${rc_no}`,
       });
 
+      // 1. First get data from external API
       const response = await axios.get(`/api/vahanfin/echallan?rc_no=${rc_no}`);
       const data = response.data;
 
@@ -223,6 +265,7 @@ export default function ChallanDashboard() {
         throw new Error('Invalid data format received from API');
       }
 
+      // 2. Format the challans
       const newChallans = [
         ...(data.data.Pending_data || []).map((challan: any) => ({
           rc_no,
@@ -254,22 +297,30 @@ export default function ChallanDashboard() {
         }))
       ];
 
-      // Update challans state
+      // 3. Sync with database
+      const syncResponse = await axios.post('/api/challans/sync', {
+        rc_no,
+        challans: newChallans
+      });
+
+      if (!syncResponse.data.success) {
+        throw new Error('Failed to sync challans with database');
+      }
+
+      // 4. Update local state
       setChallans(prevChallans => {
         const otherChallans = prevChallans.filter(c => c.rc_no !== rc_no);
         return [...otherChallans, ...newChallans];
       });
 
-      // Create new summary for the updated vehicle
+      // 5. Update summaries
       const updatedVehicleSummary = processChallansToSummaries(newChallans)[0];
-
-      // Update vehicle summaries while maintaining order
       setVehicleSummaries(prevSummaries => {
         return prevSummaries.map(summary =>
           summary.rc_no === rc_no
             ? {
               ...updatedVehicleSummary,
-              lastUpdated: new Date() // Set current time as last update
+              lastUpdated: new Date()
             }
             : summary
         );
@@ -624,23 +675,79 @@ export default function ChallanDashboard() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Vehicle No</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Challans</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Online</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Offline</th>
-
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                        onClick={() => handleSort('rc_no')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Vehicle No
+                          {sortField === 'rc_no' && (
+                            <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                        onClick={() => handleSort('totalChallans')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Challans
+                          {sortField === 'totalChallans' && (
+                            <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                        onClick={() => handleSort('totalAmount')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Amount
+                          {sortField === 'totalAmount' && (
+                            <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                        onClick={() => handleSort('onlineChallans')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Online
+                          {sortField === 'onlineChallans' && (
+                            <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                          )}
+                        </div>
+                      </th>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                        onClick={() => handleSort('offlineChallans')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Court
+                          {sortField === 'offlineChallans' && (
+                            <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                          )}
+                        </div>
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Update</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stutus</th>
-                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Receipt</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Delete</th> */}
                       <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">View</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Updated</th>
+                      <th 
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer hover:bg-gray-100"
+                        onClick={() => handleSort('lastUpdated')}
+                      >
+                        <div className="flex items-center gap-1">
+                          Last Updated
+                          {sortField === 'lastUpdated' && (
+                            <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
+                          )}
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {vehicleSummaries.map((row, index) => (
+                    {getSortedData().map((row, index) => (
                       <tr
                         key={row.rc_no}
                         className={`hover:bg-gray-50 transition-colors duration-200 ${!updatingVehicles.has(row.rc_no) && row.lastUpdated instanceof Date && row.lastUpdated.getTime() > Date.now() - 1000
@@ -675,21 +782,6 @@ export default function ChallanDashboard() {
                             <ArrowPathIcon className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
                           </button>
                         </td>
-                        <td className="px-6 py-4 text-sm text-center">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium
-                            ${row.pendingChallans < 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                            {row.pendingChallans >= 1 ? 'Unpaid' : 'Paid'}
-                          </span>
-                        </td>
-                        {/* <td className="px-6 py-4 text-sm text-center">Reciept</td>
-                        <td className="px-6 py-4 text-center">
-                          <button 
-                            onClick={() => handleDelete(String(row.rc_no))} 
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-full"
-                          >
-                            <TrashIcon className="w-5 h-5" />
-                          </button>
-                        </td> */}
                         <td className="px-6 py-4 text-center">
                           <button
                             onClick={() => {

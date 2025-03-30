@@ -30,12 +30,15 @@ interface ApiStat {
 // Interface for API request logs
 interface ApiRequest {
   id: number;
+  vehicle?: string;
   endpoint: string;
+  apiName: string;
   method: string;
   status: number;
   responseTime: string;
   timestamp: string;
   ip: string;
+  creditsUsed?: number;
 }
 
 // Sorting configuration interface
@@ -72,6 +75,23 @@ class ApiMonitor {
       
       const method = init?.method || 'GET';
       const startTime = performance.now();
+
+      // Extract vehicle number from request body if it's a POST request
+      let vehicleFromBody = 'N/A';
+      try {
+        if (method === 'POST' && init?.body) {
+          const bodyData = JSON.parse(init.body as string);
+          if (bodyData.vrn) {
+            vehicleFromBody = bodyData.vrn;
+          } else if (bodyData.rc_no) {
+            vehicleFromBody = bodyData.rc_no;
+          } else if (bodyData.vehicle && bodyData.vehicle.vrn) {
+            vehicleFromBody = bodyData.vehicle.vrn;
+          }
+        }
+      } catch (e) {
+        // Ignore JSON parsing errors
+      }
       
       try {
         const response = await originalFetch(input, init);
@@ -83,8 +103,47 @@ class ApiMonitor {
           url,
           method,
           status: response.status,
-          responseTime
+          responseTime,
+          vehicleFromBody
         });
+        
+        // Clone the response so we can read the body content while still returning the original
+        const clonedResponse = response.clone();
+        try {
+          // Try to read the response body to extract additional data
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            clonedResponse.json().then(data => {
+              // Update the last request with additional information if available
+              if (this.apiRequests.length > 0) {
+                const lastRequest = this.apiRequests[0];
+                
+                // Store any additional fields from the response
+                if (data.vehicle) {
+                  lastRequest.vehicle = data.vehicle.vrn || data.vehicle.rc_no || lastRequest.vehicle;
+                } else if (data.vrn) {
+                  lastRequest.vehicle = data.vrn;
+                } else if (data.rc_no) {
+                  lastRequest.vehicle = data.rc_no;
+                } else if (data.vehicles && data.vehicles.length > 0) {
+                  lastRequest.vehicle = data.vehicles[0].vrn || data.vehicles[0].rc_no || lastRequest.vehicle;
+                }
+                
+                // Update request with actual credits used if available
+                if (data.creditsUsed !== undefined) {
+                  lastRequest.creditsUsed = data.creditsUsed;
+                }
+                
+                this.saveToStorage();
+                this.notifyListeners();
+              }
+            }).catch(() => {
+              // Ignore JSON parsing errors
+            });
+          }
+        } catch (e) {
+          // Ignore errors reading the response body
+        }
         
         return response;
       } catch (error) {
@@ -96,7 +155,8 @@ class ApiMonitor {
           url,
           method,
           status: 500,
-          responseTime
+          responseTime,
+          vehicleFromBody
         });
         
         throw error;
@@ -137,25 +197,71 @@ class ApiMonitor {
     }
   }
 
-  private trackRequest({ url, method, status, responseTime }: { 
+  private trackRequest({ url, method, status, responseTime, vehicleFromBody = 'N/A' }: { 
     url: string, 
     method: string, 
     status: number, 
-    responseTime: number 
+    responseTime: number,
+    vehicleFromBody?: string
   }) {
     // Parse endpoint from URL
     const urlObj = new URL(url, window.location.origin);
     const endpoint = urlObj.pathname;
     
+    // Extract vehicle number from query params if available
+    const vehicleNumber = urlObj.searchParams.get('vrn') || 
+                          urlObj.searchParams.get('rc_no') || 
+                          vehicleFromBody || 
+                          'N/A';
+    
+    // Determine credits used based on API endpoint and method
+    let creditsUsed = 0;
+    if (endpoint.includes('/vehicles/lookup')) {
+      creditsUsed = 1;
+    } else if (endpoint.includes('/challans/create') || endpoint.includes('/challans/details')) {
+      creditsUsed = 2;
+    } else if (endpoint.includes('/vehicles/stats')) {
+      creditsUsed = 3;
+    } else if (endpoint.includes('/credits/purchase')) {
+      creditsUsed = 0;
+    } else if (method === 'GET') {
+      // Most GET requests cost 1 credit
+      creditsUsed = 1;
+    } else {
+      // Default value for other APIs
+      creditsUsed = method === 'POST' ? 2 : 1;
+    }
+    
+    // Get friendly API name for display
+    let apiName = endpoint.replace('/api/', '');
+    if (endpoint.includes('/vehicles/lookup')) {
+      apiName = "RC Details";
+    } else if (endpoint.includes('/challans/create')) {
+      apiName = "Echallan";
+    } else if (endpoint.includes('/challans/details')) {
+      apiName = "Challan Details";
+    } else if (endpoint.includes('/vehicles/stats')) {
+      apiName = "Vehicle Stats";
+    } else if (endpoint.includes('/credits/purchase')) {
+      apiName = "Credits Purchase";
+    } else if (endpoint.includes('/auth/')) {
+      apiName = "Authentication";
+    } else if (endpoint.includes('/vehicles/')) {
+      apiName = method === 'POST' || method === 'PUT' ? "RC Details (Update)" : "RC Details";
+    }
+    
     // Create request entry
     const request: ApiRequest = {
       id: Date.now(),
+      vehicle: vehicleNumber,
       endpoint,
+      apiName,
       method,
       status,
       responseTime: `${Math.round(responseTime)}ms`,
       timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      ip: '127.0.0.1' // Client-side we can't get real IP, so use localhost
+      ip: '127.0.0.1', // Client-side we can't get real IP, so use localhost
+      creditsUsed
     };
     
     // Update stats
@@ -178,6 +284,9 @@ class ApiMonitor {
     
     // Notify listeners
     this.notifyListeners();
+    
+    // For debugging
+    console.log(`API call tracked: ${method} ${apiName} - ${status} (${creditsUsed} credits) - Vehicle: ${vehicleNumber}`);
   }
 
   public getRequests(): ApiRequest[] {
@@ -226,6 +335,14 @@ class ApiMonitor {
       '/api/auth/session'
     ];
     
+    const vehicleNumbers = [
+      'RJ09GB9453', 
+      'MH02AX7890', 
+      'DL01AD1234', 
+      'KA05JD5678',
+      'TN07CD4567'
+    ];
+    
     const methods = ['GET', 'POST', 'PUT', 'DELETE'];
     const statuses = [200, 201, 400, 403, 404, 500];
     
@@ -244,13 +361,20 @@ class ApiMonitor {
       const method = methods[Math.floor(Math.random() * methods.length)];
       const status = statuses[Math.floor(Math.random() * statuses.length)];
       const responseTime = Math.floor(Math.random() * 500) + 50; // 50-550ms
+      const vehicleNumber = vehicleNumbers[Math.floor(Math.random() * vehicleNumbers.length)];
+      
+      // Create URL with vehicle number for vehicle-related endpoints
+      let url = `${window.location.origin}${endpoint}`;
+      if (endpoint.includes('vehicles') || endpoint.includes('challans')) {
+        url += `?vrn=${vehicleNumber}`;
+      }
       
       // Timestamp between last week and now
       const date = new Date();
       date.setDate(date.getDate() - Math.floor(Math.random() * 7));
       
       this.trackRequest({ 
-        url: `${window.location.origin}${endpoint}`, 
+        url, 
         method, 
         status, 
         responseTime 
@@ -265,54 +389,54 @@ class ApiMonitor {
 export default function ApiHistoryPage() {
   // Initialize state with static dummy data (this will be replaced with real data)
   const [apiStats, setApiStats] = useState<ApiStat[]>([
-    {
-      title: 'Total Requests',
+  {
+    title: 'Total Requests',
       count: '0',
       trend: '+0%',
-      isPositive: true,
-      icon: DocumentTextIcon,
-      color: 'from-blue-500 to-blue-600',
-      textGradient: 'bg-gradient-to-r from-blue-500 to-blue-600',
-      iconGradient: 'bg-gradient-to-br from-blue-500/10 to-blue-600/10',
-      borderColor: 'border-blue-100',
-      shadowColor: 'shadow-blue-500/20'
-    },
-    {
-      title: 'Success Rate',
+    isPositive: true,
+    icon: DocumentTextIcon,
+    color: 'from-blue-500 to-blue-600',
+    textGradient: 'bg-gradient-to-r from-blue-500 to-blue-600',
+    iconGradient: 'bg-gradient-to-br from-blue-500/10 to-blue-600/10',
+    borderColor: 'border-blue-100',
+    shadowColor: 'shadow-blue-500/20'
+  },
+  {
+    title: 'Success Rate',
       count: '0%',
       trend: '0%',
-      isPositive: true,
-      icon: CheckCircleIcon,
-      color: 'from-emerald-500 to-emerald-600',
-      textGradient: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
-      iconGradient: 'bg-gradient-to-br from-emerald-500/10 to-emerald-600/10',
-      borderColor: 'border-emerald-100',
-      shadowColor: 'shadow-emerald-500/20'
-    },
-    {
-      title: 'Average Response',
+    isPositive: true,
+    icon: CheckCircleIcon,
+    color: 'from-emerald-500 to-emerald-600',
+    textGradient: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
+    iconGradient: 'bg-gradient-to-br from-emerald-500/10 to-emerald-600/10',
+    borderColor: 'border-emerald-100',
+    shadowColor: 'shadow-emerald-500/20'
+  },
+  {
+    title: 'Average Response',
       count: '0ms',
       trend: '0ms',
-      isPositive: true,
-      icon: ClockIcon,
-      color: 'from-purple-500 to-purple-600',
-      textGradient: 'bg-gradient-to-r from-purple-500 to-purple-600',
-      iconGradient: 'bg-gradient-to-br from-purple-500/10 to-purple-600/10',
-      borderColor: 'border-purple-100',
-      shadowColor: 'shadow-purple-500/20'
-    },
-    {
-      title: 'Error Rate',
+    isPositive: true,
+    icon: ClockIcon,
+    color: 'from-purple-500 to-purple-600',
+    textGradient: 'bg-gradient-to-r from-purple-500 to-purple-600',
+    iconGradient: 'bg-gradient-to-br from-purple-500/10 to-purple-600/10',
+    borderColor: 'border-purple-100',
+    shadowColor: 'shadow-purple-500/20'
+  },
+  {
+    title: 'Error Rate',
       count: '0%',
       trend: '0%',
-      isPositive: false,
-      icon: XCircleIcon,
-      color: 'from-red-500 to-red-600',
-      textGradient: 'bg-gradient-to-r from-red-500 to-red-600',
-      iconGradient: 'bg-gradient-to-br from-red-500/10 to-red-600/10',
-      borderColor: 'border-red-100',
-      shadowColor: 'shadow-red-500/20'
-    }
+    isPositive: false,
+    icon: XCircleIcon,
+    color: 'from-red-500 to-red-600',
+    textGradient: 'bg-gradient-to-r from-red-500 to-red-600',
+    iconGradient: 'bg-gradient-to-br from-red-500/10 to-red-600/10',
+    borderColor: 'border-red-100',
+    shadowColor: 'shadow-red-500/20'
+  }
   ]);
   
   const [apiRequests, setApiRequests] = useState<ApiRequest[]>([]);
@@ -323,6 +447,7 @@ export default function ApiHistoryPage() {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showDataTooltip, setShowDataTooltip] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'timestamp', direction: 'descending' });
+  const [userCredits, setUserCredits] = useState<number>(6866);
 
   // Initialize API monitor on component mount
   useEffect(() => {
@@ -339,11 +464,43 @@ export default function ApiHistoryPage() {
     
     apiMonitor.addListener(handleUpdate);
     
+    // Fetch user's current credits
+    fetchUserCredits();
+    
+    // Make an initial test call to ensure we have data
+    if (typeof window !== 'undefined') {
+      const storedRequests = localStorage.getItem('api_requests');
+      if (!storedRequests || JSON.parse(storedRequests).length === 0) {
+        // Only generate sample data if no data exists
+        setTimeout(() => {
+          makeTestApiCall();
+        }, 500);
+      }
+    }
+    
     // Clean up listener on unmount
     return () => {
       apiMonitor.removeListener(handleUpdate);
     };
   }, []);
+  
+  // Fetch user's current credits
+  const fetchUserCredits = async () => {
+    try {
+      const response = await fetch('/api/user/credits');
+      if (response.ok) {
+        const data = await response.json();
+        setUserCredits(data.credits);
+      }
+    } catch (error) {
+      console.error('Error fetching user credits:', error);
+    }
+  };
+  
+  // Update credits after API usage
+  const updateCreditsAfterUsage = (creditsUsed: number) => {
+    setUserCredits(prev => Math.max(0, prev - creditsUsed));
+  };
   
   // Function to update data from API monitor
   const updateData = () => {
@@ -381,6 +538,21 @@ export default function ApiHistoryPage() {
         isPositive: false
       }
     ]);
+    
+    // Update credits if there are new requests that used credits
+    if (requests.length > 0 && apiRequests.length > 0) {
+      // If there are new requests
+      if (requests[0].id !== apiRequests[0].id) {
+        // Calculate credits used in new requests
+        const creditsUsed = requests
+          .filter(r => !apiRequests.some(oldR => oldR.id === r.id))
+          .reduce((sum, r) => sum + (r.creditsUsed || 0), 0);
+        
+        if (creditsUsed > 0) {
+          updateCreditsAfterUsage(creditsUsed);
+        }
+      }
+    }
   };
   
   // Generate test data
@@ -435,8 +607,8 @@ export default function ApiHistoryPage() {
       // Handle different types of data for sorting
       if (sortConfig.key === 'responseTime') {
         // Extract ms value from string for numeric comparison
-        const aValue = parseInt(a[sortConfig.key].replace('ms', ''));
-        const bValue = parseInt(b[sortConfig.key].replace('ms', ''));
+        const aValue = parseInt((a[sortConfig.key] || '0').replace('ms', ''));
+        const bValue = parseInt((b[sortConfig.key] || '0').replace('ms', ''));
         
         if (sortConfig.direction === 'ascending') {
           return aValue - bValue;
@@ -445,15 +617,35 @@ export default function ApiHistoryPage() {
         }
       } else if (sortConfig.key === 'timestamp') {
         // Sort dates
-        const aDate = new Date(a[sortConfig.key]).getTime();
-        const bDate = new Date(b[sortConfig.key]).getTime();
+        const aDate = new Date(a[sortConfig.key] || '').getTime();
+        const bDate = new Date(b[sortConfig.key] || '').getTime();
         
         if (sortConfig.direction === 'ascending') {
           return aDate - bDate;
         } else {
           return bDate - aDate;
         }
-      } else if (sortConfig.key) { // Add this check to ensure key is not null
+      } else if (sortConfig.key === 'vehicle' || sortConfig.key === 'creditsUsed') {
+        // Handle possibly undefined values
+        const aValue = a[sortConfig.key] || '';
+        const bValue = b[sortConfig.key] || '';
+        
+        if (sortConfig.direction === 'ascending') {
+          return String(aValue).localeCompare(String(bValue));
+        } else {
+          return String(bValue).localeCompare(String(aValue));
+        }
+      } else if (sortConfig.key === 'id') {
+        // Numeric sort for ID
+        const aValue = Number(a[sortConfig.key]);
+        const bValue = Number(b[sortConfig.key]);
+        
+        if (sortConfig.direction === 'ascending') {
+          return aValue - bValue;
+        } else {
+          return bValue - aValue;
+        }
+      } else if (sortConfig.key) {
         // Default string or number comparison
         const aValue = a[sortConfig.key];
         const bValue = b[sortConfig.key];
@@ -491,23 +683,36 @@ export default function ApiHistoryPage() {
         '/api/auth/session',
         '/api/vehicles/lookup?vrn=RJ09GB9450',
         '/api/challans/create',
+        '/api/vehicles/stats'
       ];
       
       // Select a random endpoint
       const endpoint = endpoints[Math.floor(Math.random() * endpoints.length)];
       
+      // Add vehicle number for vehicle-related endpoints if not already present
+      let finalEndpoint = endpoint;
+      if ((endpoint.includes('vehicles') || endpoint.includes('challans')) && !endpoint.includes('vrn=')) {
+        const vehicleNumbers = ['RJ09GB9453', 'MH02AX7890', 'DL01AD1234', 'KA05JD5678'];
+        const randomVehicle = vehicleNumbers[Math.floor(Math.random() * vehicleNumbers.length)];
+        finalEndpoint = `${endpoint}${endpoint.includes('?') ? '&' : '?'}vrn=${randomVehicle}`;
+      }
+      
       // Select a random method - GET for queries, POST for others
-      const method = endpoint.includes('?') ? 'GET' : 'POST';
+      const method = finalEndpoint.includes('?') ? 'GET' : 'POST';
       
       // Create a body for POST requests
       const body = method === 'POST' ? 
         JSON.stringify({
           test: true,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          vrn: finalEndpoint.includes('vrn=') ? 
+            finalEndpoint.split('vrn=')[1].split('&')[0] : 
+            'RJ09GB9453'
         }) : undefined;
       
       // Make the request
-      await fetch(endpoint, {
+      console.log(`Making test API call: ${method} ${finalEndpoint}`);
+      await fetch(finalEndpoint, {
         method,
         headers: {
           'Content-Type': 'application/json'
@@ -544,61 +749,72 @@ export default function ApiHistoryPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">API History</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">API Usage History</h1>
             <p className="text-sm text-gray-500 mt-1">Monitor your API usage and performance</p>
           </div>
-          <div className="flex space-x-2">
-            <button
-              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              onClick={makeTestApiCall}
-              disabled={isActionLoading}
-            >
-              {isActionLoading ? (
-                <ArrowPathIcon className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <CodeBracketIcon className="h-4 w-4 mr-1" />
-              )}
-              Test API Call
-            </button>
-            <button
-              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              onClick={generateTestData}
-              onMouseEnter={() => setShowDataTooltip(true)}
-              onMouseLeave={() => setShowDataTooltip(false)}
-              disabled={isActionLoading}
-            >
-              {isActionLoading ? (
-                <ArrowPathIcon className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <DocumentTextIcon className="h-4 w-4 mr-1" />
-              )}
-              Generate Data
-              {showDataTooltip && !isActionLoading && (
-                <div className="absolute mt-12 bg-black text-white text-xs rounded py-1 px-2 right-0 z-10">
-                  Generate sample data for testing
-                </div>
-              )}
-            </button>
-            <button
-              className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-              onClick={clearHistory}
-              disabled={isActionLoading}
-            >
-              {isActionLoading ? (
-                <ArrowPathIcon className="h-4 w-4 mr-1 animate-spin" />
-              ) : (
-                <XCircleIcon className="h-4 w-4 mr-1" />
-              )}
-              Clear History
-            </button>
-            <button 
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              onClick={updateData}
-              disabled={isActionLoading}
-            >
-              <ArrowPathIcon className={`w-5 h-5 mr-2 ${isActionLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+          
+          <div className="flex items-center gap-4">
+            {/* Credits Display */}
+            <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm">
+              <div className="flex items-center">
+                <span className="text-sm font-medium text-gray-600">Credits:</span>
+                <span className="ml-2 text-lg font-bold text-blue-600">₹ {userCredits.toLocaleString()}</span>
+              </div>
+            </div>
+            
+            <div className="flex space-x-2">
+              <button
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                onClick={makeTestApiCall}
+                disabled={isActionLoading}
+              >
+                {isActionLoading ? (
+                  <ArrowPathIcon className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <CodeBracketIcon className="h-4 w-4 mr-1" />
+                )}
+                Test API Call
+              </button>
+              <button
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                onClick={generateTestData}
+                onMouseEnter={() => setShowDataTooltip(true)}
+                onMouseLeave={() => setShowDataTooltip(false)}
+                disabled={isActionLoading}
+              >
+                {isActionLoading ? (
+                  <ArrowPathIcon className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <DocumentTextIcon className="h-4 w-4 mr-1" />
+                )}
+                Generate Data
+                {showDataTooltip && !isActionLoading && (
+                  <div className="absolute mt-12 bg-black text-white text-xs rounded py-1 px-2 right-0 z-10">
+                    Generate sample data for testing
+                  </div>
+                )}
+              </button>
+              <button
+                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                onClick={clearHistory}
+                disabled={isActionLoading}
+              >
+                {isActionLoading ? (
+                  <ArrowPathIcon className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <XCircleIcon className="h-4 w-4 mr-1" />
+                )}
+                Clear History
+              </button>
+          <button 
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                onClick={updateData}
+                disabled={isActionLoading}
+          >
+                <ArrowPathIcon className={`w-5 h-5 mr-2 ${isActionLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+            </div>
           </div>
         </div>
 
@@ -660,7 +876,7 @@ export default function ApiHistoryPage() {
         {/* API Requests Table */}
         <div className="bg-white rounded-lg shadow-sm">
           <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">Recent API Requests</h2>
+            <h2 className="text-lg font-medium text-gray-900">API Usage History</h2>
             {isActionLoading && (
               <div className="flex items-center text-sm text-blue-600">
                 <ArrowPathIcon className="w-4 h-4 mr-1 animate-spin" />
@@ -682,21 +898,15 @@ export default function ApiHistoryPage() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
                       <th 
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => sortData('endpoint')}
+                        onClick={() => sortData('vehicle')}
                       >
-                        Endpoint {getSortDirectionIndicator('endpoint')}
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => sortData('method')}
-                      >
-                        Method {getSortDirectionIndicator('method')}
+                        Vehicle Number {getSortDirectionIndicator('vehicle')}
                       </th>
                       <th 
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -706,95 +916,84 @@ export default function ApiHistoryPage() {
                       </th>
                       <th 
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => sortData('responseTime')}
+                        onClick={() => sortData('apiName')}
                       >
-                        Response Time {getSortDirectionIndicator('responseTime')}
+                        API {getSortDirectionIndicator('apiName')}
                       </th>
                       <th 
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                         onClick={() => sortData('timestamp')}
                       >
-                        Timestamp {getSortDirectionIndicator('timestamp')}
+                        Date {getSortDirectionIndicator('timestamp')}
                       </th>
                       <th 
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => sortData('ip')}
+                        onClick={() => sortData('creditsUsed')}
                       >
-                        IP Address {getSortDirectionIndicator('ip')}
+                        Credits Used {getSortDirectionIndicator('creditsUsed')}
                       </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
                     {currentRequests.map((request) => (
-                      <tr key={request.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={request.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {request.vehicle || 'N/A'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        request.status < 400
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                            {request.status < 400 ? 'Success' : 'Failed'}
+                      </span>
+                    </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <CodeBracketIcon className="w-5 h-5 text-gray-400 mr-3" />
-                            <span className="text-sm font-medium text-gray-900">{request.endpoint}</span>
+                            <span className="text-sm font-medium text-gray-900">
+                              {request.apiName}
+                            </span>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            request.method === 'GET' 
-                              ? 'bg-blue-100 text-blue-800'
-                              : request.method === 'POST'
-                              ? 'bg-green-100 text-green-800'
-                              : request.method === 'PUT'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {request.method}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            request.status < 400
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {request.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {request.responseTime}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {request.timestamp}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {request.ip}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {new Date(request.timestamp).toLocaleDateString()}
+                    </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
+                          {request.creditsUsed || 0}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-              {/* Pagination */}
-              <div className="px-6 py-4 border-t border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
+          {/* Pagination */}
+          <div className="px-6 py-4 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-500">
                     Showing {indexOfFirstRequest + 1} to {Math.min(indexOfLastRequest, sortedData.length)} of {sortedData.length} entries
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button 
-                      className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(prev => prev - 1)}
-                    >
-                      Previous
-                    </button>
-                    <span className="px-3 py-1 bg-blue-600 text-white rounded">{currentPage}</span>
-                    <button 
-                      className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                      disabled={currentPage * rowsPerPage >= sortedData.length}
-                      onClick={() => setCurrentPage(prev => prev + 1)}
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
               </div>
+              <div className="flex items-center space-x-2">
+                <button 
+                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => prev - 1)}
+                >
+                  Previous
+                </button>
+                <span className="px-3 py-1 bg-blue-600 text-white rounded">{currentPage}</span>
+                <button 
+                  className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+                      disabled={currentPage * rowsPerPage >= sortedData.length}
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
             </>
           )}
         </div>

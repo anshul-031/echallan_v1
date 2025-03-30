@@ -480,18 +480,22 @@ export default function Dashboard() {
         month: 'short',
         year: 'numeric',
       }) : "";
-      return {
+
+      const exportData: any = {
         vrn: vehicle.vrn,
-        roadTax: vehicle.roadTax,
-        fitness: vehicle.fitness,
-        insurance: vehicle.insurance,
-        pollution: vehicle.pollution,
-        statePermit: vehicle.statePermit,
-        nationalPermit: vehicle.nationalPermit,
         status: vehicle.status,
         registeredAt: vehicle.registeredAt,
-        lastUpdated: formattedLastUpdated,
       };
+
+      if (preferences.roadTaxVisibility) exportData.roadTax = vehicle.roadTax;
+      if (preferences.fitnessVisibility) exportData.fitness = vehicle.fitness;
+      if (preferences.insuranceVisibility) exportData.insurance = vehicle.insurance;
+      if (preferences.pollutionVisibility) exportData.pollution = vehicle.pollution;
+      if (preferences.statePermitVisibility) exportData.statePermit = vehicle.statePermit;
+      if (preferences.nationalPermitVisibility) exportData.nationalPermit = vehicle.nationalPermit;
+      exportData.lastUpdated = formattedLastUpdated;
+
+      return exportData;
     });
   };
 

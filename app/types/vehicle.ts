@@ -9,7 +9,7 @@ export interface Vehicle {
   nationalPermit: string;
   lastUpdated: string;
   status: string;
-  owner: string;
+  ownerId: string;
   registeredAt: string;
   documents: number;
 }

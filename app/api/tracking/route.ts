@@ -164,21 +164,7 @@ export async function GET() {
             service: serviceType,
             status: status,
             progress: progress,
-            lastUpdated: vehicle.lastUpdated || new Date().toISOString(),
-            details: {
-              startDate: new Date(new Date().getTime() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toISOString(),
-              estimatedCompletion: new Date(new Date().getTime() + Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000).toISOString(),
-              assignedTo: ['John Smith', 'Sarah Johnson', 'Michael Brown'][Math.floor(Math.random() * 3)],
-              priority: ['High', 'Medium', 'Standard'][Math.floor(Math.random() * 3)]
-            },
-            vehicleData: {
-              roadTax: vehicle.roadTax,
-              fitness: vehicle.fitness,
-              insurance: vehicle.insurance,
-              pollution: vehicle.pollution,
-              statePermit: vehicle.statePermit,
-              nationalPermit: vehicle.nationalPermit
-            }
+            lastUpdated: vehicle.lastUpdated || new Date().toISOString()
           };
         });
 
@@ -199,58 +185,14 @@ export async function GET() {
         vehicleNo: 'MH12AB1234',
         service: 'Road Tax Renewal',
         status: 'In Progress',
-        progress: {
-          governmentFees: 100,
-          rtoApproval: 60,
-          inspection: 75,
-          certificate: 30,
-          documentDelivery: 0,
-          overall: 50
-        },
         lastUpdated: new Date().toISOString(),
-        details: {
-          startDate: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days ago
-          estimatedCompletion: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days from now
-          assignedTo: 'John Smith',
-          priority: 'High'
-        },
-        vehicleData: {
-          roadTax: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          fitness: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
-          insurance: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-          pollution: new Date(Date.now() + 80 * 24 * 60 * 60 * 1000).toISOString(),
-          statePermit: new Date(Date.now() + 200 * 24 * 60 * 60 * 1000).toISOString(),
-          nationalPermit: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString()
-        }
       },
       {
         id: 2,
         vehicleNo: 'MH43CD5678',
         service: 'Fitness Certificate',
         status: 'Pending Approval',
-        progress: {
-          governmentFees: 100,
-          rtoApproval: 30,
-          inspection: 0,
-          certificate: 0,
-          documentDelivery: 0,
-          overall: 25
-        },
         lastUpdated: new Date().toISOString(),
-        details: {
-          startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
-          estimatedCompletion: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(), // 25 days from now
-          assignedTo: 'Sarah Johnson',
-          priority: 'Medium'
-        },
-        vehicleData: {
-          roadTax: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-          fitness: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          insurance: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
-          pollution: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          statePermit: new Date(Date.now() + 150 * 24 * 60 * 60 * 1000).toISOString(),
-          nationalPermit: new Date(Date.now() + 210 * 24 * 60 * 60 * 1000).toISOString()
-        }
       },
       {
         id: 3,

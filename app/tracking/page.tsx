@@ -1,26 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState, useEffect } from 'react';
-import {
-  TruckIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  ArrowPathIcon,
-  CheckIcon,
-  CodeBracketIcon,
-  CurrencyRupeeIcon,
-  MapPinIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  ChartBarIcon,
-  BellAlertIcon,
-  DocumentTextIcon,
-  ExclamationCircleIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  XMarkIcon
-} from '@heroicons/react/24/outline';
+
 
 // Create a loading component
 const LoadingFallback = () => (
@@ -35,9 +16,9 @@ const LoadingFallback = () => (
 // Dynamically import the dashboard content with SSR disabled
 const TrackingContent = dynamic(
   () => import('./tracking-content'),
-  { 
+  {
     ssr: false,
-    loading: LoadingFallback 
+    loading: LoadingFallback
   }
 );
 

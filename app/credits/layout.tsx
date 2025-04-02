@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
-export default function DashboardLayout({
+export default function CreditsLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -35,4 +35,4 @@ export default function DashboardLayout({
   
   // Return null during redirect
   return null;
-}
+} 

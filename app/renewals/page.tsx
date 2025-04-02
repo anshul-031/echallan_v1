@@ -205,6 +205,8 @@ export default function RenewalsPage() {
   const [isDeletingVehicle, setIsDeletingVehicle] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAssignVehicle, setSelectedAssignVehicle] = useState<Vehicle | null>(null);
+  const [assigningServices, setAssigningServices] = useState<{ [key: number]: boolean }>({});
+  const [assignedServices, setAssignedServices] = useState<{ [key: number]: boolean }>({});
   const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [updatingRows, setUpdatingRows] = useState<{ [key: number]: boolean }>({});
@@ -956,11 +958,130 @@ export default function RenewalsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                      No data to show
-                    </td>
-                  </tr>
+                  {[
+                    {
+                      id: 1,
+                      service: 'Road Tax',
+                      govtFees: '1200',
+                      serviceCharge: 1500,
+                    },
+                    {
+                      id: 2,
+                      service: 'Fitness',
+                      govtFees: '800',
+                      serviceCharge: 1800,
+                    },
+                    {
+                      id: 3,
+                      service: 'Insurance',
+                      govtFees: '0',
+                      serviceCharge: 1000,
+                    },
+                    {
+                      id: 4,
+                      service: 'Pollution',
+                      govtFees: '50',
+                      serviceCharge: 200,
+                    },
+                    {
+                      id: 5,
+                      service: 'Permit',
+                      govtFees: '5000',
+                      serviceCharge: 2000,
+                    },
+                    {
+                      id: 6,
+                      service: 'National Permit',
+                      govtFees: '17520',
+                      serviceCharge: 6000,
+                    }
+                  ].map((service) => {
+                    const gst = service.serviceCharge * 0.18;
+                    const total = service.serviceCharge + gst + parseFloat(service.govtFees);
+
+                    const handleAssign = async (checked: boolean) => {
+                      if (!checked) return;
+
+                      setAssigningServices(prev => ({ ...prev, [service.id]: true }));
+                      const toastId = toast.loading(`Assigning ${service.service} service to vehicle ${selectedAssignVehicle?.vrn}`);
+
+                      try {
+                        console.log('Selected vehicle:', selectedAssignVehicle);
+
+                        if (!selectedAssignVehicle.ownerId) {
+                          throw new Error('Vehicle owner ID is missing');
+                        }
+
+                        const requestBody = {
+                          services: service.service,
+                          vehicle_no: selectedAssignVehicle.vrn,
+                          vehicleId: parseInt(selectedAssignVehicle.id.toString()),
+                          userId: selectedAssignVehicle.ownerId,
+                          govFees: parseFloat(service.govtFees),
+                          serviceCharge: parseFloat(service.serviceCharge.toString()),
+                          price: parseFloat(total.toFixed(2)),
+                          isAssignedService: true
+                        };
+
+                        console.log('Sending request:', requestBody);
+
+                        const response = await fetch('/api/services', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify(requestBody),
+                        });
+
+                        if (!response.ok) {
+                          const errorData = await response.json();
+                          throw new Error(errorData.error || 'Failed to assign service');
+                        }
+
+                        const result = await response.json();
+                        console.log('Service created:', result);
+
+                        setAssignedServices(prev => ({ ...prev, [service.id]: true }));
+                        toast.success(`${service.service} service assigned for vehicle ${selectedAssignVehicle?.vrn}`, {
+                          id: toastId
+                        });
+                      } catch (error: any) {
+                        console.error('Service assignment error:', error);
+                        toast.error(`Failed to assign service: ${error.message || 'Unknown error'}`, {
+                          id: toastId
+                        });
+                        // Reset toggle
+                        const checkbox = document.getElementById(`assign-${service.id}`) as HTMLInputElement;
+                        if (checkbox) checkbox.checked = false;
+                      } finally {
+                        setAssigningServices(prev => ({ ...prev, [service.id]: false }));
+                      }
+                    };
+
+                    return (
+                      <tr key={service.id}>
+                        <td className="px-4 py-3 text-sm text-gray-900">{service.id}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{service.service}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{service.govtFees}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{service.serviceCharge.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{gst.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">{total.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900">
+                          <label className={`relative inline-flex items-center ${assignedServices[service.id] ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input
+                              id={`assign-${service.id}`}
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={assignedServices[service.id]}
+                              disabled={assigningServices[service.id] || assignedServices[service.id]}
+                              onChange={(e) => !assignedServices[service.id] && handleAssign(e.target.checked)}
+                            />
+                            <div className={`w-11 h-6 ${assigningServices[service.id] ? 'bg-gray-400' : assignedServices[service.id] ? 'bg-blue-600' : 'bg-gray-200'} rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
+                          </label>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

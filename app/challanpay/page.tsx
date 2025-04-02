@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, Fragment } from 'react';
@@ -232,7 +231,7 @@ export default function ChallanPayment() {
                       className="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
                       onClick={() => {
                         setShowCreditAlert(false);
-                        router.push('/credits');
+                        router.push(`/credits?amount=${requiredCredits}`);
                       }}
                     >
                       Add Credits

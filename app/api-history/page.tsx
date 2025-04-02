@@ -36,6 +36,14 @@ interface ApiRequest {
   responseTime: string;
   timestamp: string;
   ip: string;
+  creditsUsed: number;
+  vehicleNumber: string;
+}
+
+// Add interface for credits
+interface Credits {
+  available: number;
+  total: number;
 }
 
 // Sorting configuration interface
@@ -147,16 +155,49 @@ class ApiMonitor {
     const urlObj = new URL(url, window.location.origin);
     const endpoint = urlObj.pathname;
     
+    // Calculate credits based on endpoint
+    let creditsUsed = 2; // Default minimum credits
+    if (endpoint.includes('/api/vehicles/lookup')) {
+      creditsUsed = 2;
+    } else if (endpoint.includes('/api/challans/create')) {
+      creditsUsed = 5;
+    } else if (endpoint.includes('/api/vehicles/stats')) {
+      creditsUsed = 3;
+    }
+
+    // Get vehicle number from URL parameters
+    const searchParams = urlObj.searchParams;
+    const vehicleNumber = searchParams.get('vrn') || 'N/A';
+    
+    // Get user-friendly API name
+    let apiName = 'Other';
+    if (endpoint.includes('/api/challans/create')) {
+      apiName = 'Echallan';
+    } else if (endpoint.includes('/api/challans/update')) {
+      apiName = 'Echallan (Update)';
+    } else if (endpoint.includes('/api/vehicles/lookup')) {
+      apiName = 'RC Details';
+    } else if (endpoint.includes('/api/vehicles/update')) {
+      apiName = 'RC Details (Update)';
+    }
+    
     // Create request entry
     const request: ApiRequest = {
       id: Date.now(),
-      endpoint,
+      endpoint: apiName,
       method,
       status,
       responseTime: `${Math.round(responseTime)}ms`,
       timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      ip: '127.0.0.1' // Client-side we can't get real IP, so use localhost
+      ip: '127.0.0.1',
+      creditsUsed,
+      vehicleNumber
     };
+    
+    // Update credits if request was successful
+    if (status >= 200 && status < 400) {
+      this.updateCredits(creditsUsed);
+    }
     
     // Update stats
     this.apiStats.totalRequests++;
@@ -178,6 +219,31 @@ class ApiMonitor {
     
     // Notify listeners
     this.notifyListeners();
+  }
+
+  // Add method to update credits
+  private updateCredits(creditsUsed: number) {
+    try {
+      // Get current credits from localStorage
+      const savedCredits = localStorage.getItem('user_credits');
+      let credits: Credits = savedCredits ? JSON.parse(savedCredits) : { available: 0, total: 0 };
+      
+      // Update available credits
+      credits.available = Math.max(0, credits.available - creditsUsed);
+      
+      // Save back to localStorage
+      localStorage.setItem('user_credits', JSON.stringify(credits));
+      
+      // Dispatch custom event for credits update
+      window.dispatchEvent(new CustomEvent('creditsUpdated', { 
+        detail: { 
+          available: credits.available,
+          total: credits.total
+        }
+      }));
+    } catch (error) {
+      console.error('Failed to update credits:', error);
+    }
   }
 
   public getRequests(): ApiRequest[] {
@@ -265,54 +331,54 @@ class ApiMonitor {
 export default function ApiHistoryPage() {
   // Initialize state with static dummy data (this will be replaced with real data)
   const [apiStats, setApiStats] = useState<ApiStat[]>([
-    {
-      title: 'Total Requests',
+  {
+    title: 'Total Requests',
       count: '0',
       trend: '+0%',
-      isPositive: true,
-      icon: DocumentTextIcon,
-      color: 'from-blue-500 to-blue-600',
-      textGradient: 'bg-gradient-to-r from-blue-500 to-blue-600',
-      iconGradient: 'bg-gradient-to-br from-blue-500/10 to-blue-600/10',
-      borderColor: 'border-blue-100',
-      shadowColor: 'shadow-blue-500/20'
-    },
-    {
-      title: 'Success Rate',
+    isPositive: true,
+    icon: DocumentTextIcon,
+    color: 'from-blue-500 to-blue-600',
+    textGradient: 'bg-gradient-to-r from-blue-500 to-blue-600',
+    iconGradient: 'bg-gradient-to-br from-blue-500/10 to-blue-600/10',
+    borderColor: 'border-blue-100',
+    shadowColor: 'shadow-blue-500/20'
+  },
+  {
+    title: 'Success Rate',
       count: '0%',
       trend: '0%',
-      isPositive: true,
-      icon: CheckCircleIcon,
-      color: 'from-emerald-500 to-emerald-600',
-      textGradient: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
-      iconGradient: 'bg-gradient-to-br from-emerald-500/10 to-emerald-600/10',
-      borderColor: 'border-emerald-100',
-      shadowColor: 'shadow-emerald-500/20'
-    },
-    {
-      title: 'Average Response',
+    isPositive: true,
+    icon: CheckCircleIcon,
+    color: 'from-emerald-500 to-emerald-600',
+    textGradient: 'bg-gradient-to-r from-emerald-500 to-emerald-600',
+    iconGradient: 'bg-gradient-to-br from-emerald-500/10 to-emerald-600/10',
+    borderColor: 'border-emerald-100',
+    shadowColor: 'shadow-emerald-500/20'
+  },
+  {
+    title: 'Average Response',
       count: '0ms',
       trend: '0ms',
-      isPositive: true,
-      icon: ClockIcon,
-      color: 'from-purple-500 to-purple-600',
-      textGradient: 'bg-gradient-to-r from-purple-500 to-purple-600',
-      iconGradient: 'bg-gradient-to-br from-purple-500/10 to-purple-600/10',
-      borderColor: 'border-purple-100',
-      shadowColor: 'shadow-purple-500/20'
-    },
-    {
-      title: 'Error Rate',
+    isPositive: true,
+    icon: ClockIcon,
+    color: 'from-purple-500 to-purple-600',
+    textGradient: 'bg-gradient-to-r from-purple-500 to-purple-600',
+    iconGradient: 'bg-gradient-to-br from-purple-500/10 to-purple-600/10',
+    borderColor: 'border-purple-100',
+    shadowColor: 'shadow-purple-500/20'
+  },
+  {
+    title: 'Error Rate',
       count: '0%',
       trend: '0%',
-      isPositive: false,
-      icon: XCircleIcon,
-      color: 'from-red-500 to-red-600',
-      textGradient: 'bg-gradient-to-r from-red-500 to-red-600',
-      iconGradient: 'bg-gradient-to-br from-red-500/10 to-red-600/10',
-      borderColor: 'border-red-100',
-      shadowColor: 'shadow-red-500/20'
-    }
+    isPositive: false,
+    icon: XCircleIcon,
+    color: 'from-red-500 to-red-600',
+    textGradient: 'bg-gradient-to-r from-red-500 to-red-600',
+    iconGradient: 'bg-gradient-to-br from-red-500/10 to-red-600/10',
+    borderColor: 'border-red-100',
+    shadowColor: 'shadow-red-500/20'
+  }
   ]);
   
   const [apiRequests, setApiRequests] = useState<ApiRequest[]>([]);
@@ -323,6 +389,28 @@ export default function ApiHistoryPage() {
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [showDataTooltip, setShowDataTooltip] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'timestamp', direction: 'descending' });
+
+  // Add state for credits
+  const [credits, setCredits] = useState<Credits>({ available: 0, total: 0 });
+
+  // Add effect to listen for credits updates
+  useEffect(() => {
+    const handleCreditsUpdate = (event: CustomEvent) => {
+      setCredits(event.detail);
+    };
+
+    window.addEventListener('creditsUpdated', handleCreditsUpdate as EventListener);
+    
+    // Load initial credits
+    const savedCredits = localStorage.getItem('user_credits');
+    if (savedCredits) {
+      setCredits(JSON.parse(savedCredits));
+    }
+
+    return () => {
+      window.removeEventListener('creditsUpdated', handleCreditsUpdate as EventListener);
+    };
+  }, []);
 
   // Initialize API monitor on component mount
   useEffect(() => {
@@ -485,12 +573,22 @@ export default function ApiHistoryPage() {
     setIsActionLoading(true);
     
     try {
-      // Make a fetch call to a random API endpoint
+      // Check if user has enough credits
+      const savedCredits = localStorage.getItem('user_credits');
+      const credits = savedCredits ? JSON.parse(savedCredits) : { available: 0, total: 0 };
+      
+      if (credits.available < 2) { // Minimum credits needed
+        alert('Insufficient credits. Please purchase more credits to continue.');
+        return;
+      }
+      
+      // Make a fetch call to a random API endpoint with real vehicle numbers
       const endpoints = [
-        '/api/credits/purchase?limit=5&page=1',
-        '/api/auth/session',
-        '/api/vehicles/lookup?vrn=RJ09GB9450',
-        '/api/challans/create',
+        '/api/vehicles/lookup?vrn=MH01AB1234', // 2 credits
+        '/api/challans/create?vrn=DL01CD5678', // 5 credits
+        '/api/vehicles/stats?vrn=KA01EF9012', // 3 credits
+        '/api/vehicles/update?vrn=TN01GH3456', // 2 credits
+        '/api/challans/update?vrn=GJ01IJ7890', // 5 credits
       ];
       
       // Select a random endpoint
@@ -591,14 +689,14 @@ export default function ApiHistoryPage() {
               )}
               Clear History
             </button>
-            <button 
+          <button 
               className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
               onClick={updateData}
               disabled={isActionLoading}
-            >
+          >
               <ArrowPathIcon className={`w-5 h-5 mr-2 ${isActionLoading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
+            Refresh
+          </button>
           </div>
         </div>
 
@@ -657,146 +755,96 @@ export default function ApiHistoryPage() {
           ))}
         </div>
 
-        {/* API Requests Table */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-900">Recent API Requests</h2>
-            {isActionLoading && (
-              <div className="flex items-center text-sm text-blue-600">
-                <ArrowPathIcon className="w-4 h-4 mr-1 animate-spin" />
-                Processing...
-              </div>
-            )}
+        {/* API History Table */}
+        <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-medium text-gray-900">API History</h2>
           </div>
-          
-          {isLoading ? (
-            <div className="flex justify-center items-center py-20">
-              <ArrowPathIcon className="w-8 h-8 text-blue-500 animate-spin" />
-              <span className="ml-2 text-gray-500">Loading...</span>
-            </div>
-          ) : apiRequests.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-              <ExclamationTriangleIcon className="w-12 h-12 text-gray-300 mb-2" />
-              <p>No API requests have been tracked yet</p>
-              <p className="text-sm mt-1">Click "Test API Call" or "Generate Data" to see this in action</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => sortData('endpoint')}
-                      >
-                        Endpoint {getSortDirectionIndicator('endpoint')}
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => sortData('method')}
-                      >
-                        Method {getSortDirectionIndicator('method')}
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => sortData('status')}
-                      >
-                        Status {getSortDirectionIndicator('status')}
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => sortData('responseTime')}
-                      >
-                        Response Time {getSortDirectionIndicator('responseTime')}
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => sortData('timestamp')}
-                      >
-                        Timestamp {getSortDirectionIndicator('timestamp')}
-                      </th>
-                      <th 
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                        onClick={() => sortData('ip')}
-                      >
-                        IP Address {getSortDirectionIndicator('ip')}
-                      </th>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sr. No</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vehicle Number</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Credits Used</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center">
+                      <div className="flex justify-center">
+                        <ArrowPathIcon className="w-5 h-5 text-gray-400 animate-spin" />
+                        <span className="ml-2 text-sm text-gray-500">Loading API history...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : apiRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
+                      No API history found
+                    </td>
+                  </tr>
+                ) : (
+                  currentRequests.map((request, index) => (
+                    <tr
+                      key={request.id}
+                      className="hover:bg-gray-50 transition-colors animate-fadeIn"
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {indexOfFirstRequest + index + 1}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {request.vehicleNumber}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          request.status >= 200 && request.status < 400
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {request.status >= 200 && request.status < 400 ? 'Success' : 'Error'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {request.endpoint}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(request.timestamp).toLocaleDateString('en-IN', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {request.creditsUsed}
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {currentRequests.map((request) => (
-                      <tr key={request.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <CodeBracketIcon className="w-5 h-5 text-gray-400 mr-3" />
-                            <span className="text-sm font-medium text-gray-900">{request.endpoint}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            request.method === 'GET' 
-                              ? 'bg-blue-100 text-blue-800'
-                              : request.method === 'POST'
-                              ? 'bg-green-100 text-green-800'
-                              : request.method === 'PUT'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {request.method}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            request.status < 400
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {request.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {request.responseTime}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {request.timestamp}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {request.ip}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination */}
-              <div className="px-6 py-4 border-t border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    Showing {indexOfFirstRequest + 1} to {Math.min(indexOfLastRequest, sortedData.length)} of {sortedData.length} entries
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button 
-                      className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(prev => prev - 1)}
-                    >
-                      Previous
-                    </button>
-                    <span className="px-3 py-1 bg-blue-600 text-white rounded">{currentPage}</span>
-                    <button 
-                      className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-                      disabled={currentPage * rowsPerPage >= sortedData.length}
-                      onClick={() => setCurrentPage(prev => prev + 1)}
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-500">
+                {apiRequests.length > 0 ? `Showing ${indexOfFirstRequest + 1} to ${Math.min(indexOfLastRequest, apiRequests.length)} of ${apiRequests.length} records` : ''}
+              </span>
+              <button 
+                onClick={updateData}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center"
+              >
+                <ArrowPathIcon className="w-4 h-4 mr-1" />
+                Refresh
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

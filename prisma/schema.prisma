@@ -21,8 +21,8 @@ model User {
   vehicle_stats       UserVehicleStats?
   precedingChallan    PrecedingChallan[]
   vehicles            Vehicle[]
+  renewalServices     RenewalService[] 
 }
-
 model Vehicle {
   id             Int                @id @default(autoincrement())
   vrn            String
@@ -41,6 +41,7 @@ model Vehicle {
   createdAt      DateTime           @default(now()) @map("created_at")
   updatedAt      DateTime           @updatedAt @map("updated_at")
   challans       Challan[]
+  renewalServices RenewalService[]  
   owner          User?             @relation(fields: [ownerId], references: [id])
 
   @@map("vehicles")
@@ -155,11 +156,46 @@ model PrecedingChallan {
   payment_at          DateTime @default(now())
   vehicle_id          Int
   user                User     @relation(fields: [user_id], references: [id])
-  vehicle             Vehicle  @relation(fields: [vehicle_id], references: [id])
-  challan             Challan  @relation(fields: [challan_id], references: [id])
-
+  vehicle             Vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
+  challan             Challan  @relation(fields: [challan_id], references: [id], onDelete: Cascade) 
 
   @@index([rc_no])
   @@index([challan_id])
   @@index([user_id])
+}
+
+// ADDED: New RenewalService model and enum
+model RenewalService {
+  id                Int                   @id @default(autoincrement())
+  services          String?
+  isAssignedService Boolean?
+  vehicle_no             String?
+  vehicleId         Int?                  @map("vehicle_id")
+  userId            String?               @map("user_id")
+  govFees           Decimal?              @db.Decimal(10, 2)
+  serviceCharge     Decimal?              @db.Decimal(10, 2)
+  price             Decimal?              @db.Decimal(10, 2)
+  govtFees          Boolean               @default(false)
+  rtoApproval       Boolean               @default(false)
+  inspection        Boolean               @default(false)
+  certificate       Boolean               @default(false)
+  documentDelivered Boolean               @default(false)
+  status            RenewalServiceStatus  @default(pending)
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+  
+  vehicle           Vehicle?              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  user              User?                 @relation(fields: [userId], references: [id])
+
+  @@map("renewal_services")
+  @@index([vehicleId])
+  @@index([userId])
+}
+
+// ADDED: New enum for RenewalService status
+enum RenewalServiceStatus {
+  pending
+  processing
+  completed
+  cancelled
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../auth/[...nextauth]/route';
+import { Vehicle } from '@prisma/client';
 
 export async function POST(request: Request) {
   try {
@@ -21,33 +22,46 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Get or create vehicle
+    // Get or create vehicle with proper error handling
     let vehicle = await prisma.vehicle.findFirst({
       where: { vrn: rc_no }
     });
 
+    // Store vehicle in a separate variable after confirming it exists
+    let confirmedVehicle: Vehicle;
+
     if (!vehicle) {
-      vehicle = await prisma.vehicle.create({
-        data: {
-          vrn: rc_no,
-          roadTax: 'Unknown',
-          fitness: 'Unknown',
-          insurance: 'Unknown',
-          pollution: 'Unknown',
-          statePermit: 'Unknown',
-          nationalPermit: 'Unknown',
-          lastUpdated: new Date().toISOString(),
-          status: 'Active',
-          registeredAt: new Date().toISOString(),
-          documents: 0,
-          owner: {
-            connect: { id: user.id }
+      try {
+        confirmedVehicle = await prisma.vehicle.create({
+          data: {
+            vrn: rc_no,
+            roadTax: 'Unknown',
+            fitness: 'Unknown',
+            insurance: 'Unknown',
+            pollution: 'Unknown',
+            statePermit: 'Unknown',
+            nationalPermit: 'Unknown',
+            lastUpdated: new Date().toISOString(),
+            status: 'Active',
+            registeredAt: new Date().toISOString(),
+            documents: 0,
+            owner: {
+              connect: { id: user.id }
+            }
           }
-        }
-      });
+        });
+      } catch (error) {
+        console.error('Error creating vehicle:', error);
+        return NextResponse.json(
+          { error: 'Failed to create vehicle', success: false },
+          { status: 500 }
+        );
+      }
+    } else {
+      confirmedVehicle = vehicle;
     }
 
-    // Process challans
+    // Process challans with confirmed vehicle
     await prisma.$transaction(async (tx) => {
       for (const challan of challans) {
         const defaultDate = new Date('2001-01-01');
@@ -83,7 +97,7 @@ export async function POST(request: Request) {
               connect: { id: user.id }
             },
             vehicle: {
-              connect: { id: vehicle.id }
+              connect: { id: confirmedVehicle.id }
             }
           }
         });

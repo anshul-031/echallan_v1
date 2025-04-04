@@ -2,20 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import Modal from 'react-modal';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { DocumentArrowDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 // Document types
 const documentTypes = [
-    'Registration Certificate',
-    'Pollution',
-    'Insurance',
+    'Road Tax',
     'Fitness',
+    'Insurance',
+    'Pollution',
     'Permit',
-    'National Permit',
-    'Speed Limit Device',
-    'Reflective Tape',
-    'Road Tax'
+    'National Permit'
 ];
 
 // Set app element for accessibility
@@ -27,31 +24,51 @@ interface DocumentModalProps {
     isOpen: boolean;
     onClose: () => void;
     vrn: string;
+    initialDocUrls?: {
+        roadTaxDoc?: string | null;
+        fitnessDoc?: string | null;
+        insuranceDoc?: string | null;
+        pollutionDoc?: string | null;
+        statePermitDoc?: string | null;
+        nationalPermitDoc?: string | null;
+    };
 }
 
-export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalProps) {
+export default function DocumentModal({ isOpen, onClose, vrn, initialDocUrls = {} }: DocumentModalProps) {
+
+    console.log(initialDocUrls, 'initialDocUrls');
     const [uploading, setUploading] = useState<string | null>(null);
-    const [uploadedDocs, setUploadedDocs] = useState<Record<string, string>>({});
+    const [uploadedDocs, setUploadedDocs] = useState<Record<string, { fileName: string; url: string }>>(() => {
+        // Initialize state with any existing document URLs
+        const initialState: Record<string, { fileName: string; url: string }> = {};
 
+        // Only add existing documents if they have valid URLs
+        if (initialDocUrls?.roadTaxDoc) initialState['Road Tax'] = { fileName: 'Existing Document', url: initialDocUrls.roadTaxDoc };
+        if (initialDocUrls?.fitnessDoc) initialState['Fitness'] = { fileName: 'Existing Document', url: initialDocUrls.fitnessDoc };
+        if (initialDocUrls?.insuranceDoc) initialState['Insurance'] = { fileName: 'Existing Document', url: initialDocUrls.insuranceDoc };
+        if (initialDocUrls?.pollutionDoc) initialState['Pollution'] = { fileName: 'Existing Document', url: initialDocUrls.pollutionDoc };
+        if (initialDocUrls?.statePermitDoc) initialState['Permit'] = { fileName: 'Existing Document', url: initialDocUrls.statePermitDoc };
+        if (initialDocUrls?.nationalPermitDoc) initialState['National Permit'] = { fileName: 'Existing Document', url: initialDocUrls.nationalPermitDoc };
+
+        return initialState;
+    });
+
+    // Update uploadedDocs when initialDocUrls changes
     useEffect(() => {
-        const fetchDocuments = async () => {
-            try {
-                const response = await fetch(`/api/documents/list?vrn=${vrn}`);
-                if (!response.ok) {
-                    throw new Error('Failed to fetch documents');
-                }
-                const data = await response.json();
-                setUploadedDocs(data);
-            } catch (error) {
-                console.error('Error fetching documents:', error);
-                toast.error('Failed to load documents');
-            }
-        };
+        const newState: Record<string, { fileName: string; url: string }> = {};
 
-        if (isOpen) {
-            fetchDocuments();
-        }
-    }, [isOpen, vrn]);
+        if (initialDocUrls?.roadTaxDoc) newState['Road Tax'] = { fileName: 'Existing Document', url: initialDocUrls.roadTaxDoc };
+        if (initialDocUrls?.fitnessDoc) newState['Fitness'] = { fileName: 'Existing Document', url: initialDocUrls.fitnessDoc };
+        if (initialDocUrls?.insuranceDoc) newState['Insurance'] = { fileName: 'Existing Document', url: initialDocUrls.insuranceDoc };
+        if (initialDocUrls?.pollutionDoc) newState['Pollution'] = { fileName: 'Existing Document', url: initialDocUrls.pollutionDoc };
+        if (initialDocUrls?.statePermitDoc) newState['Permit'] = { fileName: 'Existing Document', url: initialDocUrls.statePermitDoc };
+        if (initialDocUrls?.nationalPermitDoc) newState['National Permit'] = { fileName: 'Existing Document', url: initialDocUrls.nationalPermitDoc };
+
+        setUploadedDocs(prev => ({
+            ...prev,
+            ...newState
+        }));
+    }, [initialDocUrls]);
 
     const handleFileUpload = async (docType: string, file: File | null) => {
         if (!file) return;
@@ -77,18 +94,28 @@ export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalPro
             formData.append('vrn', vrn);
             formData.append('docType', docType);
 
-            const response = await fetch('/api/documents/upload', {
+            const response = await fetch('/api/documents', {
                 method: 'POST',
                 body: formData,
             });
-
             if (!response.ok) {
                 const error = await response.json();
                 throw new Error(error.message || 'Upload failed');
             }
 
-            // Store the uploaded file name for this document type
-            setUploadedDocs(prev => ({ ...prev, [docType]: file.name }));
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.error || 'Upload failed');
+            }
+
+            // Store both the file name and R2 URL for this document type
+            setUploadedDocs(prev => ({
+                ...prev,
+                [docType]: {
+                    fileName: file.name,
+                    url: data.url
+                }
+            }));
             toast.success(`${docType} uploaded successfully`);
         } catch (error) {
             console.error('Upload error:', error);
@@ -98,14 +125,22 @@ export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalPro
         }
     };
 
-    const handleDownload = (docType: string) => {
-        if (!uploadedDocs[docType]) return;
+    const handlePreview = (docType: string) => {
+        let url: string | null = null;
 
-        const fileName = uploadedDocs[docType];
-        const url = `/api/documents/download?vrn=${vrn}&docType=${docType}&fileName=${encodeURIComponent(fileName)}`;
+        // First check uploadedDocs for newly uploaded documents
+        if (uploadedDocs[docType]) {
+            url = uploadedDocs[docType].url;
+        }
+        // Then check initialDocUrls for existing documents
+        else {
+            const urlKey = `${docType.toLowerCase().replace(' ', '')}Doc` as keyof typeof initialDocUrls;
+            url = initialDocUrls[urlKey] || null;
+        }
 
-        // Open in new tab for preview
-        window.open(url, '_blank');
+        if (url) {
+            window.open(url, '_blank');
+        }
     };
 
     return (
@@ -158,46 +193,22 @@ export default function DocumentModal({ isOpen, onClose, vrn }: DocumentModalPro
                                         ) : 'Upload'}
                                     </label>
                                 </div>
-                                {uploadedDocs[docType] ? (
-                                    <button
-                                        onClick={() => handleDownload(docType)}
-                                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-gray-600 text-white hover:bg-gray-700 transition-colors"
-                                    >
-                                        <DocumentArrowDownIcon className="w-4 h-4 mr-1" />
-                                        Preview
-                                    </button>
-                                ) : (
-                                    <button
-                                        disabled
-                                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md bg-gray-100 text-gray-400 cursor-not-allowed transition-colors"
-                                    >
-                                        <DocumentArrowDownIcon className="w-4 h-4 mr-1" />
-                                        Preview
-                                    </button>
-                                )}
+
+                                <button
+                                    onClick={() => handlePreview(docType)}
+                                    disabled={!uploadedDocs[docType]?.url && !initialDocUrls?.[`${docType.toLowerCase().replace(' ', '')}Doc` as keyof typeof initialDocUrls]}
+                                    className={`inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md
+                 ${uploadedDocs[docType]?.url || initialDocUrls?.[`${docType.toLowerCase().replace(' ', '')}Doc` as keyof typeof initialDocUrls]
+                                            ? 'bg-gray-600 text-white hover:bg-gray-700'
+                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        } transition-colors`}
+                                >
+                                    <DocumentArrowDownIcon className="w-4 h-4 mr-1" />
+                                    Preview
+                                </button>
                             </div>
                         </div>
                     ))}
-                    {Object.keys(uploadedDocs).length > 0 && (
-                        <div className="mt-4">
-                            <h3 className="text-sm font-medium text-gray-700">Uploaded Documents:</h3>
-                            <ul className="mt-2 space-y-1">
-                                {Object.entries(uploadedDocs).map(([docType, fileName]) => (
-                                    <li key={docType} className="flex items-center justify-between p-2 bg-gray-100 rounded-md">
-                                        <span className="text-sm text-gray-700">{docType}</span>
-                                        <a
-                                            href={`/api/documents/download?vrn=${vrn}&docType=${docType}&fileName=${encodeURIComponent(fileName)}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-blue-600 hover:text-blue-700"
-                                        >
-                                            {fileName}
-                                        </a>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
                 </div>
 
                 <div className="flex justify-end space-x-3 mt-6">

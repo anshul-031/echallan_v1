@@ -11,6 +11,7 @@ export async function GET(request: Request) {
     const vrn = searchParams.get('vrn');
     const expiringDoc = searchParams.get('expiring_doc');
     const expiredDoc = searchParams.get('expired_doc');
+    const renewals = searchParams.get('renewals') === 'true';
 
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -61,6 +62,19 @@ export async function GET(request: Request) {
         registeredAt: true,
         documents: true,
         ownerId: true,
+        roadTaxDoc: true,
+        fitnessDoc: true,
+        insuranceDoc: true,
+        pollutionDoc: true,
+        statePermitDoc: true,
+        nationalPermitDoc: true,
+        ...(renewals && {
+          renewalServices: {
+            select: {
+              services: true,
+            }
+          }
+        })
       },
     });
 

@@ -199,16 +199,15 @@ export default function RenewalsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedVRN, setSelectedVRN] = useState<string>('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [vehicleToDelete, setVehicleToDelete] = useState<number | null>(null);
   const [isDeletingVehicle, setIsDeletingVehicle] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAssignVehicle, setSelectedAssignVehicle] = useState<Vehicle | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [assigningServices, setAssigningServices] = useState<{ [key: number]: boolean }>({});
   const [assignedServices, setAssignedServices] = useState<{ [key: number]: boolean }>({});
   const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [updatingRows, setUpdatingRows] = useState<{ [key: number]: boolean }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -258,7 +257,7 @@ export default function RenewalsPage() {
     const fetchVehicles = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/vehicles', { credentials: 'include' });
+        const response = await fetch('/api/vehicles?renewals=true', { credentials: 'include' });
         if (!response.ok) throw new Error('Failed to fetch vehicles');
         const data = await response.json();
         setVehicles(data.vehicles);
@@ -705,7 +704,7 @@ export default function RenewalsPage() {
                       </td>
                       <td className="md:table-cell px-4 py-4 text-center whitespace-nowrap">
                         <button
-                          onClick={() => { setSelectedVRN(row.vrn); setIsModalOpen(true); }}
+                          onClick={() => { setSelectedVehicle(row); setIsModalOpen(true); }}
                           className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
                         >
                           <CloudArrowUpIcon className="w-5 h-5" />
@@ -857,7 +856,29 @@ export default function RenewalsPage() {
         </div>
       )}
 
-      <DocumentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} vrn={selectedVRN} />
+      <DocumentModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedVehicle(null);
+        }}
+        vrn={selectedVehicle?.vrn || ''}
+        initialDocUrls={selectedVehicle ? {
+          roadTaxDoc: selectedVehicle.roadTaxDoc || null,
+          fitnessDoc: selectedVehicle.fitnessDoc || null,
+          insuranceDoc: selectedVehicle.insuranceDoc || null,
+          pollutionDoc: selectedVehicle.pollutionDoc || null,
+          statePermitDoc: selectedVehicle.statePermitDoc || null,
+          nationalPermitDoc: selectedVehicle.nationalPermitDoc || null,
+        } : {
+          roadTaxDoc: null,
+          fitnessDoc: null,
+          insuranceDoc: null,
+          pollutionDoc: null,
+          statePermitDoc: null,
+          nationalPermitDoc: null,
+        }}
+      />
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {
@@ -998,8 +1019,11 @@ export default function RenewalsPage() {
                   ].map((service) => {
                     const gst = service.serviceCharge * 0.18;
                     const total = service.serviceCharge + gst + parseFloat(service.govtFees);
-
                     const handleAssign = async (checked: boolean) => {
+                      // If vehicle has renewalServices for this service, disable toggle
+                      if (selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service)) {
+                        return;
+                      }
                       if (!checked) return;
 
                       setAssigningServices(prev => ({ ...prev, [service.id]: true }));
@@ -1067,16 +1091,27 @@ export default function RenewalsPage() {
                         <td className="px-4 py-3 text-sm text-gray-900">{gst.toFixed(2)}</td>
                         <td className="px-4 py-3 text-sm text-gray-900">{total.toFixed(2)}</td>
                         <td className="px-4 py-3 text-sm text-gray-900">
-                          <label className={`relative inline-flex items-center ${assignedServices[service.id] ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                          <label className={`relative inline-flex items-center ${assignedServices[service.id] || selectedAssignVehicle?.renewalService?.some(s => s.services === service.service)
+                            ? 'cursor-not-allowed'
+                            : 'cursor-pointer'
+                            }`}>
                             <input
                               id={`assign-${service.id}`}
                               type="checkbox"
                               className="sr-only peer"
-                              checked={assignedServices[service.id]}
-                              disabled={assigningServices[service.id] || assignedServices[service.id]}
-                              onChange={(e) => !assignedServices[service.id] && handleAssign(e.target.checked)}
+                              checked={assignedServices[service.id] || selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service)}
+                              disabled={assigningServices[service.id] || assignedServices[service.id] || selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service)}
+                              onChange={(e) => !assignedServices[service.id] && !selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service) && handleAssign(e.target.checked)}
                             />
-                            <div className={`w-11 h-6 ${assigningServices[service.id] ? 'bg-gray-400' : assignedServices[service.id] ? 'bg-blue-600' : 'bg-gray-200'} rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
+                            <div className={`w-11 h-6 ${assigningServices[service.id]
+                              ? 'bg-gray-400'
+                              : (assignedServices[service.id] || selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service))
+                                ? 'bg-blue-600'
+                                : 'bg-gray-200'
+                              } rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${(assignedServices[service.id] || selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service))
+                                ? 'cursor-not-allowed'
+                                : 'cursor-pointer'
+                              }`}></div>
                           </label>
                         </td>
                       </tr>

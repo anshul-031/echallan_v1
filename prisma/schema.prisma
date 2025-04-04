@@ -21,28 +21,36 @@ model User {
   vehicle_stats       UserVehicleStats?
   precedingChallan    PrecedingChallan[]
   vehicles            Vehicle[]
-  renewalServices     RenewalService[] 
+  renewalServices     RenewalService[]
+  renewalStats        RenewalStats?      // Added relation to RenewalStats
 }
+
 model Vehicle {
-  id             Int                @id @default(autoincrement())
-  vrn            String
-  roadTax        String
-  fitness        String
-  insurance      String
-  pollution      String
-  statePermit    String
-  nationalPermit String
-  lastUpdated    String
-  status         String
-  ownerId        String?
-  registeredAt   String
-  documents      Int
-  precedingChallan PrecedingChallan[]
-  createdAt      DateTime           @default(now()) @map("created_at")
-  updatedAt      DateTime           @updatedAt @map("updated_at")
-  challans       Challan[]
-  renewalServices RenewalService[]  
-  owner          User?             @relation(fields: [ownerId], references: [id])
+  id                Int                @id @default(autoincrement())
+  vrn               String
+  roadTax           String
+  roadTaxDoc        String?            // New field for roadTax document
+  fitness           String
+  fitnessDoc        String?            // New field for fitness document
+  insurance         String
+  insuranceDoc      String?            // New field for insurance document
+  pollution         String
+  pollutionDoc      String?            // New field for pollution document
+  statePermit       String
+  statePermitDoc    String?            // New field for statePermit document
+  nationalPermit    String
+  nationalPermitDoc String?            // New field for nationalPermit document
+  lastUpdated       String
+  status            String
+  ownerId           String?
+  registeredAt      String
+  documents         Int
+  precedingChallan  PrecedingChallan[]
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  challans          Challan[]
+  renewalServices   RenewalService[]
+  owner             User?              @relation(fields: [ownerId], references: [id])
 
   @@map("vehicles")
 }
@@ -116,7 +124,6 @@ model Challan {
   created_at            DateTime         @default(now())
   user                  User            @relation(fields: [user_id], references: [id])
   vehicle               Vehicle         @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
-
   precedingChallan      PrecedingChallan?
 
   @@index([rc_no])
@@ -157,19 +164,18 @@ model PrecedingChallan {
   vehicle_id          Int
   user                User     @relation(fields: [user_id], references: [id])
   vehicle             Vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
-  challan             Challan  @relation(fields: [challan_id], references: [id], onDelete: Cascade) 
+  challan             Challan  @relation(fields: [challan_id], references: [id], onDelete: Cascade)
 
   @@index([rc_no])
   @@index([challan_id])
   @@index([user_id])
 }
 
-// ADDED: New RenewalService model and enum
 model RenewalService {
   id                Int                   @id @default(autoincrement())
   services          String?
   isAssignedService Boolean?
-  vehicle_no             String?
+  vehicle_no        String?
   vehicleId         Int?                  @map("vehicle_id")
   userId            String?               @map("user_id")
   govFees           Decimal?              @db.Decimal(10, 2)
@@ -192,10 +198,25 @@ model RenewalService {
   @@index([userId])
 }
 
-// ADDED: New enum for RenewalService status
 enum RenewalServiceStatus {
   pending
   processing
   completed
   cancelled
+}
+
+// New RenewalStats model to track counts of renewal services
+model RenewalStats {
+  id                String   @id @default(uuid())
+  userId            String   @unique
+  totalServices     Int      @default(0)  // Total number of renewal services
+  pendingCount      Int      @default(0)  // Count of services with status "pending"
+  processingCount   Int      @default(0)  // Count of services with status "processing"
+  completedCount    Int      @default(0)  // Count of services with status "completed"
+  cancelledCount    Int      @default(0)  // Count of services with status "cancelled"
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  user              User     @relation(fields: [userId], references: [id])
+
+  @@map("renewal_stats")
 }

@@ -1,38 +1,50 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
 import prisma from "@/lib/prisma";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// GET handler to fetch renewal services
+// GET handler to fetch renewal services and stats for the authenticated user
 export async function GET(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    // Get user with renewal services and stats
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
-    const vehicleId = searchParams.get("vehicleId");
-    const status = searchParams.get("status");
+    const status = searchParams.get('status')?.toLowerCase();
 
-    // Build filter conditions
-    const filters: any = {};
-    if (userId) filters.userId = userId;
-    if (vehicleId) filters.vehicleId = parseInt(vehicleId);
-    if (status) filters.status = status;
-
-    const services = await prisma.renewalService.findMany({
-      where: filters,
-      include: {
-        vehicle: 
-        {
-          select:
-          {
-            vrn: true
-          }
-        }
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      select: {
+        id: true,
+        renewalServices: {
+          where: status ? {
+            status: status as 'pending' | 'processing' | 'completed' | 'cancelled'
+          } : undefined
+        },
+        renewalStats: true
       }
     });
 
-    return NextResponse.json({ services }, { status: 200 });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      services: user.renewalServices,
+      stats: user.renewalStats
+    }, { status: 200 });
   } catch (error) {
-    console.error("Error fetching renewal services:", error);
+    console.error("Error fetching renewal services and stats:", error);
     return NextResponse.json(
-      { error: "Failed to fetch renewal services" },
+      { error: "Failed to fetch renewal data" },
       { status: 500 }
     );
   }
@@ -41,6 +53,12 @@ export async function GET(req: Request) {
 // POST handler to create a new renewal service
 export async function POST(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = await req.json();
     console.log("Received service creation request:", body);
     
@@ -48,31 +66,16 @@ export async function POST(req: Request) {
       services,
       vehicle_no,
       vehicleId,
-      userId,
       govFees,
       serviceCharge,
       price,
-      govtFees,
-      rtoApproval,
-      inspection,
-      certificate,
-      documentDelivered,
-      status,
       isAssignedService
     } = body;
 
-    // Validate required fields and their types
+    // Validate required fields
     if (!vehicleId || typeof parseInt(vehicleId.toString()) !== 'number') {
       return NextResponse.json(
         { error: "Valid Vehicle ID is required" },
-        { status: 400 }
-      );
-    }
-
-    if (!userId || typeof userId !== 'string') {
-      console.log("Invalid userId:", { userId, type: typeof userId });
-      return NextResponse.json(
-        { error: `Invalid User ID: received ${userId} (${typeof userId})` },
         { status: 400 }
       );
     }
@@ -87,41 +90,36 @@ export async function POST(req: Request) {
       );
     }
 
-    try {
-      // Create new renewal service
-      const data = {
-        services,
-        vehicle_no,
-        vehicleId: parseInt(vehicleId.toString()),
-        userId,
-        govFees: govFees ? parseFloat(govFees.toString()) : null,
-        serviceCharge: serviceCharge ? parseFloat(serviceCharge.toString()) : null,
-        price: price ? parseFloat(price.toString()) : null,
-        isAssignedService: isAssignedService
-      };
+    // Create new renewal service with authenticated user's ID
+    const data = {
+      services,
+      vehicle_no,
+      vehicleId: parseInt(vehicleId.toString()),
+      userId: session.user.id,
+      govFees: govFees ? parseFloat(govFees.toString()) : null,
+      serviceCharge: serviceCharge ? parseFloat(serviceCharge.toString()) : null,
+      price: price ? parseFloat(price.toString()) : null,
+      isAssignedService: isAssignedService
+    };
 
-      console.log("Creating renewal service with data:", data);
+    console.log("Creating renewal service with data:", data);
 
-      const newService = await prisma.renewalService.create({
-        data,
-        include: {
-          vehicle: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
+    const newService = await prisma.renewalService.create({
+      data,
+      include: {
+        vehicle: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
           }
         }
-      });
+      }
+    });
 
-      console.log("Service created successfully:", newService);
-      return NextResponse.json(newService, { status: 201 });
-    } catch (err) {
-      console.error("Error in Prisma create:", err);
-      throw err;
-    }
+    console.log("Service created successfully:", newService);
+    return NextResponse.json(newService, { status: 201 });
   } catch (error: any) {
     console.error("Error creating renewal service:", error);
     

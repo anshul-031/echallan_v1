@@ -101,43 +101,65 @@ export default function TrackingDashboard() {
   const [servicesData, setServicesData] = useState<RenewalService[]>([]);
   const [isServicesLoading, setIsServicesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [serviceStats, setServiceStats] = useState<ServiceStats>({
+    total: 0,
+    pending: 0,
+    processing: 0,
+    completed: 0,
+    cancelled: 0
+  });
 
   // Fetch services data
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const session = await getSession();
-        if (!session?.user) return;
+  // Add state for active status filter
+  const [activeStatus, setActiveStatus] = useState<string | null>(null);
 
-        setIsServicesLoading(true);
-        setError(null);
+  // Function to fetch services with status filter
+  const fetchServices = async (status?: string) => {
+    try {
+      const session = await getSession();
+      if (!session?.user) return;
 
-        const response = await fetch('/api/services');
-        if (!response.ok) {
-          throw new Error('Failed to fetch services');
-        }
+      setIsServicesLoading(true);
+      setError(null);
 
-        const data = await response.json();
-        console.log('Fetched services:', data.services);
-        setServicesData(data.services || []);
-      } catch (err: any) {
-        console.error('Error fetching services:', err);
-        setError('Failed to load services data');
-      } finally {
-        setIsServicesLoading(false);
+      const url = status ? `/api/services?status=${status}` : '/api/services';
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch services');
       }
-    };
 
+      const data = await response.json();
+      console.log('Fetched data:', data);
+      setServicesData(data.services || []);
+
+      // Update stats from API response if available
+      if (data.stats) {
+        setServiceStats({
+          total: data.stats.totalServices || 0,
+          pending: data.stats.pendingCount || 0,
+          processing: data.stats.processingCount || 0,
+          completed: data.stats.completedCount || 0,
+          cancelled: data.stats.cancelledCount || 0
+        });
+      }
+    } catch (err: any) {
+      console.error('Error fetching services:', err);
+      setError('Failed to load services data');
+    } finally {
+      setIsServicesLoading(false);
+    }
+  };
+
+  // Handle status card click
+  const handleStatusCardClick = (status: string | null) => {
+    setActiveStatus(status);
+    fetchServices(status?.toLowerCase());
+  };
+
+  useEffect(() => {
     fetchServices();
   }, []);
-  // Calculate service status statistics
-  const serviceStats = {
-    total: servicesData.length,
-    pending: servicesData.filter(s => s.status === 'pending').length,
-    processing: servicesData.filter(s => s.status === 'processing').length,
-    completed: servicesData.filter(s => s.status === 'completed').length,
-    cancelled: servicesData.filter(s => s.status === 'cancelled').length
-  };
 
   // Calculate progress percentage for a service
   const calculateServiceProgress = (service: RenewalService) => {
@@ -180,7 +202,8 @@ export default function TrackingDashboard() {
       setError(null);
       toast.loading('Refreshing services...');
 
-      const response = await fetch('/api/services', {
+      const url = activeStatus ? `/api/services?status=${activeStatus}` : '/api/services';
+      const response = await fetch(url, {
         headers: {
           'Cache-Control': 'no-cache'
         }
@@ -192,6 +215,18 @@ export default function TrackingDashboard() {
 
       const data = await response.json();
       setServicesData(data.services || []);
+
+      // Update stats from refreshed data
+      if (data.stats) {
+        setServiceStats({
+          total: data.stats.totalServices || 0,
+          pending: data.stats.pendingCount || 0,
+          processing: data.stats.processingCount || 0,
+          completed: data.stats.completedCount || 0,
+          cancelled: data.stats.cancelledCount || 0
+        });
+      }
+
       toast.dismiss();
       toast.success('Services refreshed successfully');
     } catch (err) {
@@ -258,26 +293,34 @@ export default function TrackingDashboard() {
 
         {/* Status Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {getStatusCards(serviceStats).map((card, index) => (
-            <div
-              key={card.title}
-              className={`bg-white rounded-xl p-6 shadow-sm border border-gray-100 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 hover:shadow-lg hover:shadow-${card.color}-500/20`}
-              onMouseEnter={() => setHoveredCard(index)}
-              onMouseLeave={() => setHoveredCard(null)}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">{card.title}</p>
-                  <div className="flex items-baseline mt-2">
-                    <p className="text-2xl font-semibold">{animatedNumbers[index].toLocaleString()}</p>
+          {getStatusCards(serviceStats).map((card, index) => {
+            const status = card.title === 'Total Services' ? null : card.title.toLowerCase();
+            const isActive = status === activeStatus;
+            return (
+              <div
+                key={card.title}
+                className={`bg-white rounded-xl p-6 shadow-sm border cursor-pointer
+                  ${isActive ? `border-${card.color}-500 ring-2 ring-${card.color}-500` : 'border-gray-100'}
+                  transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 hover:shadow-lg hover:shadow-${card.color}-500/20`}
+                onMouseEnter={() => setHoveredCard(index)}
+                onMouseLeave={() => setHoveredCard(null)}
+                onClick={() => handleStatusCardClick(status)}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">{card.title}</p>
+                    <div className="flex items-baseline mt-2">
+                      <p className="text-2xl font-semibold">{animatedNumbers[index].toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className={`p-3 rounded-full bg-${card.color}-50 transition-all duration-300
+                    ${hoveredCard === index || isActive ? `bg-${card.color}-100` : ''}`}>
+                    <card.icon className={`w-6 h-6 text-${card.color}-500`} />
                   </div>
                 </div>
-                <div className={`p-3 rounded-full bg-${card.color}-50 transition-all duration-300 ${hoveredCard === index ? `bg-${card.color}-100` : ''}`}>
-                  <card.icon className={`w-6 h-6 text-${card.color}-500`} />
-                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Main Content */}
@@ -360,11 +403,7 @@ export default function TrackingDashboard() {
                                         'bg-yellow-500'
                                     }`}
                                   style={{
-                                    width: `${service.status === 'completed' ? '100' :
-                                      service.status === 'processing' ? '50' :
-                                        service.status === 'cancelled' ? '100' :
-                                          '0'
-                                      }%`
+                                    width: `${calculateServiceProgress(service)}%`
                                   }}
                                 ></div>
                               </div>

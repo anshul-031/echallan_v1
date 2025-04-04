@@ -134,6 +134,7 @@ export default function Dashboard() {
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedVRN, setSelectedVRN] = useState<string>('');
+  const [selectedVehicleData, setSelectedVehicleData] = useState<Vehicle | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -879,7 +880,11 @@ export default function Dashboard() {
                       </td>
                       <td className="md:table-cell px-4 py-4 text-center whitespace-nowrap">
                         <button
-                          onClick={() => { setSelectedVRN(row.vrn); setIsModalOpen(true); }}
+                          onClick={() => {
+                            setSelectedVRN(row.vrn);
+                            setSelectedVehicleData(row);
+                            setIsModalOpen(true);
+                          }}
                           className="p-1.5 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors"
                         >
                           <CloudArrowUpIcon className="w-5 h-5" />
@@ -986,7 +991,22 @@ export default function Dashboard() {
         <LiveDataPanel vehicles={vehicles} setVehicles={setVehicles} />
       </div>
 
-      <DocumentModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} vrn={selectedVRN} />
+      <DocumentModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedVehicleData(null);
+        }}
+        vrn={selectedVRN}
+        initialDocUrls={{
+          roadTaxDoc: selectedVehicleData?.roadTaxDoc || null,
+          fitnessDoc: selectedVehicleData?.fitnessDoc || null,
+          insuranceDoc: selectedVehicleData?.insuranceDoc || null,
+          pollutionDoc: selectedVehicleData?.pollutionDoc || null,
+          statePermitDoc: selectedVehicleData?.statePermitDoc || null,
+          nationalPermitDoc: selectedVehicleData?.nationalPermitDoc || null,
+        }}
+      />
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}
         onClose={() => {

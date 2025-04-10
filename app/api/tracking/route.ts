@@ -181,21 +181,21 @@ export async function GET() {
     // If no vehicles found or database error, return mock data as fallback
     const trackingData = [
       {
-        id: 1,
+        id: '507f1f77bcf86cd799439011',
         vehicleNo: 'MH12AB1234',
         service: 'Road Tax Renewal',
         status: 'In Progress',
         lastUpdated: new Date().toISOString(),
       },
       {
-        id: 2,
+        id: '507f1f77bcf86cd799439012',
         vehicleNo: 'MH43CD5678',
         service: 'Fitness Certificate',
         status: 'Pending Approval',
         lastUpdated: new Date().toISOString(),
       },
       {
-        id: 3,
+        id: '507f1f77bcf86cd799439013',
         vehicleNo: 'DL9EF9012',
         service: 'Pollution Certificate',
         status: 'Completed',

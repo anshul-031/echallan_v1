@@ -224,7 +224,7 @@ export async function PUT(request: Request) {
 
     // Check if user has permission to update this vehicle
     const existingVehicle = await prisma.vehicle.findUnique({
-      where: { id: Number(id) }
+      where: { id: id }
     });
     
     if (!existingVehicle) {
@@ -245,7 +245,7 @@ export async function PUT(request: Request) {
     } = updateData;
 
     const vehicle = await prisma.vehicle.update({
-      where: { id: Number(id) },
+      where: { id: id },
       data: validUpdateData
     });
   
@@ -287,7 +287,7 @@ export async function DELETE(request: Request) {
     }
 
     const existingVehicle = await prisma.vehicle.findUnique({
-      where: { id: Number(id) },
+      where: { id: id },
     });
 
     if (!existingVehicle) {
@@ -311,7 +311,7 @@ export async function DELETE(request: Request) {
     }
 
     await prisma.vehicle.delete({
-      where: { id: Number(id) },
+      where: { id: id },
     });
 
     console.log("Vehicle deleted successfully");

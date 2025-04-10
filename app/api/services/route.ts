@@ -72,10 +72,19 @@ export async function POST(req: Request) {
       isAssignedService
     } = body;
 
-    // Validate required fields
-    if (!vehicleId || typeof parseInt(vehicleId.toString()) !== 'number') {
+    // Validate vehicleId format
+    if (!vehicleId || typeof vehicleId !== 'string') {
       return NextResponse.json(
-        { error: "Valid Vehicle ID is required" },
+        { error: "Vehicle ID must be a string" },
+        { status: 400 }
+      );
+    }
+
+    // Validate MongoDB ObjectId format
+    const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+    if (!objectIdPattern.test(vehicleId)) {
+      return NextResponse.json(
+        { error: "Invalid MongoDB ObjectId format" },
         { status: 400 }
       );
     }
@@ -94,7 +103,7 @@ export async function POST(req: Request) {
     const data = {
       services,
       vehicle_no,
-      vehicleId: parseInt(vehicleId.toString()),
+      vehicleId, // Already validated as string ObjectId
       userId: session.user.id,
       govFees: govFees ? parseFloat(govFees.toString()) : null,
       serviceCharge: serviceCharge ? parseFloat(serviceCharge.toString()) : null,

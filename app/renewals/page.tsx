@@ -1039,7 +1039,7 @@ export default function RenewalsPage() {
                         const requestBody = {
                           services: service.service,
                           vehicle_no: selectedAssignVehicle.vrn,
-                          vehicleId: parseInt(selectedAssignVehicle.id.toString()),
+                          vehicleId: selectedAssignVehicle.id, // Pass the ObjectId directly
                           userId: selectedAssignVehicle.ownerId,
                           govFees: parseFloat(service.govtFees),
                           serviceCharge: parseFloat(service.serviceCharge.toString()),

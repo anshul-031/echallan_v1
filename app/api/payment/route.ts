@@ -66,8 +66,8 @@ export async function POST(req: Request) {
             challan_status: 'Ongoing',
             sent_to_reg_court: originalChallan.sent_to_reg_court,
             sent_to_virtual_court: originalChallan.sent_to_virtual_court,
-            amount_of_fine: originalChallan.amount_of_fine,
-            fine_imposed: originalChallan.fine_imposed,
+            amount_of_fine: parseFloat(originalChallan.amount_of_fine.toString()),
+            fine_imposed: parseFloat(originalChallan.fine_imposed.toString()),
             vehicle_id: originalChallan.vehicle_id
           }
         });

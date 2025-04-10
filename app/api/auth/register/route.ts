@@ -35,6 +35,7 @@ export async function POST(req: Request) {
         password: hashedPassword,
         name,
         updated_at: new Date(),
+        id: undefined, // Let MongoDB generate the ObjectId
       },
     });
 

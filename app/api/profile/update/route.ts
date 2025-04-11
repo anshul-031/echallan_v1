@@ -21,7 +21,7 @@ export async function PUT(req: Request) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return new NextResponse("Unauthorized", { status: 401 });
-    }
+    } 
 
     const data: ProfileUpdateInput = await req.json();
     const validUpdateData: Prisma.UserUpdateInput = {};

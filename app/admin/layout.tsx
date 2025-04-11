@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation';
 import { getServerSession } from "next-auth";
-
 import AdminNav from './AdminNav';
 import { headers } from 'next/headers';
 import Header from './components/Header';

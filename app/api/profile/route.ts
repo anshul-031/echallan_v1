@@ -1,245 +1,107 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import prisma from '@/lib/prisma';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { getServerSession } from "next-auth";
+import prisma from "@/lib/prisma";
+import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
+import { authOptions } from "../auth/[...nextauth]/route";
 
-type DocumentCounts = {
-  expiring_count: number;
-  expired_count: number;
+type ProfileUpdateData = {
+  name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  dob?: string | null;
+  gender?: string | null;
+  doj?: string | null;
+  designation?: string | null;
+  reportTo?: string | null;
+  location?: string | null;
 };
 
-// Helper function to calculate expiring/expired document counts
-async function calculateDocumentCounts(userId: string): Promise<DocumentCounts> {
-  try {
-    // Get user's vehicles
-    const vehicles = await prisma.vehicle.findMany({
-      where: {
-        ownerId: userId
-      }
-    });
-    
-    let expiring_count = 0;
-    let expired_count = 0;
-    
-    const currentDate = new Date();
-    const thirtyDaysFromNow = new Date();
-    thirtyDaysFromNow.setDate(currentDate.getDate() + 30);
-    
-    vehicles.forEach(vehicle => {
-      // Check each document date
-      const documents = [
-        { label: 'Road Tax', date: vehicle.roadTax },
-        { label: 'Fitness', date: vehicle.fitness },
-        { label: 'Insurance', date: vehicle.insurance },
-        { label: 'Pollution', date: vehicle.pollution },
-        { label: 'State Permit', date: vehicle.statePermit },
-        { label: 'National Permit', date: vehicle.nationalPermit }
-      ];
-      
-      documents.forEach(doc => {
-        if (!doc.date) return;
-        
-        try {
-          // Parse the date (assuming format is DD-MM-YYYY)
-          const parts = doc.date.split('-');
-          if (parts.length !== 3) return;
-          
-          const day = parseInt(parts[0], 10);
-          const month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
-          const year = parseInt(parts[2], 10);
-          
-          const documentDate = new Date(year, month, day);
-          
-          // Skip invalid dates
-          if (isNaN(documentDate.getTime())) return;
-          
-          // Check if expired
-          if (documentDate < currentDate) {
-            expired_count++;
-          } 
-          // Check if expiring soon
-          else if (documentDate <= thirtyDaysFromNow) {
-            expiring_count++;
-          }
-        } catch (err) {
-          // Skip this document if date parsing fails
-          console.error(`Error parsing date for ${doc.label}: ${doc.date}`);
-        }
-      });
-    });
-    
-    return { expiring_count, expired_count };
-  } catch (error) {
-    console.error('Error calculating document counts:', error);
-    return { expiring_count: 0, expired_count: 0 };
-  }
-}
-
-type ProfileData = {
-  id: string;
-  email: string;
-  name: string | null;
-  role: string;
-  credits: number; // Add this field
-  expiring_documents: number;
-  expired_documents: number;
-  joinDate: string;
-};
-
-// GET handler to fetch user profile data
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized: User not logged in' }, { status: 401 });
+    if (!session?.user?.email) {
+      return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const userEmail = session.user.email;
-    
-    if (!userEmail) {
-      return NextResponse.json({ error: 'Unauthorized: Invalid user session' }, { status: 401 });
-    }
-
-    try {
-      const user = await prisma.user.findUnique({
-        where: {
-          email: userEmail as string,
-        },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          role: true,
-          credits: true, // Add this field
-          created_at: true,
-          updated_at: true,
-        },
-      });
-
-      if (!user) {
-        // If database user not found but session exists, return session data
-        const fallbackData: ProfileData = {
-          id: session.user.id || 'unknown',
-          email: session.user.email,
-          name: session.user.name || '',
-          role: session.user.role || 'user',
-          credits: 0, // Add this field
-          joinDate: 'Unknown',
-          expiring_documents: 0,
-          expired_documents: 0,
-        };
-        return NextResponse.json(fallbackData);
-      }
-
-      // Calculate document counts from vehicles
-      const { expiring_count, expired_count } = await calculateDocumentCounts(user.id);
-
-      // Format dates and prepare response
-      const userData: ProfileData = {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        credits: user.credits, // Add this field
-        expiring_documents: expiring_count,
-        expired_documents: expired_count,
-        joinDate: user.created_at?.toLocaleDateString('en-IN', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        }) || 'Unknown',
-      };
-
-      return NextResponse.json(userData);
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-      // Return session data as fallback
-      const fallbackData: ProfileData = {
-        id: session.user.id || 'unknown',
-        email: session.user.email,
-        name: session.user.name || '',
-        role: session.user.role || 'user',
-        credits: 0, // Add this field
-        joinDate: 'Unknown',
-        expiring_documents: 0,
-        expired_documents: 0,
-      };
-      return NextResponse.json(fallbackData);
-    }
-  } catch (error) {
-    console.error('Error in profile API:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
-
-// PATCH handler to update user profile
-export async function PATCH(request: Request) {
-  try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const data = await request.json();
-    const userEmail = session.user.email;
-
-    // Validate data
-    if (data.email && data.email !== userEmail) {
-      // Check if email is already taken
-      const existingUser = await prisma.user.findUnique({
-        where: { email: data.email },
-      });
-
-      if (existingUser) {
-        return NextResponse.json({ error: 'Email already in use' }, { status: 400 });
-      }
-    }
-
-    // Update user
-    const updatedUser = await prisma.user.update({
+    const user = await prisma.user.findUnique({
       where: {
-        email: userEmail as string,
-      },
-      data: {
-        name: data.name,
-        email: data.email,
-        updated_at: new Date(),
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        created_at: true,
-        updated_at: true,
+        email: session.user.email,
       },
     });
 
-    // Calculate document counts from vehicles
-    const { expiring_count, expired_count } = await calculateDocumentCounts(updatedUser.id);
+    if (!user) {
+      return new NextResponse("User not found", { status: 404 });
+    }
 
-    const responseData: ProfileData = {
-      id: updatedUser.id,
-      email: updatedUser.email,
-      name: updatedUser.name,
-      role: updatedUser.role,
-      credits: 0, // Add this field
-      expiring_documents: expiring_count,
-      expired_documents: expired_count,
-      joinDate: updatedUser.created_at.toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }),
+    // Only return the safe fields
+    const profileData = {
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      address: user.address,
+      dob: user.dob,
+      gender: user.gender,
+      doj: user.doj,
+      designation: user.designation,
+      reportTo: user.reportTo,
+      location: user.location,
+      userType: user.userType,
     };
 
-    return NextResponse.json(responseData);
+    return NextResponse.json(profileData);
   } catch (error) {
-    console.error('Error updating user profile:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error("Error fetching profile:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
 
+export async function PUT(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
 
+    const updateData: ProfileUpdateData = await req.json();
+    const validUpdateData: Prisma.UserUpdateInput = {};
+
+    // Only include provided fields and handle date conversions
+    if (updateData.name !== undefined) validUpdateData.name = updateData.name;
+    if (updateData.phone !== undefined) validUpdateData.phone = updateData.phone;
+    if (updateData.address !== undefined) validUpdateData.address = updateData.address;
+    if (updateData.gender !== undefined) validUpdateData.gender = updateData.gender;
+    if (updateData.designation !== undefined) validUpdateData.designation = updateData.designation;
+    if (updateData.reportTo !== undefined) validUpdateData.reportTo = updateData.reportTo;
+    if (updateData.location !== undefined) validUpdateData.location = updateData.location;
+    
+    // Handle date fields
+    if (updateData.dob) validUpdateData.dob = new Date(updateData.dob);
+    if (updateData.doj) validUpdateData.doj = new Date(updateData.doj);
+
+    const updatedUser = await prisma.user.update({
+      where: {
+        email: session.user.email,
+      },
+      data: validUpdateData,
+    });
+
+    const profileData = {
+      name: updatedUser.name,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      address: updatedUser.address,
+      dob: updatedUser.dob,
+      gender: updatedUser.gender,
+      doj: updatedUser.doj,
+      designation: updatedUser.designation,
+      reportTo: updatedUser.reportTo,
+      location: updatedUser.location,
+      userType: updatedUser.userType,
+    };
+
+    return NextResponse.json(profileData);
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
+  }
+}

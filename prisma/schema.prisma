@@ -7,13 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserType {
+  USER
+  CUSTOMER
+  ADMIN
+  EMPLOYEE
+  VENDOR
+}
+
 model User {
   id                  String             @id @default(auto()) @map("_id") @db.ObjectId
   email               String             @unique
   password            String
   name                String?
+  phone               String?
+  address             String?
+  dob                 DateTime?
+  gender              String?
+  doj                 DateTime?          // Date of joining
+  designation         String?
+  reportTo            String?            // Superior's name/id
+  location            String?
+  userType            UserType           @default(USER)
   credits             Int                @default(0)
-  role                String             @default("user")
   created_at          DateTime           @default(now())
   updated_at          DateTime           @updatedAt
   challans            Challan[]
@@ -212,4 +228,16 @@ model RenewalStats {
   user              User     @relation(fields: [userId], references: [id])
 
   @@map("renewal_stats")
+}
+
+model AdminStats {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  totalUsers        Int      @default(0)
+  totalCustomers    Int      @default(0)
+  totalEmployees    Int      @default(0)
+  totalVehicles     Int      @default(0)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("admin_stats")
 }

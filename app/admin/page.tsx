@@ -1,160 +1,112 @@
 'use client';
 
-import { useState } from 'react';
-import {
-  UsersIcon,
-  DocumentTextIcon,
-  CogIcon,
-  BellIcon,
-  ChartBarIcon,
-  BuildingOfficeIcon,
-  UserGroupIcon,
-  TruckIcon,
-  BriefcaseIcon,
-  NewspaperIcon,
-  EnvelopeIcon,
-  InboxStackIcon,
-  ShoppingBagIcon,
-} from '@heroicons/react/24/outline';
+import { useState, useEffect } from 'react';
+import { signIn, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
-const navigation = [
-  { name: 'Dashboard', icon: ChartBarIcon },
-  { name: 'Company Management', icon: BuildingOfficeIcon },
-  { name: 'Employee Management', icon: UserGroupIcon },
-  { name: 'Vendor Management', icon: ShoppingBagIcon },
-  { name: 'User Management', icon: UsersIcon },
-  { name: 'Vehicles Management', icon: TruckIcon },
-  { name: 'Apply Online Data', icon: DocumentTextIcon },
-  { name: 'Job Management', icon: BriefcaseIcon },
-  { name: 'Blog Management', icon: NewspaperIcon },
-  { name: 'Contact Management', icon: EnvelopeIcon },
-  { name: 'Newsletter Management', icon: InboxStackIcon },
-  { name: 'Bulk Data Management', icon: DocumentTextIcon },
-];
+export default function AdminRoot() {
+  const [loading, setLoading] = useState(false);
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
-const summaryCards = [
-  {
-    title: 'Total Users',
-    count: '1,234',
-    icon: UsersIcon,
-    color: 'bg-blue-500',
-  },
-  {
-    title: 'Active Sessions',
-    count: '56',
-    icon: DocumentTextIcon,
-    color: 'bg-green-500',
-  },
-  {
-    title: 'System Health',
-    count: '98%',
-    icon: ChartBarIcon,
-    color: 'bg-purple-500',
-  },
-  {
-    title: 'Alerts',
-    count: '3',
-    icon: BellIcon,
-    color: 'bg-red-500',
-  },
-];
+  useEffect(() => {
+    if (status === 'authenticated') {
+      if (session?.user?.role === 'ADMIN') {
+        router.push('/admin/dashboard');
+      }
+    }
+  }, [session, status, router]);
 
-const users = [
-  {
-    id: 1,
-    name: 'John Doe',
-    email: 'john@example.com',
-    role: 'Admin',
-    status: 'Active',
-    lastLogin: '2024-01-23 10:30 AM',
-  },
-  {
-    id: 2,
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    role: 'User',
-    status: 'Active',
-    lastLogin: '2024-01-23 09:15 AM',
-  },
-];
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setLoading(true);
 
-export default function AdminDashboard() {
-  const [selectedTab, setSelectedTab] = useState('dashboard');
-  const [selectedNav, setSelectedNav] = useState('Dashboard');
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Navigation Sidebar */}
-      <div className="hidden md:flex md:flex-shrink-0">
-        <div className="flex flex-col w-64 border-r border-gray-200 bg-white">
-          <div className="h-0 flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
-            <div className="flex items-center flex-shrink-0 px-4">
-              <h1 className="text-xl font-semibold text-gray-900">Admin Panel</h1>
-            </div>
-            <nav className="mt-5 flex-1 px-2 space-y-1">
-              {navigation.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => setSelectedNav(item.name)}
-                  className={`${
-                    selectedNav === item.name
-                      ? 'bg-gray-100 text-gray-900'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  } group flex items-center px-2 py-2 text-sm font-medium rounded-md w-full`}
-                >
-                  <item.icon
-                    className={`${
-                      selectedNav === item.name
-                        ? 'text-gray-500'
-                        : 'text-gray-400 group-hover:text-gray-500'
-                    } mr-3 flex-shrink-0 h-6 w-6`}
-                  />
-                  {item.name}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        toast.error('Invalid credentials');
+        return;
+      }
+
+      router.push('/admin/dashboard');
+      router.refresh();
+    } catch (error) {
+      toast.error('Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Show loading while checking session
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading...</div>
       </div>
+    );
+  }
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="p-6">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-6">Admin Dashboard</h1>
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {summaryCards.map((card) => (
-              <div
-                key={card.title}
-                className="bg-white rounded-lg p-6 shadow-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">{card.title}</p>
-                    <p className="text-2xl font-semibold mt-2">{card.count}</p>
-                  </div>
-                  <div className={`p-3 rounded-lg ${card.color} bg-opacity-10`}>
-                    <card.icon className={`w-6 h-6 ${card.color.replace('bg-', 'text-')}`} />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Main Content Area */}
-          <div className="bg-white rounded-lg shadow-sm">
-            {/* Content for selected navigation item would go here */}
-            <div className="p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                {selectedNav}
-              </h2>
-              <p className="text-gray-500">
-                Content for {selectedNav} will be displayed here.
-              </p>
+  // Show login form if not authenticated
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Admin Login
+          </h2>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="email" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Email address"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+              />
             </div>
           </div>
-        </div>
+
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
+              {loading ? 'Signing in...' : 'Sign in'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

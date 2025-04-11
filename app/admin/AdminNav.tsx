@@ -18,7 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 const navigation = [
-    { name: 'Dashboard', href: '/admin', icon: ChartBarIcon },
+    { name: 'Dashboard', href: '/admin/dashboard', icon: ChartBarIcon },
     { name: 'Company Management', href: '/admin/company', icon: BuildingOfficeIcon },
     { name: 'Employee Management', href: '/admin/employee', icon: UserGroupIcon },
     { name: 'Vendor Management', href: '/admin/vendor', icon: ShoppingBagIcon },

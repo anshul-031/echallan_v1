@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/authOptions";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
+import { authOptions } from "../../auth/[...nextauth]/route";
 
 type ProfileUpdateInput = {
   name?: string | null;

@@ -14,6 +14,7 @@ type ProfileUpdateData = {
   designation?: string | null;
   reportTo?: string | null;
   location?: string | null;
+  image?: string | null;
 };
 
 export async function GET() {
@@ -27,6 +28,9 @@ export async function GET() {
       where: {
         email: session.user.email,
       },
+      include: {
+        employeeProfile: true,
+      }
     });
 
     if (!user) {
@@ -41,11 +45,13 @@ export async function GET() {
       address: user.address,
       dob: user.dob,
       gender: user.gender,
-      doj: user.doj,
-      designation: user.designation,
-      reportTo: user.reportTo,
       location: user.location,
       userType: user.userType,
+      image: user.image,
+      // Include employee fields if they exist
+      doj: user.employeeProfile?.doj,
+      designation: user.employeeProfile?.designation,
+      reportTo: user.employeeProfile?.reportTo,
     };
 
     return NextResponse.json(profileData);
@@ -63,40 +69,91 @@ export async function PUT(req: Request) {
     }
 
     const updateData: ProfileUpdateData = await req.json();
-    const validUpdateData: Prisma.UserUpdateInput = {};
-
-    // Only include provided fields and handle date conversions
-    if (updateData.name !== undefined) validUpdateData.name = updateData.name;
-    if (updateData.phone !== undefined) validUpdateData.phone = updateData.phone;
-    if (updateData.address !== undefined) validUpdateData.address = updateData.address;
-    if (updateData.gender !== undefined) validUpdateData.gender = updateData.gender;
-    if (updateData.designation !== undefined) validUpdateData.designation = updateData.designation;
-    if (updateData.reportTo !== undefined) validUpdateData.reportTo = updateData.reportTo;
-    if (updateData.location !== undefined) validUpdateData.location = updateData.location;
     
-    // Handle date fields
-    if (updateData.dob) validUpdateData.dob = new Date(updateData.dob);
-    if (updateData.doj) validUpdateData.doj = new Date(updateData.doj);
-
-    const updatedUser = await prisma.user.update({
-      where: {
-        email: session.user.email,
-      },
-      data: validUpdateData,
+    // Get user with employee profile
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { employeeProfile: true }
     });
 
+    if (!user) {
+      return new NextResponse("User not found", { status: 404 });
+    }
+
+    // Separate user and employee data
+    // Update user data first
+    const userUpdateData: Prisma.UserUpdateInput = {
+      ...(updateData.name !== undefined && { name: updateData.name }),
+      ...(updateData.phone !== undefined && { phone: updateData.phone }),
+      ...(updateData.address !== undefined && { address: updateData.address }),
+      ...(updateData.gender !== undefined && { gender: updateData.gender }),
+      ...(updateData.location !== undefined && { location: updateData.location }),
+      ...(updateData.dob && { dob: new Date(updateData.dob) }),
+      ...(updateData.image !== undefined && { image: updateData.image })
+    };
+
+    // Prepare employee data if needed
+    const employeeData: Prisma.EmployeeUncheckedCreateInput = {
+      userId: user.id,
+      designation: updateData.designation || 'Employee',
+      doj: updateData.doj ? new Date(updateData.doj) : new Date(),
+      reportTo: updateData.reportTo || null
+    };
+
+    // Update user data
+    const updatedUser = await prisma.user.update({
+      where: { email: session.user.email },
+      data: userUpdateData,
+      include: { employeeProfile: true }
+    });
+
+    // Handle employee data if any employee fields are provided
+    const hasEmployeeData = updateData.designation || updateData.doj || updateData.reportTo;
+    
+    if (hasEmployeeData) {
+      if (user.employeeProfile) {
+        // Update existing employee profile
+        await prisma.employee.update({
+          where: { userId: user.id },
+          data: {
+            ...(updateData.designation && { designation: updateData.designation }),
+            ...(updateData.doj && { doj: new Date(updateData.doj) }),
+            ...(updateData.reportTo !== undefined && { reportTo: updateData.reportTo })
+          }
+        });
+      } else {
+        // Create new employee profile if designation is provided
+        if (updateData.designation) {
+          await prisma.employee.create({
+            data: employeeData
+          });
+        }
+      }
+    }
+
+    // Fetch updated user data with employee profile
+    const finalUser = await prisma.user.findUnique({
+      where: { email: session.user.email },
+      include: { employeeProfile: true }
+    });
+
+    if (!finalUser) {
+      return new NextResponse("Error retrieving updated profile", { status: 500 });
+    }
+
     const profileData = {
-      name: updatedUser.name,
-      email: updatedUser.email,
-      phone: updatedUser.phone,
-      address: updatedUser.address,
-      dob: updatedUser.dob,
-      gender: updatedUser.gender,
-      doj: updatedUser.doj,
-      designation: updatedUser.designation,
-      reportTo: updatedUser.reportTo,
-      location: updatedUser.location,
-      userType: updatedUser.userType,
+      name: finalUser.name,
+      email: finalUser.email,
+      phone: finalUser.phone,
+      address: finalUser.address,
+      dob: finalUser.dob,
+      gender: finalUser.gender,
+      location: finalUser.location,
+      userType: finalUser.userType,
+      image: finalUser.image,
+      doj: finalUser.employeeProfile?.doj,
+      designation: finalUser.employeeProfile?.designation,
+      reportTo: finalUser.employeeProfile?.reportTo,
     };
 
     return NextResponse.json(profileData);

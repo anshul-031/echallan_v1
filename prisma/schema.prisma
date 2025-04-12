@@ -8,11 +8,14 @@ datasource db {
 }
 
 enum UserType {
-  USER
-  CUSTOMER
+  BASIC
+  CAB
+  EV
+  CHALLAN
+  FLEET
+  SUPER_USER
   ADMIN
   EMPLOYEE
-  VENDOR
 }
 
 model User {
@@ -24,12 +27,11 @@ model User {
   address             String?
   dob                 DateTime?
   gender              String?
-  doj                 DateTime?          // Date of joining
-  designation         String?
-  reportTo            String?            // Superior's name/id
+  image               String?
   location            String?
-  userType            UserType           @default(USER)
+  userType            UserType           @default(BASIC)
   credits             Int                @default(0)
+  companyId           String?            @db.ObjectId
   created_at          DateTime           @default(now())
   updated_at          DateTime           @updatedAt
   challans            Challan[]
@@ -39,6 +41,43 @@ model User {
   vehicles            Vehicle[]
   renewalServices     RenewalService[]
   renewalStats        RenewalStats?
+  company             Company?           @relation(fields: [companyId], references: [id])
+  employeeProfile     Employee?
+}
+
+model Employee {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String    @unique @db.ObjectId
+  doj             DateTime  // Date of joining
+  designation     String
+  reportTo        String?   // Superior's name/id
+  assignedUsers   String[]  // Array of user emails assigned to this employee
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id])
+
+  @@map("employees")
+}
+
+model Company {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  email        String    @unique
+  address      String
+  ownerName    String
+  ownerPhone   String
+  contactName  String
+  contactPhone String
+  status       Boolean   @default(true)  // true for active, false for inactive
+  image        String?
+  gstin        String?   // GST number
+  pan          String?   // PAN number
+  cin          String?   // CIN number
+  users        User[]
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  @@map("companies")
 }
 
 model Vehicle {

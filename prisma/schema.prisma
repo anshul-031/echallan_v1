@@ -16,6 +16,7 @@ enum UserType {
   SUPER_USER
   ADMIN
   EMPLOYEE
+
 }
 
 model User {

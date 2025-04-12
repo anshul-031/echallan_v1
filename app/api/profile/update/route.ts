@@ -35,7 +35,6 @@ export async function PUT(req: Request) {
     
     // Handle date fields
     if (data.dob) validUpdateData.dob = new Date(data.dob);
-
     const updatedUser = await prisma.user.update({
       where: {
         email: session.user.email,

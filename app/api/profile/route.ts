@@ -14,7 +14,6 @@ type ProfileUpdateData = {
   designation?: string | null;
   reportTo?: string | null;
   location?: string | null;
-  image?: string | null;
 };
 
 export async function GET() {

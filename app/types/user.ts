@@ -41,4 +41,5 @@ export interface Company {
   cin?: string;
   created_at?: Date;
   updated_at?: Date;
+
 }

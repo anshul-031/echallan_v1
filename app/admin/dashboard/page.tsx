@@ -48,7 +48,6 @@ export default function AdminDashboard() {
             fetchStats();
         }
     }, [session]);
-
     if (status !== 'loading' && session?.user?.userType !== 'ADMIN') {
         router.push('/dashboard');
         return null;

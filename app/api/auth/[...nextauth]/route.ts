@@ -71,6 +71,7 @@ const authOptions: NextAuthOptions = {
           name: user.name,
           userType: user.userType,
           image: user.image,
+
         };
       },
     }),

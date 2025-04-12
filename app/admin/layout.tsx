@@ -14,13 +14,14 @@ export default async function AdminLayout({
   const headerList = headers();
   const pathname = headerList.get("x-invoke-path") || "";
   const isLoginPage = pathname === '/admin/login';
+
   const userType = session?.user?.userType;
   const hasAdminAccess = userType === 'ADMIN' || userType === 'EMPLOYEE';
-
   // If not authenticated and not on login page, redirect to admin login
   if (!session && !isLoginPage) {
     redirect('/admin');
   }
+
 
   // If authenticated but doesn't have admin access and not on login page, redirect to dashboard
   if (session && !hasAdminAccess && !isLoginPage) {

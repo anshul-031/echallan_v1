@@ -1,5 +1,6 @@
 'use client';
 
+
 import { signOut, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -57,6 +58,7 @@ export default function Header() {
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+
                         </div>
                     </div>
                 </div>

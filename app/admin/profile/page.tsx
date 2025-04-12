@@ -31,7 +31,6 @@ export default function AdminProfile() {
     });
 
     const isEmployee = formData.userType === 'EMPLOYEE';
-
     // Fetch user data when component mounts
     useEffect(() => {
         const fetchUserData = async () => {
@@ -291,7 +290,6 @@ export default function AdminProfile() {
                             </>
                         )}
                     </div>
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Name</label>
@@ -355,7 +353,6 @@ export default function AdminProfile() {
                                 className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
                             />
                         </div>
-
                         {/* No regular Date of Joining field - it's only shown for employees */}
                         {isEmployee && (
                             <>

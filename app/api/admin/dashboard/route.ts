@@ -22,7 +22,7 @@ export async function GET() {
       const [totalUsers, totalCustomers, totalEmployees, totalVehicles] = await Promise.all([
         prisma.user.count(),
         prisma.user.count({
-          where: { userType: 'CUSTOMER' }
+          where: { userType: 'EMPLOYEE' }
         }),
         prisma.user.count({
           where: { userType: 'EMPLOYEE' }
@@ -60,7 +60,7 @@ export async function PUT() {
     const [totalUsers, totalCustomers, totalEmployees, totalVehicles] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({
-        where: { userType: 'CUSTOMER' }
+        where: { userType: 'EMPLOYEE' }
       }),
       prisma.user.count({
         where: { userType: 'EMPLOYEE' }

@@ -49,7 +49,7 @@ export default function AdminDashboard() {
         }
     }, [session]);
 
-    if (status !== 'loading' && session?.user?.role !== 'ADMIN') {
+    if (status !== 'loading' && session?.user?.userType !== 'ADMIN') {
         router.push('/dashboard');
         return null;
     }

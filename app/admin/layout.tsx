@@ -14,24 +14,24 @@ export default async function AdminLayout({
   const headerList = headers();
   const pathname = headerList.get("x-invoke-path") || "";
   const isLoginPage = pathname === '/admin/login';
-  const isAdmin = session?.user?.role === 'ADMIN';  // We're consistently using role in the session now
+  const userType = session?.user?.userType;
+  const hasAdminAccess = userType === 'ADMIN' || userType === 'EMPLOYEE';
 
   // If not authenticated and not on login page, redirect to admin login
   if (!session && !isLoginPage) {
     redirect('/admin');
   }
 
-
-  // If authenticated but not an admin and not on login page, redirect to dashboard
-  if (session && !isAdmin && !isLoginPage) {
+  // If authenticated but doesn't have admin access and not on login page, redirect to dashboard
+  if (session && !hasAdminAccess && !isLoginPage) {
     redirect('/dashboard');
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {!isLoginPage && isAdmin && <AdminNav />}
+      {!isLoginPage && hasAdminAccess && <AdminNav />}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {!isLoginPage && isAdmin && <Header />}
+        {!isLoginPage && hasAdminAccess && <Header />}
         <main className="flex-1 overflow-y-auto focus:outline-none">
           {children}
         </main>

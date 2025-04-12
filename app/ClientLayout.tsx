@@ -9,8 +9,9 @@ import { SessionProvider } from 'next-auth/react';
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.startsWith('/auth/');
+  const isAdminPage = pathname?.startsWith('/admin');
 
-  if (isAuthPage) {
+  if (isAuthPage || isAdminPage) {
     return (
       <SessionProvider>
         {children}

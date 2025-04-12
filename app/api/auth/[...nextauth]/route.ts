@@ -1,12 +1,8 @@
- 
- 
-
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import NextAuth from "next-auth/next";
-import { JWT } from "next-auth/jwt";
 
 // Extend the built-in session types
 declare module "next-auth" {
@@ -14,7 +10,8 @@ declare module "next-auth" {
     id: string;
     email: string;
     name?: string | null;
-    role: string;
+    userType: string;
+    image?: string | null;
   }
 
   interface Session {
@@ -22,7 +19,8 @@ declare module "next-auth" {
       id: string;
       email: string;
       name?: string | null;
-      role: string;
+      userType: string;
+      image?: string | null;
     };
   }
 }
@@ -30,8 +28,8 @@ declare module "next-auth" {
 // Extend the built-in token types
 declare module "next-auth/jwt" {
   interface JWT {
-    id?: string;  // Add id to the token
-    role?: string;
+    id?: string;
+    userType?: string;
   }
 }
 
@@ -71,7 +69,8 @@ const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: user.userType,
+          userType: user.userType,
+          image: user.image,
         };
       },
     }),
@@ -87,15 +86,16 @@ const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;  // Add user id to the token
-        token.role = user.role;  // Add role to the token
+        token.id = user.id;
+        token.userType = user.userType;
       }
       return token;
     },
     async session({ session, token }) {
       if (session?.user) {
-        session.user.id = token.id as string;  // Add id to session.user
-        session.user.role = token.role as string;  // Add role to session.user
+        session.user.id = token.id as string;
+        session.user.image = token.picture as string;
+        session.user.userType = token.userType as string;
       }
       return session;
     },

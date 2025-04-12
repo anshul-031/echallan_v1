@@ -1,17 +1,23 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
+import { CameraIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 
 export default function AdminProfile() {
     const { data: session, update } = useSession();
     const router = useRouter();
     const [isEditing, setIsEditing] = useState(false);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [uploadError, setUploadError] = useState('');
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState({
         name: session?.user?.name || '',
+        image: '',
         email: session?.user?.email || '',
         gender: '',
         dob: '',
@@ -21,7 +27,10 @@ export default function AdminProfile() {
         designation: '',
         reportTo: '',
         location: '',
+        userType: '',
     });
+
+    const isEmployee = formData.userType === 'EMPLOYEE';
 
     // Fetch user data when component mounts
     useEffect(() => {
@@ -72,7 +81,7 @@ export default function AdminProfile() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const updatePromise = fetch('/api/profile/update', {
+            const updatePromise = fetch('/api/profile', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -87,6 +96,7 @@ export default function AdminProfile() {
                     designation: formData.designation,
                     reportTo: formData.reportTo,
                     location: formData.location,
+                    image: formData.image,
                 }),
             });
 
@@ -106,7 +116,15 @@ export default function AdminProfile() {
                     dob: updatedData.dob ? new Date(updatedData.dob).toISOString().split('T')[0] : '',
                     doj: updatedData.doj ? new Date(updatedData.doj).toISOString().split('T')[0] : '',
                 });
-                await update();
+                // Update session data and refresh page to show changes everywhere
+                await update({
+                    ...session,
+                    user: {
+                        ...session?.user,
+                        name: updatedData.name
+                    }
+                });
+                router.refresh();
                 setIsEditing(false);
             }
         } catch (error) {
@@ -183,6 +201,97 @@ export default function AdminProfile() {
 
             <div className="bg-white rounded-lg shadow-lg p-6 border border-gray-200">
                 <form onSubmit={handleSubmit}>
+                    <div className="mb-8 flex flex-col items-center">
+                        <div className={`relative w-32 h-32 rounded-full bg-gray-100 flex items-center justify-center ${isEditing ? 'cursor-pointer group' : ''}`}
+                            onClick={() => isEditing && fileInputRef.current?.click()}
+                        >
+                            {previewImage ? (
+                                <Image
+                                    src={previewImage}
+                                    alt="Profile preview"
+                                    fill
+                                    className="rounded-full object-cover"
+                                />
+                            ) : formData.image ? (
+                                <Image
+                                    src={formData.image}
+                                    alt="Profile picture"
+                                    fill
+                                    className="rounded-full object-cover"
+                                />
+                            ) : (
+                                <UserCircleIcon className="h-16 w-16 text-gray-400" />
+                            )}
+                            {isEditing && (
+                                <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <CameraIcon className="h-8 w-8 text-white" />
+                                </div>
+                            )}
+                        </div>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/jpeg,image/png,image/jpg"
+                            onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+
+                                if (file.size > 500 * 1024) {
+                                    setUploadError('Image size should be less than 500KB');
+                                    return;
+                                }
+
+                                if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+                                    setUploadError('Only JPEG, JPG and PNG files are allowed');
+                                    return;
+                                }
+
+                                setUploadError('');
+
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    setPreviewImage(reader.result as string);
+                                };
+                                reader.readAsDataURL(file);
+
+                                const uploadFormData = new FormData();
+                                uploadFormData.append('file', file);
+                                uploadFormData.append('userId', session?.user?.id || 'temp');
+
+                                toast.promise(
+                                    fetch('/api/profile/upload', {
+                                        method: 'POST',
+                                        body: uploadFormData,
+                                    }).then(async (response) => {
+                                        if (!response.ok) {
+                                            const error = await response.text();
+                                            throw new Error(error);
+                                        }
+                                        const { url } = await response.json();
+                                        setFormData(prev => ({ ...prev, image: url }));
+                                        return 'Image uploaded successfully';
+                                    }),
+                                    {
+                                        loading: 'Uploading image...',
+                                        success: (message) => message,
+                                        error: (err) => err instanceof Error ? err.message : 'Failed to upload image'
+                                    }
+                                );
+                            }}
+                        />
+                        {isEditing && (
+                            <>
+                                {uploadError && (
+                                    <p className="mt-2 text-sm text-red-600">{uploadError}</p>
+                                )}
+                                <p className="mt-2 text-sm text-gray-500">
+                                    Upload profile picture (JPEG, PNG, JPG, max 500KB)
+                                </p>
+                            </>
+                        )}
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Name</label>
@@ -247,42 +356,46 @@ export default function AdminProfile() {
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Date of Joining</label>
-                            <input
-                                type="date"
-                                name="doj"
-                                value={formData.doj}
-                                onChange={handleInputChange}
-                                disabled={!isEditing}
-                                className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
-                            />
-                        </div>
+                        {/* No regular Date of Joining field - it's only shown for employees */}
+                        {isEmployee && (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Designation</label>
+                                    <input
+                                        type="text"
+                                        name="designation"
+                                        value={formData.designation}
+                                        onChange={handleInputChange}
+                                        disabled={!isEditing}
+                                        className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
+                                    />
+                                </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Designation</label>
-                            <input
-                                type="text"
-                                name="designation"
-                                value={formData.designation}
-                                onChange={handleInputChange}
-                                disabled={!isEditing}
-                                className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
-                            />
-                        </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Reports To</label>
+                                    <input
+                                        type="text"
+                                        name="reportTo"
+                                        value={formData.reportTo}
+                                        onChange={handleInputChange}
+                                        disabled={!isEditing}
+                                        className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
+                                    />
+                                </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Reports To</label>
-                            <input
-                                type="text"
-                                name="reportTo"
-                                value={formData.reportTo}
-                                onChange={handleInputChange}
-                                disabled={!isEditing}
-                                className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
-                            />
-                        </div>
-
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Date of Joining</label>
+                                    <input
+                                        type="date"
+                                        name="doj"
+                                        value={formData.doj}
+                                        onChange={handleInputChange}
+                                        disabled={!isEditing}
+                                        className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
+                                    />
+                                </div>
+                            </>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Location</label>
                             <input

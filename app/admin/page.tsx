@@ -12,7 +12,8 @@ export default function AdminRoot() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      if (session?.user?.role === 'ADMIN') {
+      const userType = session?.user?.userType;
+      if (userType === 'ADMIN' || userType === 'EMPLOYEE') {
         router.push('/admin/dashboard');
       }
     }

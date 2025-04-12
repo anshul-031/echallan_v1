@@ -70,7 +70,7 @@ model Company {
   contactPhone String
   status       Boolean   @default(true)  // true for active, false for inactive
   image        String?
-  gstin        String?   // GSTIN number
+  gstin        String?   // GST number
   pan          String?   // PAN number
   cin          String?   // CIN number
   users        User[]

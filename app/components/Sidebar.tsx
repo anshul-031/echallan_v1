@@ -208,7 +208,7 @@ export default function Sidebar() {
             <div className={`flex-1 text-left transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 absolute' : 'opacity-100 w-auto relative'
               }`}>
               <p className="text-sm font-medium text-gray-700 dark:text-gray-200">{session?.user?.name || 'User'}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{session?.user?.role || 'User'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{session?.user?.userType || 'User'}</p>
             </div>
           </button>
 

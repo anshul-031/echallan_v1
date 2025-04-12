@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  UserCircleIcon, 
-  PencilIcon, 
+import {
+  UserCircleIcon,
+  PencilIcon,
   CheckIcon,
   XMarkIcon,
   EnvelopeIcon,
@@ -42,45 +42,45 @@ export default function ProfilePage() {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         if (!session) {
           setIsLoading(false);
           return;
         }
-        
+
         // Pre-populate with session data immediately
         if (session?.user) {
           setProfile(prev => ({
             ...prev,
             name: session.user.name || '',
             email: session.user.email || '',
-            role: session.user.role || '',
+            role: session.user.userType || '',
           }));
-          
+
           setEditableProfile(prev => ({
             ...prev,
             name: session.user.name || '',
             email: session.user.email || '',
           }));
         }
-        
+
         const response = await fetch('/api/profile', {
           headers: {
             'Cache-Control': 'no-cache'
           }
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
           throw new Error(errorData.error || `Error ${response.status}: Failed to fetch profile data`);
         }
-        
+
         const userData = await response.json();
-        
+
         if (!userData) {
           throw new Error('No profile data received');
         }
-        
+
         setProfile(prev => ({
           ...prev,
           name: userData.name || prev.name || '',
@@ -91,32 +91,32 @@ export default function ProfilePage() {
           expired_documents: userData.expired_documents ?? 0,
           department: userData.department || 'Operations',
         }));
-        
+
         setEditableProfile(prev => ({
           ...prev,
           name: userData.name || prev.name || '',
           email: userData.email || prev.email || '',
         }));
-        
+
       } catch (err: any) {
         console.error('Error fetching profile:', err);
         setError(err.message || 'Failed to load profile data. Please try again later.');
         toast.error('Failed to load profile data');
-        
+
         // Still use session data if API fails
         if (session?.user) {
           setProfile(prev => ({
             ...prev,
             name: session.user.name || prev.name || '',
             email: session.user.email || prev.email || '',
-            role: session.user.role || prev.role || '',
+            role: session.user.userType || prev.role || '',
           }));
         }
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     fetchProfile();
   }, [session]);
 
@@ -125,7 +125,7 @@ export default function ProfilePage() {
       // Save changes
       setIsLoading(true);
       setError(null);
-      
+
       try {
         const response = await fetch('/api/profile', {
           method: 'PATCH',
@@ -137,14 +137,14 @@ export default function ProfilePage() {
             email: editableProfile.email,
           }),
         });
-        
+
         if (!response.ok) {
           const errorData = await response.json();
           throw new Error(errorData.error || 'Failed to update profile');
         }
-        
+
         const updatedData = await response.json();
-        
+
         // Update profile with the returned data
         setProfile(prev => ({
           ...prev,
@@ -152,7 +152,7 @@ export default function ProfilePage() {
           email: updatedData.email || prev.email,
           joinDate: updatedData.joinDate || prev.joinDate,
         }));
-        
+
         setIsLoading(false);
         setIsEditing(false);
         toast.success('Profile updated successfully');
@@ -182,20 +182,20 @@ export default function ProfilePage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    
+
     // Validate file type
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!validTypes.includes(file.type)) {
       toast.error('Please upload a valid image file (JPEG, PNG, GIF, WEBP)');
       return;
     }
-    
+
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size should be less than 5MB');
       return;
     }
-    
+
     const reader = new FileReader();
     reader.onload = (e) => {
       if (e.target?.result) {
@@ -219,22 +219,22 @@ export default function ProfilePage() {
               <div>
                 <p className="font-medium">Error</p>
                 <p className="text-sm">{error}</p>
-                <button 
-                  onClick={() => setError(null)} 
+                <button
+                  onClick={() => setError(null)}
                   className="text-sm text-red-600 hover:text-red-800 mt-1"
                 >
                   Try Again
                 </button>
               </div>
-              <button 
-                onClick={() => setError(null)} 
+              <button
+                onClick={() => setError(null)}
                 className="ml-auto p-1 text-red-600 hover:text-red-800"
               >
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
           )}
-          
+
           {isLoading && !error ? (
             <div className="py-14">
               <ProfileLoader size="lg" showText text="Loading your profile data..." />
@@ -247,25 +247,25 @@ export default function ProfilePage() {
                     <div className="relative group">
                       <div className="w-28 h-28 rounded-full overflow-hidden bg-white/20 flex items-center justify-center border-4 border-white">
                         {profileImage ? (
-                          <img 
-                            src={profileImage} 
-                            alt="Profile" 
+                          <img
+                            src={profileImage}
+                            alt="Profile"
                             className="w-full h-full object-cover"
                           />
                         ) : (
                           <UserCircleIcon className="w-24 h-24 text-white" />
                         )}
                       </div>
-                      <label 
-                        htmlFor="profile-image" 
+                      <label
+                        htmlFor="profile-image"
                         className="absolute bottom-0 right-0 bg-white text-blue-600 rounded-full p-2 shadow-lg cursor-pointer hover:bg-blue-50 transition-colors"
                       >
                         <PencilIcon className="w-4 h-4" />
                       </label>
-                      <input 
-                        type="file" 
-                        id="profile-image" 
-                        className="hidden" 
+                      <input
+                        type="file"
+                        id="profile-image"
+                        className="hidden"
                         accept="image/*"
                         onChange={handleImageUpload}
                       />
@@ -286,13 +286,13 @@ export default function ProfilePage() {
                     <div className="ml-auto">
                       {isEditing ? (
                         <div className="flex gap-2">
-                          <button 
+                          <button
                             onClick={handleCancel}
                             className="bg-white/20 hover:bg-white/30 text-white rounded-lg p-2 transition-colors"
                           >
                             <XMarkIcon className="w-5 h-5" />
                           </button>
-                          <button 
+                          <button
                             onClick={handleEditToggle}
                             disabled={isLoading}
                             className="bg-white text-blue-600 rounded-lg p-2 hover:bg-blue-50 transition-colors disabled:opacity-50"
@@ -301,7 +301,7 @@ export default function ProfilePage() {
                           </button>
                         </div>
                       ) : (
-                        <button 
+                        <button
                           onClick={handleEditToggle}
                           className="bg-white/20 hover:bg-white/30 text-white rounded-lg px-4 py-2 flex items-center gap-2 transition-colors"
                         >
@@ -312,7 +312,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="p-6 sm:p-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
@@ -332,7 +332,7 @@ export default function ProfilePage() {
                             <p className="text-gray-900">{profile.name || 'Not set'}</p>
                           )}
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium text-gray-500 mb-1">Email Address</label>
                           <div className="flex items-center">
@@ -352,7 +352,7 @@ export default function ProfilePage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900 mb-4">Professional Information</h2>
                       <div className="space-y-4">
@@ -363,7 +363,7 @@ export default function ProfilePage() {
                             <p className="text-gray-900">{profile.role}</p>
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium text-gray-500 mb-1">Department</label>
                           <div className="flex items-center">
@@ -381,7 +381,7 @@ export default function ProfilePage() {
                             )}
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium text-gray-500 mb-1">Join Date</label>
                           <div className="flex items-center">
@@ -389,7 +389,7 @@ export default function ProfilePage() {
                             <p className="text-gray-900">{profile.joinDate}</p>
                           </div>
                         </div>
-                        
+
                         <div>
                           <label className="block text-sm font-medium text-gray-500 mb-1">Document Status</label>
                           <div className="mt-2 grid grid-cols-2 gap-3">

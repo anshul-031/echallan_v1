@@ -36,7 +36,6 @@ export async function POST(req: Request) {
         name,
         updated_at: new Date(),
         id: undefined, // Let MongoDB generate the ObjectId
-        userType: "USER", // Set default userType
       },
     });
 

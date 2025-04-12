@@ -32,7 +32,7 @@ export default function AdminProfile() {
 
     const isEmployee = formData.userType === 'EMPLOYEE';
 
-    // Fetch user data when component mounts
+    // Fetch user data when component mount
     useEffect(() => {
         const fetchUserData = async () => {
             if (session?.user?.email) {

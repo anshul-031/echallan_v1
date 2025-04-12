@@ -103,7 +103,7 @@ export default function ProfilePage() {
         setError(err.message || 'Failed to load profile data. Please try again later.');
         toast.error('Failed to load profile data');
 
-        // Still use session data if API fails
+        // Still use session data if API fail
         if (session?.user) {
           setProfile(prev => ({
             ...prev,

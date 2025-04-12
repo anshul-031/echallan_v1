@@ -31,13 +31,10 @@ export async function PUT(req: Request) {
     if (data.phone !== undefined) validUpdateData.phone = data.phone;
     if (data.address !== undefined) validUpdateData.address = data.address;
     if (data.gender !== undefined) validUpdateData.gender = data.gender;
-    if (data.designation !== undefined) validUpdateData.designation = data.designation;
-    if (data.reportTo !== undefined) validUpdateData.reportTo = data.reportTo;
     if (data.location !== undefined) validUpdateData.location = data.location;
     
     // Handle date fields
     if (data.dob) validUpdateData.dob = new Date(data.dob);
-    if (data.doj) validUpdateData.doj = new Date(data.doj);
 
     const updatedUser = await prisma.user.update({
       where: {
@@ -51,9 +48,6 @@ export async function PUT(req: Request) {
         address: true,
         dob: true,
         gender: true,
-        doj: true,
-        designation: true,
-        reportTo: true,
         location: true,
         userType: true,
       },

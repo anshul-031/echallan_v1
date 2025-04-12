@@ -1,5 +1,4 @@
 'use client';
-
 import { signOut, getSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -21,7 +20,6 @@ export default function Header() {
             setSession(session);
         });
     }, []);
-
     return (
         <header className="bg-white shadow-sm">
             <div className="mx-auto px-4 sm:px-6 lg:px-8">

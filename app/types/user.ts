@@ -8,7 +8,6 @@ export interface User {
   userType: UserType;
   credits: number;
 }
-
 export interface ProfileUpdateData {
   name?: string;
   gender?: string;

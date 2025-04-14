@@ -1,6 +1,5 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
@@ -13,7 +12,6 @@ interface AdminStats {
 }
 
 export default function AdminDashboard() {
-    const { data: session, status } = useSession();
     const router = useRouter();
     const [stats, setStats] = useState<AdminStats>({
         totalUsers: 0,
@@ -22,11 +20,6 @@ export default function AdminDashboard() {
         totalVehicles: 0
     });
 
-    useEffect(() => {
-        if (status === 'unauthenticated') {
-            router.push('/admin');
-        }
-    }, [status, router]);
 
     useEffect(() => {
         const fetchStats = async () => {
@@ -44,23 +37,9 @@ export default function AdminDashboard() {
             }
         };
 
-        if (session?.user) {
-            fetchStats();
-        }
-    }, [session]);
+        fetchStats();
+    }, []);
 
-    if (status !== 'loading' && session?.user?.userType !== 'ADMIN') {
-        router.push('/dashboard');
-        return null;
-    }
-
-    if (status === 'loading') {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-lg">Loading...</div>
-            </div>
-        );
-    }
 
     return (
         <div className="p-6">

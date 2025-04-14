@@ -42,19 +42,26 @@ model User {
   renewalServices     RenewalService[]
   renewalStats        RenewalStats?
   company             Company?           @relation(fields: [companyId], references: [id])
-  employeeProfile     Employee?
 }
 
 model Employee {
+  privileges      Privileges?
   id              String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId          String    @unique @db.ObjectId
+  email           String    @unique
+  password        String
+  name            String
+  phone           String
+  image           String?
+  address         String?   // Physical address
+  location        String?   // Location/branch
+  role            String?   // Employee role
   doj             DateTime  // Date of joining
   designation     String
   reportTo        String?   // Superior's name/id
   assignedUsers   String[]  // Array of user emails assigned to this employee
+  status          Boolean   @default(true)  // true for active, false for inactive
   created_at      DateTime  @default(now())
   updated_at      DateTime  @updatedAt
-  user            User      @relation(fields: [userId], references: [id])
 
   @@map("employees")
 }
@@ -254,6 +261,43 @@ enum RenewalServiceStatus {
   cancelled
 }
 
+model Privileges {
+  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
+  employeeId             String   @unique @db.ObjectId
+  // Dashboard privileges
+  dashboard_view         Boolean  @default(false)
+  dashboard_add          Boolean  @default(false)
+  dashboard_edit         Boolean  @default(false)
+  // Customer Master privileges
+  customer_view          Boolean  @default(false)
+  customer_add           Boolean  @default(false)
+  customer_edit          Boolean  @default(false)
+  // Employee Master privileges
+  employee_view          Boolean  @default(false)
+  employee_add           Boolean  @default(false)
+  employee_edit          Boolean  @default(false)
+  // User Master privileges
+  user_view              Boolean  @default(false)
+  user_add               Boolean  @default(false)
+  user_edit              Boolean  @default(false)
+  // Vehicle Master privileges
+  vehicle_view           Boolean  @default(false)
+  vehicle_add            Boolean  @default(false)
+  vehicle_edit           Boolean  @default(false)
+  // Administrator Master privileges
+  administrator_view     Boolean  @default(false)
+  administrator_add      Boolean  @default(false)
+  administrator_edit     Boolean  @default(false)
+  // Other privileges
+  bulk_data_access       Boolean  @default(false)
+  other_options_access   Boolean  @default(false)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+  employee               Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@map("privileges")
+}
+
 model RenewalStats {
   id                String   @id @default(auto()) @map("_id") @db.ObjectId
   userId            String   @unique @db.ObjectId
@@ -267,16 +311,4 @@ model RenewalStats {
   user              User     @relation(fields: [userId], references: [id])
 
   @@map("renewal_stats")
-}
-
-model AdminStats {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  totalUsers        Int      @default(0)
-  totalCustomers    Int      @default(0)
-  totalEmployees    Int      @default(0)
-  totalVehicles     Int      @default(0)
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
-
-  @@map("admin_stats")
 }

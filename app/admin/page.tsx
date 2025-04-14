@@ -12,9 +12,14 @@ export default function AdminRoot() {
 
   useEffect(() => {
     if (status === 'authenticated') {
+      const isEmployee = session?.user?.isEmployee;
       const userType = session?.user?.userType;
-      if (userType === 'ADMIN' || userType === 'EMPLOYEE') {
+
+      // Only allow employees and admin users
+      if (isEmployee) {
         router.push('/admin/dashboard');
+      } else {
+        toast.error('You do not have access to the admin panel');
       }
     }
   }, [session, status, router]);
@@ -31,7 +36,9 @@ export default function AdminRoot() {
       const result = await signIn('credentials', {
         email,
         password,
+        isEmployee: true, // Add this to indicate employee login
         redirect: false,
+        callbackUrl: '/admin/dashboard'
       });
 
       if (result?.error) {
@@ -63,8 +70,11 @@ export default function AdminRoot() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Admin Login
+            Employee Access
           </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Login for authorized employees only
+          </p>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">

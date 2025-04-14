@@ -59,6 +59,11 @@ export default function EmployeeManagement() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  // Email search states
+  const [searchEmail, setSearchEmail] = useState('');
+  const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [hasSearchResults, setHasSearchResults] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const searchTimeout = useRef<NodeJS.Timeout>();
 
@@ -222,6 +227,48 @@ export default function EmployeeManagement() {
     }, 500);
   }, []);
 
+  const handleEmailSearch = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value;
+      setSearchEmail(value);
+      if (!value) {
+        setShowSuggestions(false);
+        setEmailSuggestions([]);
+      } else {
+        try {
+          const response = await fetch(`/api/admin/employee/search-users?q=${encodeURIComponent(value)}&assigned=${encodeURIComponent(formData.assignedUsers.join(','))}`);
+          if (!response.ok) throw new Error('Failed to fetch suggestions');
+          const data = await response.json();
+          setEmailSuggestions(data.users);
+          setHasSearchResults(data.hasResults);
+          setShowSuggestions(true);
+        } catch (error) {
+          console.error('Error fetching suggestions:', error);
+          setEmailSuggestions([]);
+          setHasSearchResults(false);
+        }
+      }
+    },
+    [formData.assignedUsers]
+  );
+
+  const handleEmailSelect = (email: string) => {
+    if (!formData.assignedUsers.includes(email)) {
+      setFormData(prev => ({
+        ...prev,
+        assignedUsers: [...prev.assignedUsers, email]
+      }));
+    }
+    setSearchEmail('');
+    setShowSuggestions(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchEmail && emailSuggestions.length > 0) {
+      e.preventDefault();
+      handleEmailSelect(emailSuggestions[0]);
+    }
+  };
   const clearSearch = () => {
     setSearchQuery('');
     fetchEmployees();
@@ -307,15 +354,15 @@ export default function EmployeeManagement() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">Sr.No</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Image</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Contact</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Email ID</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Address</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Designation</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Role</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Status</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">Sr.No</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Image</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Name</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Contact</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Email ID</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Address</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Designation</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Role</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Status</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">View</th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Edit</th>
                   </tr>
@@ -332,42 +379,46 @@ export default function EmployeeManagement() {
                   ) : (
                     employees.map((employee, index) => (
                       <tr key={employee.id}>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="h-10 w-10 relative">
-                            {employee.image ? (
-                              <Image
-                                src={employee.image}
-                                alt={employee.name}
-                                fill
-                                className="rounded-full object-cover"
-                              />
-                            ) : (
-                              <UserIcon className="h-10 w-10 text-gray-400" />
-                            )}
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{index + 1}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-center">
+                          <div className="flex justify-center">
+                            <div className="h-10 w-10 relative">
+                              {employee.image ? (
+                                <Image
+                                  src={employee.image}
+                                  alt={employee.name}
+                                  fill
+                                  className="rounded-full object-cover"
+                                />
+                              ) : (
+                                <UserIcon className="h-10 w-10 text-gray-400" />
+                              )}
+                            </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
+                        <td className="px-4 py-4 whitespace-nowrap text-center">
                           <div className="text-sm font-medium text-gray-900">{employee.name}</div>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{employee.phone}</td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{employee.email}</td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{employee.address}</td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{employee.designation}</td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{employee.role}</td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => {
-                              setSelectedEmployee(employee);
-                              setShowStatusModal(true);
-                            }}
-                            className={`w-20 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors shadow-sm border ${employee.status
-                              ? 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200 hover:border-green-300'
-                              : 'bg-red-100 text-red-800 hover:bg-red-200 border-red-200 hover:border-red-300'
-                              }`}
-                          >
-                            {employee.status ? 'Active' : 'Inactive'}
-                          </button>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{employee.phone}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{employee.email}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{employee.address}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{employee.designation}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 text-center">{employee.role}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-center">
+                          <div className="flex justify-center">
+                            <button
+                              onClick={() => {
+                                setSelectedEmployee(employee);
+                                setShowStatusModal(true);
+                              }}
+                              className={`w-20 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors shadow-sm border ${employee.status
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200 border-green-200 hover:border-green-300'
+                                : 'bg-red-100 text-red-800 hover:bg-red-200 border-red-200 hover:border-red-300'
+                                }`}
+                            >
+                              {employee.status ? 'Active' : 'Inactive'}
+                            </button>
+                          </div>
                         </td>
                         <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-center">
                           <button
@@ -562,19 +613,60 @@ export default function EmployeeManagement() {
                     onChange={(e) => setFormData({ ...formData, reportTo: e.target.value })}
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Assigned Users</label>
-                  <input
-                    type="text"
-                    className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-400"
-                    value={formData.assignedUsers.join(', ')}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      assignedUsers: e.target.value.split(',').map(email => email.trim()).filter(email => email !== '')
-                    })}
-                    placeholder="user1@example.com, user2@example.com"
-                  />
-                  <p className="mt-1 text-sm text-gray-500">Enter comma-separated email addresses</p>
+                <div className="col-span-2 relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Users</label>
+                  <div className="mt-1 border-2 border-gray-300 rounded-md focus-within:border-blue-500 hover:border-gray-400">
+                    <div className="flex flex-wrap gap-2 p-2">
+                      {formData.assignedUsers.map((email) => (
+                        <div
+                          key={email}
+                          className="flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full text-sm"
+                        >
+                          <span>{email}</span>
+                          <button
+                            type="button"
+                            onClick={() => setFormData(prev => ({
+                              ...prev,
+                              assignedUsers: prev.assignedUsers.filter(e => e !== email)
+                            }))}
+                            className="text-blue-600 hover:text-blue-800 ml-1"
+                          >
+                            <XMarkIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <input
+                        type="text"
+                        value={searchEmail}
+                        onChange={handleEmailSearch}
+                        onKeyDown={handleKeyDown}
+                        onFocus={() => setShowSuggestions(Boolean(searchEmail))}
+                        placeholder="Type to search users..."
+                        className="flex-1 min-w-[200px] outline-none focus:outline-none border-0 p-2 text-sm"
+                      />
+                    </div>
+                  </div>
+                  {showSuggestions && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                      <ul className="py-1 max-h-60 overflow-auto">
+                        {emailSuggestions.length > 0 ? (
+                          emailSuggestions.map((email) => (
+                            <li
+                              key={email}
+                              className="px-4 py-2 hover:bg-blue-50 cursor-pointer text-sm text-gray-700"
+                              onClick={() => handleEmailSelect(email)}
+                            >
+                              {email}
+                            </li>
+                          ))
+                        ) : (
+                          <li className="px-4 py-2 text-sm text-gray-500">
+                            No users found
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
 

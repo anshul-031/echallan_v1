@@ -269,7 +269,6 @@ export default function EmployeeManagement() {
       handleEmailSelect(emailSuggestions[0]);
     }
   };
-
   const clearSearch = () => {
     setSearchQuery('');
     fetchEmployees();

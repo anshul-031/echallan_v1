@@ -5,9 +5,10 @@ export function middleware(request: NextRequest) {
   // Simplified middleware logic
   const isAuthPath = request.nextUrl.pathname.startsWith('/auth');
   const isRootPath = request.nextUrl.pathname === '/';
+  const isAdminPath = request.nextUrl.pathname.startsWith('/admin');
 
   // Redirect root to login
-  if (isRootPath) {
+  if (!isAdminPath && isRootPath) {
     return NextResponse.redirect(new URL('/auth/login', request.url));
   }
 

@@ -10,77 +10,30 @@ export async function GET() {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Get admin stats
-    let adminStats = await prisma.adminStats.findFirst({
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
-
-    if (!adminStats) {
-      // Calculate stats
-      const [totalUsers, totalCustomers, totalEmployees, totalVehicles] = await Promise.all([
-        prisma.user.count(),
-        prisma.user.count({
-          where: { userType: 'EMPLOYEE' }
-        }),
-        prisma.user.count({
-          where: { userType: 'EMPLOYEE' }
-        }),
-        prisma.vehicle.count()
-      ]);
-
-      // Create new stats
-      adminStats = await prisma.adminStats.create({
-        data: {
-          totalUsers,
-          totalCustomers,
-          totalEmployees,
-          totalVehicles
-        }
-      });
-    }
-
-    return NextResponse.json(adminStats);
-  } catch (error) {
-    console.error("Error fetching admin stats:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
-  }
-}
-
-// Update stats periodically
-export async function PUT() {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
-
-    // Calculate new stats
+    // Calculate stats directly
     const [totalUsers, totalCustomers, totalEmployees, totalVehicles] = await Promise.all([
-      prisma.user.count(),
       prisma.user.count({
-        where: { userType: 'EMPLOYEE' }
+        where: {
+          NOT: {
+            userType: {
+              in: ['ADMIN', 'EMPLOYEE']
+            }
+          }
+        }
       }),
-      prisma.user.count({
-        where: { userType: 'EMPLOYEE' }
-      }),
+      prisma.company.count(),
+      prisma.employee.count(),
       prisma.vehicle.count()
     ]);
 
-    // Update stats
-    const updatedStats = await prisma.adminStats.create({
-      data: {
-        totalUsers,
-        totalCustomers,
-        totalEmployees,
-        totalVehicles
-      }
+    return NextResponse.json({
+      totalUsers,
+      totalCustomers,
+      totalEmployees,
+      totalVehicles,
     });
-
-    return NextResponse.json(updatedStats);
   } catch (error) {
-    console.error("Error updating admin stats:", error);
+    console.error("Error fetching admin stats:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

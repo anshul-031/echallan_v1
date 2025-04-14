@@ -113,6 +113,14 @@ export default function ViewEmployee() {
                     {/* Basic Information */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
+                            <label className="block text-sm font-medium text-gray-500">Status</label>
+                            <p className="mt-1 text-base text-gray-900">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${employee.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                    {employee.status ? 'Active' : 'Inactive'}
+                                </span>
+                            </p>
+                        </div>
+                        <div>
                             <label className="block text-sm font-medium text-gray-500">Full Name</label>
                             <p className="mt-1 text-base text-gray-900">{employee.name}</p>
                         </div>
@@ -129,6 +137,10 @@ export default function ViewEmployee() {
                             <p className="mt-1 text-base text-gray-900">{employee.designation}</p>
                         </div>
                         <div>
+                            <label className="block text-sm font-medium text-gray-500">Role</label>
+                            <p className="mt-1 text-base text-gray-900">{employee.role}</p>
+                        </div>
+                        <div>
                             <label className="block text-sm font-medium text-gray-500">Date of Joining</label>
                             <p className="mt-1 text-base text-gray-900">
                                 {new Date(employee.doj).toLocaleDateString()}
@@ -137,14 +149,6 @@ export default function ViewEmployee() {
                         <div>
                             <label className="block text-sm font-medium text-gray-500">Reports To</label>
                             <p className="mt-1 text-base text-gray-900">{employee.reportTo || '-'}</p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-500">Status</label>
-                            <p className="mt-1 text-base text-gray-900">
-                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${employee.status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                    {employee.status ? 'Active' : 'Inactive'}
-                                </span>
-                            </p>
                         </div>
                     </div>
 

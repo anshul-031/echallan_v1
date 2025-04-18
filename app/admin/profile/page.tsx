@@ -7,6 +7,17 @@ import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { CameraIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 
+type ProfileData = {
+    name: string;
+    email: string;
+    phone: string;
+    image?: string;
+    designation?: string;
+    doj?: string;
+    reportTo?: string;
+    status?: boolean;
+};
+
 export default function AdminProfile() {
     const { data: session, update } = useSession();
     const router = useRouter();
@@ -15,24 +26,16 @@ export default function AdminProfile() {
     const [uploadError, setUploadError] = useState('');
     const [previewImage, setPreviewImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<ProfileData>({
         name: session?.user?.name || '',
-        image: '',
         email: session?.user?.email || '',
-        gender: '',
-        dob: '',
-        doj: '',
         phone: '',
-        address: '',
+        image: '',
         designation: '',
+        doj: '',
         reportTo: '',
-        location: '',
-        userType: '',
     });
 
-    const isEmployee = formData.userType === 'EMPLOYEE';
-
-    // Fetch user data when component mounts
     useEffect(() => {
         const fetchUserData = async () => {
             if (session?.user?.email) {
@@ -43,7 +46,6 @@ export default function AdminProfile() {
                         setFormData({
                             ...formData,
                             ...userData,
-                            dob: userData.dob ? new Date(userData.dob).toISOString().split('T')[0] : '',
                             doj: userData.doj ? new Date(userData.doj).toISOString().split('T')[0] : '',
                         });
                     }
@@ -62,7 +64,7 @@ export default function AdminProfile() {
         confirmPassword: '',
     });
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
@@ -86,18 +88,7 @@ export default function AdminProfile() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    name: formData.name,
-                    gender: formData.gender,
-                    dob: formData.dob,
-                    doj: formData.doj,
-                    phone: formData.phone,
-                    address: formData.address,
-                    designation: formData.designation,
-                    reportTo: formData.reportTo,
-                    location: formData.location,
-                    image: formData.image,
-                }),
+                body: JSON.stringify(formData),
             });
 
             toast.promise(updatePromise, {
@@ -113,10 +104,8 @@ export default function AdminProfile() {
                 setFormData({
                     ...formData,
                     ...updatedData,
-                    dob: updatedData.dob ? new Date(updatedData.dob).toISOString().split('T')[0] : '',
                     doj: updatedData.doj ? new Date(updatedData.doj).toISOString().split('T')[0] : '',
                 });
-                // Update session data and refresh page to show changes everywhere
                 await update({
                     ...session,
                     user: {
@@ -135,7 +124,7 @@ export default function AdminProfile() {
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (passwordData.newPassword !== passwordData.confirmPassword) {
-            alert('New passwords do not match!');
+            toast.error('New passwords do not match!');
             return;
         }
 
@@ -233,7 +222,7 @@ export default function AdminProfile() {
                             ref={fileInputRef}
                             className="hidden"
                             accept="image/jpeg,image/png,image/jpg"
-                            onChange={(e) => {
+                            onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
 
@@ -257,27 +246,25 @@ export default function AdminProfile() {
 
                                 const uploadFormData = new FormData();
                                 uploadFormData.append('file', file);
-                                uploadFormData.append('userId', session?.user?.id || 'temp');
 
-                                toast.promise(
-                                    fetch('/api/profile/upload', {
-                                        method: 'POST',
-                                        body: uploadFormData,
-                                    }).then(async (response) => {
-                                        if (!response.ok) {
-                                            const error = await response.text();
-                                            throw new Error(error);
-                                        }
-                                        const { url } = await response.json();
-                                        setFormData(prev => ({ ...prev, image: url }));
-                                        return 'Image uploaded successfully';
-                                    }),
-                                    {
-                                        loading: 'Uploading image...',
-                                        success: (message) => message,
-                                        error: (err) => err instanceof Error ? err.message : 'Failed to upload image'
+                                const uploadPromise = fetch('/api/profile/upload', {
+                                    method: 'POST',
+                                    body: uploadFormData,
+                                }).then(async (response) => {
+                                    if (!response.ok) {
+                                        const error = await response.text();
+                                        throw new Error(error);
                                     }
-                                );
+                                    const { url } = await response.json();
+                                    setFormData(prev => ({ ...prev, image: url }));
+                                    return 'Image uploaded successfully';
+                                });
+
+                                toast.promise(uploadPromise, {
+                                    loading: 'Uploading image...',
+                                    success: (message) => message,
+                                    error: (err) => err instanceof Error ? err.message : 'Failed to upload image'
+                                });
                             }}
                         />
                         {isEditing && (
@@ -311,7 +298,8 @@ export default function AdminProfile() {
                                 type="email"
                                 name="email"
                                 value={formData.email}
-                                disabled
+                                disabled={!isEditing}
+                                onChange={handleInputChange}
                                 className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm bg-gray-50"
                             />
                         </div>
@@ -328,36 +316,7 @@ export default function AdminProfile() {
                             />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Gender</label>
-                            <select
-                                name="gender"
-                                value={formData.gender}
-                                onChange={handleInputChange}
-                                disabled={!isEditing}
-                                className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
-                            >
-                                <option value="">Select Gender</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Date of Birth</label>
-                            <input
-                                type="date"
-                                name="dob"
-                                value={formData.dob}
-                                onChange={handleInputChange}
-                                disabled={!isEditing}
-                                className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
-                            />
-                        </div>
-
-                        {/* No regular Date of Joining field - it's only shown for employees */}
-                        {isEmployee && (
+                        {session?.user?.isEmployee && (
                             <>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Designation</label>
@@ -365,18 +324,6 @@ export default function AdminProfile() {
                                         type="text"
                                         name="designation"
                                         value={formData.designation}
-                                        onChange={handleInputChange}
-                                        disabled={!isEditing}
-                                        className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Reports To</label>
-                                    <input
-                                        type="text"
-                                        name="reportTo"
-                                        value={formData.reportTo}
                                         onChange={handleInputChange}
                                         disabled={!isEditing}
                                         className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
@@ -394,31 +341,20 @@ export default function AdminProfile() {
                                         className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
                                     />
                                 </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Reports To</label>
+                                    <input
+                                        type="text"
+                                        name="reportTo"
+                                        value={formData.reportTo}
+                                        onChange={handleInputChange}
+                                        disabled={!isEditing}
+                                        className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
+                                    />
+                                </div>
                             </>
                         )}
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Location</label>
-                            <input
-                                type="text"
-                                name="location"
-                                value={formData.location}
-                                onChange={handleInputChange}
-                                disabled={!isEditing}
-                                className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
-                            />
-                        </div>
-
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700">Address</label>
-                            <textarea
-                                name="address"
-                                value={formData.address}
-                                onChange={handleInputChange}
-                                disabled={!isEditing}
-                                rows={3}
-                                className="mt-1 block w-full px-4 py-3 rounded-md border-2 border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 hover:border-gray-300 transition-colors"
-                            />
-                        </div>
                     </div>
 
                     <div className="mt-6 flex justify-end space-x-3">
@@ -501,7 +437,7 @@ export default function AdminProfile() {
                                         />
                                     </div>
                                 </div>
-                                <div className="mt-5 flex justify-end space-x-3">
+                                <div className="mt-6 flex justify-end space-x-3">
                                     <button
                                         type="button"
                                         onClick={() => setShowPasswordModal(false)}

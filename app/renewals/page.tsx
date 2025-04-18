@@ -16,7 +16,43 @@ import {
   ChevronRightIcon,
   UserIcon,
 } from '@heroicons/react/24/outline';
-import { Vehicle } from '@/app/types/vehicle';
+interface RenewalService {
+  id: string;
+  services: string | null;
+  isAssignedService: boolean | null;
+  vehicle_no: string | null;
+  vehicleId: string | null;
+  userId: string | null;
+  govFees: number | null;
+  serviceCharge: number | null;
+  gst: number | null;
+  status: 'not_assigned' | 'pending' | 'processing' | 'completed' | 'cancelled';
+}
+
+interface Vehicle {
+  id: string;
+  vrn: string;
+  roadTax: string;
+  roadTaxDoc: string | null;
+  fitness: string;
+  fitnessDoc: string | null;
+  insurance: string;
+  insuranceDoc: string | null;
+  pollution: string;
+  pollutionDoc: string | null;
+  statePermit: string;
+  statePermitDoc: string | null;
+  nationalPermit: string;
+  nationalPermitDoc: string | null;
+  lastUpdated: string;
+  status: string;
+  ownerId: string | null;
+  registeredAt: string;
+  documents: number;
+  createdAt: Date;
+  updatedAt: Date;
+  renewalServices?: RenewalService[];
+}
 import { getExpirationColor } from '@/lib/utils';
 import DocumentModal from '../components/DocumentModal';
 import DeleteConfirmationModal from '../components/DeleteConfirmationModal';
@@ -200,15 +236,14 @@ export default function RenewalsPage() {
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [vehicleToDelete, setVehicleToDelete] = useState<number | null>(null);
+  const [vehicleToDelete, setVehicleToDelete] = useState<string | null>(null);
   const [isDeletingVehicle, setIsDeletingVehicle] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedAssignVehicle, setSelectedAssignVehicle] = useState<Vehicle | null>(null);
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  const [assigningServices, setAssigningServices] = useState<{ [key: number]: boolean }>({});
-  const [assignedServices, setAssignedServices] = useState<{ [key: number]: boolean }>({});
+  const [assigningService, setAssigningService] = useState<string | null>(null);
   const [isDetailsPopupOpen, setIsDetailsPopupOpen] = useState(false);
-  const [updatingRows, setUpdatingRows] = useState<{ [key: number]: boolean }>({});
+  const [updatingRows, setUpdatingRows] = useState<{ [key: string]: boolean }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [vehicleStats, setVehicleStats] = useState<VehicleStats>({
@@ -406,7 +441,7 @@ export default function RenewalsPage() {
   };
 
   // Handle delete
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => {
     setVehicleToDelete(id);
     setIsDeleteModalOpen(true);
   };
@@ -864,12 +899,12 @@ export default function RenewalsPage() {
         }}
         vrn={selectedVehicle?.vrn || ''}
         initialDocUrls={selectedVehicle ? {
-          roadTaxDoc: selectedVehicle.roadTaxDoc || null,
-          fitnessDoc: selectedVehicle.fitnessDoc || null,
-          insuranceDoc: selectedVehicle.insuranceDoc || null,
-          pollutionDoc: selectedVehicle.pollutionDoc || null,
-          statePermitDoc: selectedVehicle.statePermitDoc || null,
-          nationalPermitDoc: selectedVehicle.nationalPermitDoc || null,
+          roadTaxDoc: selectedVehicle?.roadTaxDoc ?? null,
+          fitnessDoc: selectedVehicle?.fitnessDoc ?? null,
+          insuranceDoc: selectedVehicle?.insuranceDoc ?? null,
+          pollutionDoc: selectedVehicle?.pollutionDoc ?? null,
+          statePermitDoc: selectedVehicle?.statePermitDoc ?? null,
+          nationalPermitDoc: selectedVehicle?.nationalPermitDoc ?? null,
         } : {
           roadTaxDoc: null,
           fitnessDoc: null,
@@ -969,92 +1004,36 @@ export default function RenewalsPage() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S.no</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Services</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Govt Fees</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service Charge</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GST</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assign</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sr.No</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Services</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Govt Fees</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Service Charge</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">GST</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Assign</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {[
-                    {
-                      id: 1,
-                      service: 'Road Tax',
-                      govtFees: '1200',
-                      serviceCharge: 1500,
-                    },
-                    {
-                      id: 2,
-                      service: 'Fitness',
-                      govtFees: '800',
-                      serviceCharge: 1800,
-                    },
-                    {
-                      id: 3,
-                      service: 'Insurance',
-                      govtFees: '0',
-                      serviceCharge: 1000,
-                    },
-                    {
-                      id: 4,
-                      service: 'Pollution',
-                      govtFees: '50',
-                      serviceCharge: 200,
-                    },
-                    {
-                      id: 5,
-                      service: 'Permit',
-                      govtFees: '5000',
-                      serviceCharge: 2000,
-                    },
-                    {
-                      id: 6,
-                      service: 'National Permit',
-                      govtFees: '17520',
-                      serviceCharge: 6000,
-                    }
-                  ].map((service) => {
-                    const gst = service.serviceCharge * 0.18;
-                    const total = service.serviceCharge + gst + parseFloat(service.govtFees);
-                    const handleAssign = async (checked: boolean) => {
-                      // If vehicle has renewalServices for this service, disable toggle
-                      if (selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service)) {
-                        return;
-                      }
+                  {!selectedAssignVehicle?.renewalServices || selectedAssignVehicle.renewalServices.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                        No services found for this vehicle
+                      </td>
+                    </tr>
+                  ) : selectedAssignVehicle.renewalServices.map((service, index) => {
+                    const handleServiceAssign = async (checked: boolean) => {
                       if (!checked) return;
 
-                      setAssigningServices(prev => ({ ...prev, [service.id]: true }));
-                      const toastId = toast.loading(`Assigning ${service.service} service to vehicle ${selectedAssignVehicle?.vrn}`);
+                      setAssigningService(service.services);
+                      const toastId = toast.loading(`Updating status for ${service.services} service`);
 
                       try {
-                        console.log('Selected vehicle:', selectedAssignVehicle);
-
-                        if (!selectedAssignVehicle.ownerId) {
-                          throw new Error('Vehicle owner ID is missing');
-                        }
-
-                        const requestBody = {
-                          services: service.service,
-                          vehicle_no: selectedAssignVehicle.vrn,
-                          vehicleId: selectedAssignVehicle.id, // Pass the ObjectId directly
-                          userId: selectedAssignVehicle.ownerId,
-                          govFees: parseFloat(service.govtFees),
-                          serviceCharge: parseFloat(service.serviceCharge.toString()),
-                          price: parseFloat(total.toFixed(2)),
-                          isAssignedService: true
-                        };
-
-                        console.log('Sending request:', requestBody);
-
-                        const response = await fetch('/api/services', {
-                          method: 'POST',
+                        const response = await fetch(`/api/services/${service.id}`, {
+                          method: 'PATCH',
                           headers: {
                             'Content-Type': 'application/json',
                           },
-                          body: JSON.stringify(requestBody),
+                          body: JSON.stringify({}) // Send empty object to avoid parse error
                         });
 
                         if (!response.ok) {
@@ -1062,11 +1041,21 @@ export default function RenewalsPage() {
                           throw new Error(errorData.error || 'Failed to assign service');
                         }
 
-                        const result = await response.json();
-                        console.log('Service created:', result);
+                        const updatedService = await response.json();
 
-                        setAssignedServices(prev => ({ ...prev, [service.id]: true }));
-                        toast.success(`${service.service} service assigned for vehicle ${selectedAssignVehicle?.vrn}`, {
+                        // Update local state with the response from server
+                        if (selectedAssignVehicle) {
+                          const updatedServices = selectedAssignVehicle.renewalServices?.map(s =>
+                            s.id === service.id ? updatedService : s
+                          ) || [];
+
+                          setSelectedAssignVehicle({
+                            ...selectedAssignVehicle,
+                            renewalServices: updatedServices
+                          });
+                        }
+
+                        toast.success('Service assigned successfully', {
                           id: toastId
                         });
                       } catch (error: any) {
@@ -1078,40 +1067,40 @@ export default function RenewalsPage() {
                         const checkbox = document.getElementById(`assign-${service.id}`) as HTMLInputElement;
                         if (checkbox) checkbox.checked = false;
                       } finally {
-                        setAssigningServices(prev => ({ ...prev, [service.id]: false }));
+                        setAssigningService(null);
                       }
                     };
 
                     return (
                       <tr key={service.id}>
-                        <td className="px-4 py-3 text-sm text-gray-900">{service.id}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{service.service}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{service.govtFees}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{service.serviceCharge.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{gst.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">{total.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-sm text-gray-900">
-                          <label className={`relative inline-flex items-center ${assignedServices[service.id] || selectedAssignVehicle?.renewalService?.some(s => s.services === service.service)
-                            ? 'cursor-not-allowed'
-                            : 'cursor-pointer'
-                            }`}>
+                        <td className="px-4 py-3 text-sm text-gray-900 text-center">{index + 1}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 text-center">{service.services}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 text-center">{service.govFees?.toFixed(2) ?? '0.00'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 text-center">{service.serviceCharge?.toFixed(2) ?? '0.00'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 text-center">{service.gst?.toFixed(2) ?? '0.00'}</td>
+                        <td className="px-4 py-3 text-sm text-gray-900 text-center">
+                          {((service.govFees ?? 0) + (service.serviceCharge ?? 0) + (service.gst ?? 0)).toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-900 text-center">
+                          <label className="relative inline-flex items-center cursor-pointer">
                             <input
                               id={`assign-${service.id}`}
                               type="checkbox"
                               className="sr-only peer"
-                              checked={assignedServices[service.id] || selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service)}
-                              disabled={assigningServices[service.id] || assignedServices[service.id] || selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service)}
-                              onChange={(e) => !assignedServices[service.id] && !selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service) && handleAssign(e.target.checked)}
+                              checked={service.isAssignedService || false}
+                              disabled={service.isAssignedService === true}
+                              onChange={(e) => service.isAssignedService !== true && handleServiceAssign(e.target.checked)}
                             />
-                            <div className={`w-11 h-6 ${assigningServices[service.id]
+                            <div className={`w-11 h-6 ${assigningService === service.services
                               ? 'bg-gray-400'
-                              : (assignedServices[service.id] || selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service))
-                                ? 'bg-blue-600'
+                              : service.isAssignedService === true
+                                ? 'bg-blue-600 cursor-not-allowed'
                                 : 'bg-gray-200'
-                              } rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${(assignedServices[service.id] || selectedAssignVehicle?.renewalServices?.some(s => s.services === service.service))
-                                ? 'cursor-not-allowed'
-                                : 'cursor-pointer'
-                              }`}></div>
+                              }
+                              rounded-full peer peer-focus:ring-4 peer-focus:ring-blue-300 peer-checked:after:translate-x-full
+                              peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px]
+                              after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5
+                              after:transition-all`}></div>
                           </label>
                         </td>
                       </tr>

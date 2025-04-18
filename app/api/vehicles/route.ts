@@ -71,7 +71,14 @@ export async function GET(request: Request) {
         ...(renewals && {
           renewalServices: {
             select: {
+              id: true,
               services: true,
+              isAssignedService: true,
+              govFees: true,
+              serviceCharge: true,
+              gst: true,
+              price: true,
+              status: true
             }
           }
         })

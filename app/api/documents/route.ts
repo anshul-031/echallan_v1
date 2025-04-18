@@ -27,14 +27,15 @@ export async function POST(req: Request) {
       );
     }
 
+    // Get the URL parameters
+    const url = new URL(req.url);
+    const isNewVehicle = url.searchParams.get('newVehicle') === 'true';
+
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const vrn = formData.get('vrn') as string;
     const docType = formData.get('docType') as string;
     const userId = session.user.id;
-
-    console.log('Received file:', file);
-    console.log('Received vrn:', vrn);  
 
     if (!file || !vrn || !docType || !userId) {
       return NextResponse.json(
@@ -69,30 +70,30 @@ export async function POST(req: Request) {
       );
     }
 
-    // Find the vehicle first
-    const existingVehicle = await prisma.vehicle.findFirst({
-      where: {
-        vrn,
-        ownerId: userId
-      }
-    });
-    console.log('Existing vehicle:', existingVehicle);
+    // Skip vehicle check for new vehicles
+    if (!isNewVehicle) {
+      const existingVehicle = await prisma.vehicle.findFirst({
+        where: {
+          vrn,
+          ownerId: userId
+        }
+      });
 
-    if (!existingVehicle) {
-      return NextResponse.json(
-        { error: 'Vehicle not found or does not belong to the user' },
-        { status: 404 }
-      );
+      if (!existingVehicle) {
+        return NextResponse.json(
+          { error: 'Vehicle not found or does not belong to the user' },
+          { status: 404 }
+        );
+      }
     }
 
     const buffer = await file.arrayBuffer();
     
-    // Use the new file structure with userId
+    // Upload to R2
     fileKey = `${userId}/${vrn}/${docType}/${file.name}`;
     const r2Url = `https://${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${fileKey}`;
 
     try {
-      // Upload to R2
       const uploadCommand = new PutObjectCommand({
         Bucket: BUCKET_NAME,
         Key: fileKey,
@@ -102,29 +103,41 @@ export async function POST(req: Request) {
       
       await r2Client.send(uploadCommand);
 
-      // Update the vehicle document URL in database
-      const updatedVehicle = await prisma.vehicle.update({
-        where: { 
-          id: existingVehicle.id
-        },
-        data: {
-          [dbField]: r2Url,
-          lastUpdated: new Date().toISOString()
-        }
-      });
+      // If it's an existing vehicle, update the document URL
+      if (!isNewVehicle) {
+        // First find the vehicle
+        const vehicle = await prisma.vehicle.findFirst({
+          where: {
+            vrn,
+            ownerId: userId
+          }
+        });
 
-      if (!updatedVehicle) {
-        throw new Error('Failed to update vehicle document');
+        if (vehicle) {
+          const updatedVehicle = await prisma.vehicle.update({
+            where: {
+              id: vehicle.id
+            },
+            data: {
+              [dbField]: r2Url,
+              lastUpdated: new Date().toISOString()
+            }
+          });
+
+          if (!updatedVehicle) {
+            throw new Error('Failed to update vehicle document');
+          }
+        }
       }
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         success: true,
         fileKey,
-        url: r2Url 
+        url: r2Url
       });
 
     } catch (error) {
-      // If anything fails after file upload, try to delete the uploaded file
+      // Clean up if upload fails
       try {
         const deleteCommand = new DeleteObjectCommand({
           Bucket: BUCKET_NAME,

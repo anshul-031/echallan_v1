@@ -25,9 +25,14 @@ export async function GET(req: Request) {
       select: {
         id: true,
         renewalServices: {
-          where: status ? {
-            status: status as 'pending' | 'processing' | 'completed' | 'cancelled'
-          } : undefined
+          where: {
+            NOT: {
+              status: 'not_assigned'
+            },
+            ...(status && {
+              status: status as 'pending' | 'processing' | 'completed' | 'cancelled'
+            })
+          }
         },
         renewalStats: true
       }

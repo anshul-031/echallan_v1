@@ -24,6 +24,7 @@ model User {
   password            String
   name                String?
   phone               String?
+  status              Boolean            @default(true)  
   address             String?
   dob                 DateTime?
   gender              String?
@@ -237,12 +238,20 @@ model RenewalService {
   govFees           Float?
   serviceCharge     Float?
   price             Float?
+  gst               Float?
   govtFees          Boolean              @default(false)
   rtoApproval       Boolean              @default(false)
   inspection        Boolean              @default(false)
   certificate       Boolean              @default(false)
   documentDelivered Boolean              @default(false)
-  status            RenewalServiceStatus @default(pending)
+  documentRecieved  Boolean              @default(false)
+  documentRecievedUpdate DateTime?
+  govtFeesUpdate    DateTime?             
+  rtoApprovalUpdate DateTime?             
+  inspectionUpdate  DateTime?             
+  certificateUpdate DateTime?
+  documentDeliveryUpdate DateTime?             
+  status            RenewalServiceStatus @default(not_assigned)
   createdAt         DateTime             @default(now()) @map("created_at")
   updatedAt         DateTime             @updatedAt @map("updated_at")
   
@@ -255,6 +264,7 @@ model RenewalService {
 }
 
 enum RenewalServiceStatus {
+  not_assigned
   pending
   processing
   completed

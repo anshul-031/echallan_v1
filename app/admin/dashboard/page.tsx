@@ -50,7 +50,7 @@ export default function AdminDashboard() {
                     <h2 className="text-lg font-semibold mb-2">Total Users</h2>
                     <p className="text-3xl font-bold text-blue-600">{stats.totalUsers}</p>
                     <button
-                        onClick={() => router.push('/admin/users')}
+                        onClick={() => router.push('/admin/user')}
                         className="mt-4 text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center"
                     >
                         More Info

@@ -7,6 +7,21 @@ export interface User {
   image?: string;
   userType: UserType;
   credits: number;
+  status: boolean;
+  phone?: string;
+  address?: string;
+  location?: string;
+  dob?: string;
+  gender?: string;
+  created_at: string;
+  company?: {
+    id: string;
+    name: string;
+  };
+  vehicles?: {
+    vrn: string;
+  }[];
+  companyId?: string;
 }
 
 export interface ProfileUpdateData {

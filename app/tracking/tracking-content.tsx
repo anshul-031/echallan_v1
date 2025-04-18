@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { getSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
+import { format } from 'date-fns';
 
 interface RenewalService {
   id: number;
@@ -18,6 +19,7 @@ interface RenewalService {
   vehicle_no: string;
   vehicleId: number;
   userId: string;
+  gst: number;
   govFees: number;
   serviceCharge: number;
   price: number;
@@ -25,7 +27,14 @@ interface RenewalService {
   rtoApproval: boolean;
   inspection: boolean;
   certificate: boolean;
+  govtFeesUpdate?: Date;
+  rtoApprovalUpdate?: Date;
+  inspectionUpdate?: Date;
+  certificateUpdate?: Date;
+  documentDeliveryUpdate?: Date;
   documentDelivered: boolean;
+  documentRecieved: boolean;
+  documentRecievedUpdate?: Date;
   status: 'pending' | 'processing' | 'completed' | 'cancelled';
   createdAt: string;
   updatedAt: string;
@@ -87,6 +96,18 @@ export default function TrackingDashboard() {
     status: string;
     location: string;
     lastUpdated: string;
+    govtFeesUpdate?: Date;
+    rtoApprovalUpdate?: Date;
+    inspectionUpdate?: Date;
+    certificateUpdate?: Date;
+    documentDeliveryUpdate?: Date;
+    documentRecieved: boolean;
+    documentRecievedUpdate?: Date;
+    expectedDeliveryDate?: Date;
+    deliveryPerformance?: {
+      daysEarlyOrLate: number;
+      isEarly: boolean;
+    };
     progress?: {
       overall: number;
       governmentFees: number;
@@ -157,6 +178,17 @@ export default function TrackingDashboard() {
     fetchServices(status?.toLowerCase());
   };
 
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    }).split(' ').join('-');
+  };
+
+
   useEffect(() => {
     fetchServices();
   }, []);
@@ -176,6 +208,28 @@ export default function TrackingDashboard() {
 
   // Select a service to show progress
   const handleTrackService = (service: RenewalService) => {
+    let expectedDeliveryDate: Date | undefined;
+    let deliveryPerformance: { daysEarlyOrLate: number; isEarly: boolean } | undefined;
+
+    // Calculate expected delivery and performance for completed services
+    if (service.status === 'completed' && service.documentRecieved && service.documentRecievedUpdate) {
+      // Expected delivery is 15 days from document received date
+      expectedDeliveryDate = new Date(service.documentRecievedUpdate);
+      expectedDeliveryDate.setDate(expectedDeliveryDate.getDate() + 15);
+
+      // Calculate performance if document was delivered
+      if (service.documentDelivered && service.documentDeliveryUpdate) {
+        const expectedDate = expectedDeliveryDate.getTime();
+        const actualDate = new Date(service.documentDeliveryUpdate).getTime();
+        const diffInDays = Math.floor((expectedDate - actualDate) / (1000 * 60 * 60 * 24));
+
+        deliveryPerformance = {
+          daysEarlyOrLate: Math.abs(diffInDays),
+          isEarly: diffInDays > 0
+        };
+      }
+    }
+
     setSelectedVehicle({
       id: service.id,
       vehicleNo: service.vehicle_no,
@@ -183,6 +237,15 @@ export default function TrackingDashboard() {
       status: service.status,
       location: 'RTO Office',
       lastUpdated: service.updatedAt,
+      govtFeesUpdate: service.govtFeesUpdate,
+      rtoApprovalUpdate: service.rtoApprovalUpdate,
+      inspectionUpdate: service.inspectionUpdate,
+      certificateUpdate: service.certificateUpdate,
+      documentDeliveryUpdate: service.documentDeliveryUpdate,
+      documentRecieved: service.documentRecieved,
+      documentRecievedUpdate: service.documentRecievedUpdate,
+      expectedDeliveryDate,
+      deliveryPerformance,
       progress: {
         overall: calculateServiceProgress(service),
         governmentFees: service.govtFees ? 100 : 0,
@@ -214,7 +277,8 @@ export default function TrackingDashboard() {
       }
 
       const data = await response.json();
-      setServicesData(data.services || []);
+      const services = data.services || [];
+      setServicesData(services);
 
       // Update stats from refreshed data
       if (data.stats) {
@@ -225,6 +289,14 @@ export default function TrackingDashboard() {
           completed: data.stats.completedCount || 0,
           cancelled: data.stats.cancelledCount || 0
         });
+      }
+
+      // Update tracked vehicle if one is selected
+      if (selectedVehicle) {
+        const updatedService = services.find((service: RenewalService) => service.id === selectedVehicle.id);
+        if (updatedService) {
+          handleTrackService(updatedService);
+        }
       }
 
       toast.dismiss();
@@ -356,6 +428,7 @@ export default function TrackingDashboard() {
                         <th scope="col" className="px-6 py-3">Status</th>
                         <th scope="col" className="px-6 py-3">Gov Fees</th>
                         <th scope="col" className="px-6 py-3">Service Charge</th>
+                        <th scope="col" className="px-6 py-3">GST</th>
                         <th scope="col" className="px-6 py-3">Total Price</th>
                         <th scope="col" className="px-6 py-3">Progress</th>
                         <th scope="col" className="px-6 py-3">Created At</th>
@@ -393,7 +466,8 @@ export default function TrackingDashboard() {
                             </td>
                             <td className="px-6 py-4">₹{service.govFees}</td>
                             <td className="px-6 py-4">₹{service.serviceCharge}</td>
-                            <td className="px-6 py-4">₹{service.price}</td>
+                            <td className="px-6 py-4">₹{service.gst}</td>
+                            <td className="px-6 py-4">₹{service.govFees + service.serviceCharge}</td>
                             <td className="px-6 py-4">
                               <div className="w-full bg-gray-200 rounded-full h-2.5">
                                 <div
@@ -466,152 +540,306 @@ export default function TrackingDashboard() {
               <div className="space-y-6">
                 {selectedVehicle && selectedVehicle.progress ? (
                   <>
-                    {/* Government Fees */}
-                    <div className="relative">
-                      <div className={`absolute left-5 top-8 w-0.5 h-12 ${selectedVehicle.progress.governmentFees === 100 ? 'bg-blue-500' : 'bg-gray-200'
-                        } transition-colors duration-500`}></div>
-                      <div className="flex items-start space-x-4">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${selectedVehicle.progress.governmentFees === 100
-                          ? 'bg-blue-500 text-white shadow-md shadow-blue-200'
-                          : 'bg-gray-100 text-gray-400'
-                          }`}>
-                          {selectedVehicle.progress.governmentFees === 100 ? (
-                            <CheckIcon className="w-5 h-5" />
-                          ) : (
-                            <span className="text-sm font-medium">1</span>
-                          )}
+                    {activeStatus === 'completed' ? (
+                      <>
+                        {/* Document Received */}
+                        <div className="relative">
+                          <div className={`absolute left-5 top-8 w-0.5 h-12 ${selectedVehicle.documentRecieved ? 'bg-blue-500' : 'bg-gray-200'} transition-colors duration-500`}></div>
+                          <div className="flex items-start space-x-4">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${selectedVehicle.documentRecieved ? 'bg-blue-500 text-white shadow-md shadow-blue-200' : 'bg-gray-100 text-gray-400'}`}>
+                              {selectedVehicle.documentRecieved ? (
+                                <CheckIcon className="w-5 h-5" />
+                              ) : (
+                                <span className="text-sm font-medium">1</span>
+                              )}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-gray-900">Document Received</span>
+                              {selectedVehicle.documentRecievedUpdate && (
+                                <span className="text-xs text-gray-500">
+                                  {formatDate(new Date(selectedVehicle.documentRecievedUpdate).toLocaleDateString())}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className={`text-sm font-medium ${selectedVehicle.progress.governmentFees === 100 ? 'text-gray-900' : 'text-gray-500'
-                            }`}>
-                            Government Fees
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {selectedVehicle.progress.governmentFees === 100 ? 'Completed' : 'In Progress'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* RTO Approval */}
-                    <div className="relative">
-                      <div className={`absolute left-5 top-8 w-0.5 h-12 ${selectedVehicle.progress.rtoApproval === 100 ? 'bg-blue-500' : 'bg-gray-200'
-                        } transition-colors duration-500`}></div>
-                      <div className="flex items-start space-x-4">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${selectedVehicle.progress.rtoApproval === 100
-                          ? 'bg-blue-500 text-white shadow-md shadow-blue-200'
-                          : 'bg-gray-100 text-gray-400'
-                          }`}>
-                          {selectedVehicle.progress.rtoApproval === 100 ? (
-                            <CheckIcon className="w-5 h-5" />
-                          ) : (
-                            <span className="text-sm font-medium">2</span>
-                          )}
+                        {/* Expected Delivery */}
+                        <div className="relative">
+                          <div className={`absolute left-5 top-8 w-0.5 h-12 ${selectedVehicle.expectedDeliveryDate ? 'bg-blue-500' : 'bg-gray-200'} transition-colors duration-500`}></div>
+                          <div className="flex items-start space-x-4">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${selectedVehicle.expectedDeliveryDate ? 'bg-blue-500 text-white shadow-md shadow-blue-200' : 'bg-gray-100 text-gray-400'}`}>
+                              {selectedVehicle.documentRecieved ? (
+                                <CheckIcon className="w-5 h-5" />
+                              ) : (
+                                <span className="text-sm font-medium">2</span>
+                              )}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-gray-900">Expected Delivery</span>
+                              {selectedVehicle.expectedDeliveryDate && (
+                                <span className="text-xs text-gray-500">
+                                  {formatDate(new Date(selectedVehicle.expectedDeliveryDate).toLocaleDateString())}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className={`text-sm font-medium ${selectedVehicle.progress.rtoApproval === 100 ? 'text-gray-900' : 'text-gray-500'
-                            }`}>
-                            RTO Approval
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {selectedVehicle.progress.rtoApproval === 100 ? 'Completed' : selectedVehicle.progress.rtoApproval > 0 ? 'In Progress' : 'Pending'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Inspection */}
-                    <div className="relative">
-                      <div className={`absolute left-5 top-8 w-0.5 h-12 ${selectedVehicle.progress.inspection === 100 ? 'bg-blue-500' : 'bg-gray-200'
-                        } transition-colors duration-500`}></div>
-                      <div className="flex items-start space-x-4">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${selectedVehicle.progress.inspection === 100
-                          ? 'bg-blue-500 text-white shadow-md shadow-blue-200'
-                          : 'bg-gray-100 text-gray-400'
-                          }`}>
-                          {selectedVehicle.progress.inspection === 100 ? (
-                            <CheckIcon className="w-5 h-5" />
-                          ) : (
-                            <span className="text-sm font-medium">3</span>
-                          )}
+                        {/* Document Delivered */}
+                        <div className="relative">
+                          <div className={`absolute left-5 top-8 w-0.5 h-12 ${selectedVehicle.progress.documentDelivery === 100 ? 'bg-blue-500' : 'bg-gray-200'} transition-colors duration-500`}></div>
+                          <div className="flex items-start space-x-4">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${selectedVehicle.progress.documentDelivery === 100 ? 'bg-blue-500 text-white shadow-md shadow-blue-200' : 'bg-gray-100 text-gray-400'}`}>
+                              {selectedVehicle.status === 'completed' ? (
+                                <CheckIcon className="w-5 h-5" />
+                              ) : (
+                                <span className="text-sm font-medium">3</span>
+                              )}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-gray-900">Document Delivered</span>
+                              {selectedVehicle.documentDeliveryUpdate && (
+                                <span className="text-xs text-gray-500">
+                                  {formatDate(new Date(selectedVehicle.documentDeliveryUpdate).toLocaleDateString())}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className={`text-sm font-medium ${selectedVehicle.progress.inspection === 100 ? 'text-gray-900' : 'text-gray-500'
-                            }`}>
-                            Inspection
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {selectedVehicle.progress.inspection === 100 ? 'Completed' : selectedVehicle.progress.inspection > 0 ? 'In Progress' : 'Pending'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Certificate */}
-                    <div className="relative">
-                      <div className={`absolute left-5 top-8 w-0.5 h-12 ${selectedVehicle.progress.certificate === 100 ? 'bg-blue-500' : 'bg-gray-200'
-                        } transition-colors duration-500`}></div>
-                      <div className="flex items-start space-x-4">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${selectedVehicle.progress.certificate === 100
-                          ? 'bg-blue-500 text-white shadow-md shadow-blue-200'
-                          : 'bg-gray-100 text-gray-400'
-                          }`}>
-                          {selectedVehicle.progress.certificate === 100 ? (
-                            <CheckIcon className="w-5 h-5" />
-                          ) : (
-                            <span className="text-sm font-medium">4</span>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className={`text-sm font-medium ${selectedVehicle.progress.certificate === 100 ? 'text-gray-900' : 'text-gray-500'
-                            }`}>
-                            Certificate
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {selectedVehicle.progress.certificate === 100 ? 'Completed' : selectedVehicle.progress.certificate > 0 ? 'In Progress' : 'Pending'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                        {/* Delivery Performance */}
+                        {selectedVehicle.deliveryPerformance && (
+                          <div className="relative">
+                            <div className="flex items-start space-x-4">
+                              <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-blue-500 text-white shadow-md shadow-blue-200`}>
+                                {selectedVehicle.status === 'completed' && selectedVehicle.expectedDeliveryDate ? (
+                                  <CheckIcon className="w-5 h-5" />
+                                ) : (
+                                  <span className="text-sm font-medium">4</span>
+                                )}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-medium text-gray-900">Performance</span>
+                                <span className={`text-xs ${selectedVehicle.deliveryPerformance.isEarly ? 'text-green-600' : 'text-red-600'}`}>
+                                  {selectedVehicle.deliveryPerformance.isEarly
+                                    ? `Delivered ${selectedVehicle.deliveryPerformance.daysEarlyOrLate} days early`
+                                    : `Delivery was ${selectedVehicle.deliveryPerformance.daysEarlyOrLate} days late`}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
-                    {/* Document Delivered */}
-                    <div className="relative">
-                      <div className="flex items-start space-x-4">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${selectedVehicle.progress.documentDelivery === 100
-                          ? 'bg-blue-500 text-white shadow-md shadow-blue-200'
-                          : 'bg-gray-100 text-gray-400'
-                          }`}>
-                          {selectedVehicle.progress.documentDelivery === 100 ? (
-                            <CheckIcon className="w-5 h-5" />
-                          ) : (
-                            <span className="text-sm font-medium">5</span>
-                          )}
+                      </>
+                    ) : (
+                      <>
+                        {/* Regular steps for non-completed services */}
+                        {/* Government Fees */}
+                        <div className="relative">
+                          <div className={`absolute left-5 top-8 w-0.5 h-12 ${selectedVehicle.progress.governmentFees === 100 ? 'bg-blue-500' : 'bg-gray-200'} transition-colors duration-500`}></div>
+                          <div className="flex items-start space-x-4">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${selectedVehicle.progress.governmentFees === 100 ? 'bg-blue-500 text-white shadow-md shadow-blue-200' : 'bg-gray-100 text-gray-400'}`}>
+                              {selectedVehicle.progress.governmentFees === 100 ? (
+                                <CheckIcon className="w-5 h-5" />
+                              ) : (
+                                <span className="text-sm font-medium">1</span>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm font-medium ${selectedVehicle.progress.governmentFees === 100 ? 'text-gray-900' : 'text-gray-500'
+                                }`}>
+                                Government Fees
+                              </p>
+                              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>
+                                  {selectedVehicle.progress.governmentFees === 100
+                                    ? 'Completed'
+                                    : selectedVehicle.status === 'processing'
+                                      ? 'In Progress'
+                                      : 'Pending'}
+                                </span>
+                                {selectedVehicle.govtFeesUpdate && (
+                                  <span>
+                                    {new Date(selectedVehicle.govtFeesUpdate).toLocaleDateString('en-US', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <p className={`text-sm font-medium ${selectedVehicle.progress.documentDelivery === 100 ? 'text-gray-900' : 'text-gray-500'
-                            }`}>
-                            Document Delivered
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {selectedVehicle.progress.documentDelivery === 100 ? 'Completed' : selectedVehicle.progress.documentDelivery > 0 ? 'In Progress' : 'Pending'}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Overall progress */}
-                    <div className="mt-8 pt-4 border-t border-gray-100">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm text-gray-600">Overall Progress</span>
-                        <span className="text-sm font-medium text-blue-600">{selectedVehicle.progress.overall}%</span>
-                      </div>
-                      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out"
-                          style={{ width: `${selectedVehicle.progress.overall}%` }}
-                        ></div>
-                      </div>
-                    </div>
+                        {/* RTO Approval */}
+                        <div className="relative">
+                          <div className={`absolute left-5 top-8 w-0.5 h-12 ${selectedVehicle.progress.rtoApproval === 100 ? 'bg-blue-500' : 'bg-gray-200'
+                            } transition-colors duration-500`}></div>
+                          <div className="flex items-start space-x-4">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${selectedVehicle.progress.rtoApproval === 100
+                              ? 'bg-blue-500 text-white shadow-md shadow-blue-200'
+                              : 'bg-gray-100 text-gray-400'
+                              }`}>
+                              {selectedVehicle.progress.rtoApproval === 100 ? (
+                                <CheckIcon className="w-5 h-5" />
+                              ) : (
+                                <span className="text-sm font-medium">2</span>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm font-medium ${selectedVehicle.progress.rtoApproval === 100 ? 'text-gray-900' : 'text-gray-500'
+                                }`}>
+                                RTO Approval
+                              </p>
+                              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>
+                                  {selectedVehicle.progress.rtoApproval === 100 ? 'Completed' : selectedVehicle.progress.rtoApproval > 0 ? 'In Progress' : 'Pending'}
+                                </span>
+                                {selectedVehicle.rtoApprovalUpdate && (
+                                  <span>
+                                    {new Date(selectedVehicle.rtoApprovalUpdate).toLocaleDateString('en-US', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Inspection */}
+                        <div className="relative">
+                          <div className={`absolute left-5 top-8 w-0.5 h-12 ${selectedVehicle.progress.inspection === 100 ? 'bg-blue-500' : 'bg-gray-200'
+                            } transition-colors duration-500`}></div>
+                          <div className="flex items-start space-x-4">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${selectedVehicle.progress.inspection === 100
+                              ? 'bg-blue-500 text-white shadow-md shadow-blue-200'
+                              : 'bg-gray-100 text-gray-400'
+                              }`}>
+                              {selectedVehicle.progress.inspection === 100 ? (
+                                <CheckIcon className="w-5 h-5" />
+                              ) : (
+                                <span className="text-sm font-medium">3</span>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm font-medium ${selectedVehicle.progress.inspection === 100 ? 'text-gray-900' : 'text-gray-500'
+                                }`}>
+                                Inspection
+                              </p>
+                              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>
+                                  {selectedVehicle.progress.inspection === 100 ? 'Completed' : selectedVehicle.progress.inspection > 0 ? 'In Progress' : 'Pending'}
+                                </span>
+                                {selectedVehicle.inspectionUpdate && (
+                                  <span>
+                                    {new Date(selectedVehicle.inspectionUpdate).toLocaleDateString('en-US', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Certificate */}
+                        <div className="relative">
+                          <div className={`absolute left-5 top-8 w-0.5 h-12 ${selectedVehicle.progress.certificate === 100 ? 'bg-blue-500' : 'bg-gray-200'
+                            } transition-colors duration-500`}></div>
+                          <div className="flex items-start space-x-4">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${selectedVehicle.progress.certificate === 100
+                              ? 'bg-blue-500 text-white shadow-md shadow-blue-200'
+                              : 'bg-gray-100 text-gray-400'
+                              }`}>
+                              {selectedVehicle.progress.certificate === 100 ? (
+                                <CheckIcon className="w-5 h-5" />
+                              ) : (
+                                <span className="text-sm font-medium">4</span>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm font-medium ${selectedVehicle.progress.certificate === 100 ? 'text-gray-900' : 'text-gray-500'
+                                }`}>
+                                Certificate
+                              </p>
+                              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>
+                                  {selectedVehicle.progress.certificate === 100 ? 'Completed' : selectedVehicle.progress.certificate > 0 ? 'In Progress' : 'Pending'}
+                                </span>
+                                {selectedVehicle.certificateUpdate && (
+                                  <span>
+                                    {new Date(selectedVehicle.certificateUpdate).toLocaleDateString('en-US', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Document Delivered */}
+                        <div className="relative">
+                          <div className="flex items-start space-x-4">
+                            <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500 ${selectedVehicle.progress.documentDelivery === 100
+                              ? 'bg-blue-500 text-white shadow-md shadow-blue-200'
+                              : 'bg-gray-100 text-gray-400'
+                              }`}>
+                              {selectedVehicle.progress.documentDelivery === 100 ? (
+                                <CheckIcon className="w-5 h-5" />
+                              ) : (
+                                <span className="text-sm font-medium">5</span>
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm font-medium ${selectedVehicle.progress.documentDelivery === 100 ? 'text-gray-900' : 'text-gray-500'
+                                }`}>
+                                Document Delivered
+                              </p>
+                              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                                <span>
+                                  {selectedVehicle.progress.documentDelivery === 100 ? 'Completed' : selectedVehicle.progress.documentDelivery > 0 ? 'In Progress' : 'Pending'}
+                                </span>
+                                {selectedVehicle.documentDeliveryUpdate && (
+                                  <span>
+                                    {new Date(selectedVehicle.documentDeliveryUpdate).toLocaleDateString('en-US', {
+                                      day: 'numeric',
+                                      month: 'short',
+                                      year: 'numeric'
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Overall progress - only show for non-completed status */}
+                        {activeStatus !== 'completed' && (
+                          <div className="mt-8 pt-4 border-t border-gray-100">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-sm text-gray-600">Overall Progress</span>
+                              <span className="text-sm font-medium text-blue-600">{selectedVehicle.progress.overall}%</span>
+                            </div>
+                            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out"
+                                style={{ width: `${selectedVehicle.progress.overall}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </>
                 ) : (
                   <div className="text-center py-12">

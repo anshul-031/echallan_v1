@@ -85,15 +85,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // Validate MongoDB ObjectId format
-    const objectIdPattern = /^[0-9a-fA-F]{24}$/;
-    if (!objectIdPattern.test(vehicleId)) {
-      return NextResponse.json(
-        { error: "Invalid MongoDB ObjectId format" },
-        { status: 400 }
-      );
-    }
-
     if (!services || !vehicle_no) {
       const missingFields = [];
       if (!services) missingFields.push('services');

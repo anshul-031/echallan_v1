@@ -34,8 +34,6 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         name,
-        updated_at: new Date(),
-        id: undefined, // Let MongoDB generate the ObjectId
          // Set default userType
       },
     });

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -19,12 +19,12 @@ enum UserType {
 }
 
 model User {
-  id                  String             @id @default(auto()) @map("_id") @db.ObjectId
+  id                  String             @id @default(cuid())
   email               String             @unique
   password            String
   name                String?
   phone               String?
-  status              Boolean            @default(true)  
+  status              Boolean            @default(true)
   address             String?
   dob                 DateTime?
   gender              String?
@@ -32,7 +32,7 @@ model User {
   location            String?
   userType            UserType           @default(BASIC)
   credits             Int                @default(0)
-  companyId           String?            @db.ObjectId
+  companyId           String?
   created_at          DateTime           @default(now())
   updated_at          DateTime           @updatedAt
   challans            Challan[]
@@ -47,7 +47,7 @@ model User {
 
 model Employee {
   privileges      Privileges?
-  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  id              String    @id @default(cuid())
   email           String    @unique
   password        String
   name            String
@@ -68,7 +68,7 @@ model Employee {
 }
 
 model Company {
-  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  id           String    @id @default(cuid())
   name         String
   email        String    @unique
   address      String
@@ -89,7 +89,7 @@ model Company {
 }
 
 model Vehicle {
-  id                String             @id @default(auto()) @map("_id") @db.ObjectId
+  id                String             @id @default(cuid())
   vrn               String
   roadTax           String
   roadTaxDoc        String?
@@ -105,7 +105,7 @@ model Vehicle {
   nationalPermitDoc String?
   lastUpdated       String
   status            String
-  ownerId           String?            @db.ObjectId
+  ownerId           String?
   registeredAt      String
   documents         Int
   precedingChallan  PrecedingChallan[]
@@ -119,8 +119,8 @@ model Vehicle {
 }
 
 model UserVehicleStats {
-  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId                 String   @unique @db.ObjectId
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
   total_vehicles         Int      @default(0)
   expiring_count         Int      @default(0)
   expired_count          Int      @default(0)
@@ -165,10 +165,10 @@ model UserVehicleStats {
 }
 
 model Challan {
-  id                    String           @id @default(auto()) @map("_id") @db.ObjectId
+  id                    String           @id @default(cuid())
   rc_no                 String
-  user_id               String           @db.ObjectId
-  vehicle_id            String           @db.ObjectId
+  user_id               String
+  vehicle_id            String
   challan_no            String           @unique
   challan_status        String
   sent_to_reg_court     String
@@ -191,8 +191,8 @@ model Challan {
 }
 
 model Preference {
-  id                       String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId                   String   @unique @db.ObjectId
+  id                       String   @id @default(cuid())
+  userId                   String   @unique
   roadTaxVisibility        Boolean  @default(true)
   fitnessVisibility        Boolean  @default(true)
   insuranceVisibility      Boolean  @default(true)
@@ -207,10 +207,10 @@ model Preference {
 }
 
 model PrecedingChallan {
-  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
-  challan_id            String   @unique @db.ObjectId
+  id                    String   @id @default(cuid())
+  challan_id            String   @unique
   rc_no                 String
-  user_id               String   @db.ObjectId
+  user_id               String
   challan_no            String   @unique
   challan_status        String
   sent_to_reg_court     String
@@ -219,7 +219,7 @@ model PrecedingChallan {
   fine_imposed          Float
   receipt_no            String?
   payment_at            DateTime @default(now())
-  vehicle_id            String   @db.ObjectId
+  vehicle_id            String
   user                  User     @relation(fields: [user_id], references: [id])
   vehicle               Vehicle  @relation(fields: [vehicle_id], references: [id], onDelete: Cascade)
   challan               Challan  @relation(fields: [challan_id], references: [id], onDelete: Cascade)
@@ -229,12 +229,12 @@ model PrecedingChallan {
 }
 
 model RenewalService {
-  id                String                @id @default(auto()) @map("_id") @db.ObjectId
+  id                String                @id @default(cuid())
   services          String?
   isAssignedService Boolean?
   vehicle_no        String?
-  vehicleId         String?              @db.ObjectId @map("vehicle_id")
-  userId            String?              @db.ObjectId @map("user_id")
+  vehicleId         String?              @map("vehicle_id")
+  userId            String?              @map("user_id")
   govFees           Float?
   serviceCharge     Float?
   price             Float?
@@ -246,11 +246,11 @@ model RenewalService {
   documentDelivered Boolean              @default(false)
   documentRecieved  Boolean              @default(false)
   documentRecievedUpdate DateTime?
-  govtFeesUpdate    DateTime?             
-  rtoApprovalUpdate DateTime?             
-  inspectionUpdate  DateTime?             
+  govtFeesUpdate    DateTime?
+  rtoApprovalUpdate DateTime?
+  inspectionUpdate  DateTime?
   certificateUpdate DateTime?
-  documentDeliveryUpdate DateTime?             
+  documentDeliveryUpdate DateTime?
   status            RenewalServiceStatus @default(not_assigned)
   createdAt         DateTime             @default(now()) @map("created_at")
   updatedAt         DateTime             @updatedAt @map("updated_at")
@@ -272,8 +272,8 @@ enum RenewalServiceStatus {
 }
 
 model Privileges {
-  id                     String   @id @default(auto()) @map("_id") @db.ObjectId
-  employeeId             String   @unique @db.ObjectId
+  id                     String   @id @default(cuid())
+  employeeId             String   @unique
   // Dashboard privileges
   dashboard_view         Boolean  @default(false)
   dashboard_add          Boolean  @default(false)
@@ -309,8 +309,8 @@ model Privileges {
 }
 
 model RenewalStats {
-  id                String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String   @unique @db.ObjectId
+  id                String   @id @default(cuid())
+  userId            String   @unique
   totalServices     Int      @default(0)
   pendingCount      Int      @default(0)
   processingCount   Int      @default(0)

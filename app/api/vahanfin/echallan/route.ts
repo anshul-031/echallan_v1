@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Missing rc_no parameter' }, { status: 400 });
   }
 
-  const vahanApiUrl = `https://apiv2.vahanfin.com/echallan/?rc_no=${rc_no}`;
+  const vahanApiUrl = `https://number.vahanfin.com/echallan/${rc_no}`;
 
   try {
     // REMOVE SSL VERIFICATION BYPASS BEFORE PRODUCTION

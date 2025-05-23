@@ -65,7 +65,7 @@ export default function EmployeeManagement() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [hasSearchResults, setHasSearchResults] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const searchTimeout = useRef<NodeJS.Timeout>();
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchEmployees();

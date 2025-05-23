@@ -314,17 +314,17 @@ export default function LiveChallanPanel() {
     try {
       const response = await fetch(`/api/vahanfin/echallan?rc_no=${searchQuery}`);
       const data = await response.json();
+      console.log(data);
+      // if (!response.ok) {
+      //   throw new Error(data.message || 'Failed to fetch vehicle data');
+      // }
 
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch vehicle data');
-      }
-
-      if (!data.data) {
+      if (!data.response[0]) {
         throw new Error('No data found for this vehicle');
       }
 
-      setSearchPendingResults(data.data.Pending_data || []); 
-      setSearchDisposedData(data.data.Disposed_data || []);
+      setSearchPendingResults(data.response[0]?.response?.data?.Pending_data || []);
+      setSearchDisposedData(data.response[0]?.response?.data?.Disposed_data || []);//data.response[0]?.response?.data?.Disposed_data || []
       setError(null);
 
     } catch (error) {

@@ -74,7 +74,7 @@ export default function UserManagement() {
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [changingStatus, setChangingStatus] = useState(false);
-    const searchTimeout = useRef<NodeJS.Timeout>();
+    const searchTimeout = useRef<NodeJS.Timeout | null>(null);
     const [showForm, setShowForm] = useState(false);
     const [formData, setFormData] = useState<UserFormData>(initialFormData);
     const [submitting, setSubmitting] = useState(false);

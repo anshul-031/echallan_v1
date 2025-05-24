@@ -60,7 +60,7 @@ export default function CompanyManagement() {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [changingStatus, setChangingStatus] = useState(false);
-  const searchTimeout = useRef<NodeJS.Timeout>();
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<CompanyFormData>(initialFormData);
   const [submitting, setSubmitting] = useState(false);
